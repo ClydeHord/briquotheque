@@ -1,0 +1,134 @@
+LICENCE D'UTILISATION DE BRIQUOTHÈQUE
+Version 1.0 — 13 novembre 2026
+© 2026 Clýde Hørd — tous droits réservés.
+
+Briquothèque est un logiciel propriétaire dont le code source est rendu visible. Il n'est PAS un logiciel libre :
+le fait que son code soit consultable ne donne aucun autre droit que ceux écrits ci-dessous.
+Télécharger, installer ou utiliser Briquothèque vaut acceptation de la présente licence. Si vous ne l'acceptez pas,
+vous ne devez ni le télécharger, ni l'installer, ni l'utiliser.
+
+
+1. DÉFINITIONS
+   « Auteur » : Clýde Hørd, concepteur et unique propriétaire de Briquothèque.
+   « Logiciel » : Briquothèque dans son ensemble — code source et code exécutable, interface, textes, graphismes,
+   icônes, photographies, données d'exemple, documentation (dont le guide utilisateur), noms et visuels — dans toutes
+   ses versions, y compris les mises à jour.
+   « Source officielle » : le dépôt GitHub de l'Auteur, https://github.com/ClydeHord/briquotheque.
+   « Auto-hébergement » : l'installation du Logiciel sur un serveur ou un ordinateur que l'utilisateur contrôle
+   lui-même, pour son propre usage.
+   « Utilisateur » : toute personne physique qui installe ou utilise le Logiciel.
+
+2. PROPRIÉTÉ
+   Le Logiciel est une œuvre protégée par le droit d'auteur (Code de la propriété intellectuelle) et par les traités
+   internationaux. Concept, conception et propriété : Clýde Hørd. Développement réalisé avec Claude Code (Anthropic),
+   sur les instructions et selon le concept de l'Auteur. Cette licence ne vend rien et ne cède aucun droit de
+   propriété : elle accorde seulement un droit d'utilisation, limité, personnel, non exclusif, non transférable et
+   révocable. Tous les droits qui ne sont pas expressément accordés sont réservés à l'Auteur.
+
+3. CE QUI EST AUTORISÉ — gratuitement, aux conditions de la présente licence
+   a) télécharger le Logiciel depuis la Source officielle uniquement ;
+   b) l'installer en Auto-hébergement et l'utiliser pour gérer votre propre collection, à titre personnel et non
+      commercial (vous et les membres de votre foyer) ;
+   c) laisser des visiteurs consulter, en lecture seule, les pages publiques que le Logiciel produit pour votre
+      propre collection (collection, liste de souhaits, nouveautés, fiches partagées) ;
+   d) le régler comme il le prévoit (réglages, variables d'environnement, vos propres données, vos propres photos) :
+      ce n'est pas une modification ;
+   e) le mettre à jour depuis la Source officielle et en garder des copies de sauvegarde privées, strictement pour
+      votre installation.
+
+4. CE QUI EST INTERDIT — sauf autorisation écrite et préalable de l'Auteur
+   a) REDISTRIBUTION : copier, publier, partager, diffuser, prêter, louer, sous-licencier ou transférer le Logiciel,
+      en tout ou en partie, sous quelque forme que ce soit — autre dépôt, miroir, site web, archive, paquet,
+      image de conteneur (Docker…), image disque, appareil préinstallé, magasin d'applications, réseau de partage —
+      y compris gratuitement ;
+   b) COMMERCIALISATION : vendre le Logiciel ou toute copie, l'inclure dans une offre payante, l'utiliser dans le cadre
+      d'une activité professionnelle ou commerciale, proposer son installation, son hébergement ou son accès à des
+      tiers comme service (hébergement mutualisé, logiciel en ligne, abonnement…), y afficher de la publicité,
+      ou en tirer un quelconque revenu, directement ou indirectement ;
+   c) MODIFICATION : modifier, adapter, traduire, corriger, compléter le Logiciel ou en réutiliser des parties
+      (code, textes, images) dans une autre œuvre, et créer des œuvres dérivées ;
+   d) HÉBERGEMENT POUR AUTRUI : installer le Logiciel pour qu'il gère la collection d'une autre personne que vous
+      ou votre foyer ;
+   e) MENTIONS : supprimer, masquer ou modifier les mentions de propriété, l'auteur, le ©, la licence, les mentions
+      légales, le filigrane ou les métadonnées des photographies ;
+   f) NOMS : utiliser les noms « Briquothèque » ou « Clýde Hørd », ou leurs visuels, pour désigner un autre produit,
+      laisser croire à un partenariat ou à une approbation ;
+   g) INTELLIGENCE ARTIFICIELLE : utiliser tout ou partie du Logiciel (code, textes, documentation, photographies)
+      pour entraîner, affiner ou alimenter un modèle d'intelligence artificielle ou un jeu de données ;
+   h) CONTOURNEMENT : contourner ou désactiver les protections du Logiciel (mot de passe, code d'installation,
+      limites d'accès), ou utiliser le Logiciel pour enfreindre les conditions d'utilisation de services tiers.
+   Ce qui n'est pas expressément autorisé à l'article 3 est interdit.
+
+5. PHOTOGRAPHIES ET IMAGES
+   Les photographies fournies avec le Logiciel (exemples du dossier seed/, captures du guide) sont des œuvres de
+   l'Auteur, signées d'un filigrane et de métadonnées (auteur, droits, source). Elles ne peuvent être affichées qu'au
+   sein du Logiciel installé selon l'article 3. Toute reproduction, réutilisation, retouche, ou tout retrait ou
+   modification du filigrane ou des métadonnées est interdit. Les images de produits LEGO® et celles provenant de
+   sites tiers restent la propriété de leurs auteurs respectifs.
+
+6. COPIES OBTENUES AILLEURS, PLATEFORME GITHUB
+   Seule la Source officielle fait foi. Une copie obtenue ailleurs (y compris une « fourche » ou fork) ne donne aucun
+   droit ; les conditions de GitHub qui permettent de consulter le dépôt ou d'en créer une fourche sur GitHub
+   n'accordent aucune autre autorisation que celles de la présente licence.
+
+7. SERVICES TIERS
+   Le Logiciel peut utiliser des services tiers (BrickLink, Rebrickable, BrickOwl, LEGO.com, Instagram…) avec vos
+   propres clés d'accès. Vous êtes seul responsable de ces clés et du respect des conditions d'utilisation de ces
+   services. L'Auteur n'est lié à aucun d'eux.
+
+8. CONTRIBUTIONS
+   Les idées, suggestions ou propositions que vous adressez à l'Auteur peuvent être librement utilisées par lui,
+   sans contrepartie ni obligation. Elles ne vous donnent aucun droit sur le Logiciel.
+
+9. ABSENCE DE GARANTIE
+   Le Logiciel est fourni « tel quel », sans aucune garantie, expresse ou implicite, notamment de bon fonctionnement,
+   d'exactitude des prix et estimations, de disponibilité des services tiers ou d'adéquation à un usage particulier.
+   Vous l'installez et l'utilisez à vos risques ; vous êtes responsable de votre installation, de sa sécurité,
+   de vos données et de leurs sauvegardes.
+
+10. RESPONSABILITÉ
+   Dans toute la mesure permise par la loi, l'Auteur ne pourra être tenu responsable d'aucun dommage, direct ou
+   indirect (perte de données, de valeur, de revenus, interruption, mauvaise estimation…) résultant de l'installation,
+   de l'utilisation ou de l'impossibilité d'utiliser le Logiciel. Vous garantissez l'Auteur contre toute réclamation
+   d'un tiers liée à votre utilisation du Logiciel contraire à la présente licence ou à la loi.
+
+11. FIN DE L'AUTORISATION
+   Tout manquement à la présente licence met fin automatiquement, sans préavis, à votre droit d'utilisation : vous
+   devez alors cesser d'utiliser le Logiciel et en supprimer toutes les copies. L'Auteur peut aussi retirer cette
+   autorisation pour l'avenir, à tout moment. Les articles 2, 4, 5, 9, 10, 12 et 13 restent applicables après la fin
+   de l'autorisation. Toute reproduction, représentation, diffusion ou modification non autorisée constitue une
+   contrefaçon (articles L.122-4 et L.335-2 et suivants du Code de la propriété intellectuelle) et peut faire l'objet
+   de poursuites.
+
+12. ÉVOLUTION DE LA LICENCE
+   L'Auteur peut modifier la présente licence ; la version applicable est celle publiée sur la Source officielle
+   au moment de l'utilisation.
+
+13. DROIT APPLICABLE ET DIVERS
+   La présente licence est soumise au droit français ; tout litige relève des tribunaux français compétents.
+   Si une clause était jugée nulle, les autres resteraient applicables. Le fait de ne pas exercer un droit ne vaut
+   pas renonciation. Seule la version française fait foi.
+
+14. MARQUES
+   LEGO® est une marque du groupe LEGO, qui ne parraine, n'autorise ni n'approuve le Logiciel. BrickLink®,
+   Rebrickable, BrickOwl et Instagram appartiennent à leurs détenteurs respectifs.
+
+Contact : par le dépôt officiel, https://github.com/ClydeHord/briquotheque
+
+
+--------------------------------------------------------------------------------------------------------------------
+ENGLISH SUMMARY (for information only — the French text above is the only binding version)
+
+Briquothèque is proprietary, source-available software. © 2026 Clýde Hørd — all rights reserved.
+ALLOWED, free of charge: download it from the official repository only, self-host it and use it for your own
+collection, for personal, non-commercial purposes (you and your household); let visitors view the read-only public
+pages of your own collection; configure it; update it from the official repository.
+FORBIDDEN without prior written permission: any redistribution (other repositories, mirrors, websites, archives,
+packages, container images, pre-installed devices, app stores — even free of charge); any commercial use (selling,
+paid offers, business use, hosting it or giving access to it as a service for others, advertising, any revenue);
+modifying it, reusing parts of it, creating derivative works; hosting it for other people's collections; removing
+copyright notices, licence, legal notices, watermarks or image metadata; using the names "Briquothèque" or
+"Clýde Hørd"; using any part of it (code, text, documentation, photos) to train or feed AI models or datasets;
+circumventing its protections. Photos supplied with it are the author's works and may only be displayed within the
+software. Provided "as is", without warranty; to the extent permitted by law, no liability. Any breach ends your
+right to use it. Forks or copies obtained elsewhere grant no rights. Governed by French law.
