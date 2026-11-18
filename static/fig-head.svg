@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <!-- tête de figurine stylisée, sans visage (dessin original) -->
+  <rect x="25" y="5" width="14" height="9" rx="2.5" fill="#f2c300" stroke="#8a6d00" stroke-width="2"/>
+  <ellipse cx="32" cy="6" rx="7" ry="2" fill="#ffd93b" stroke="#8a6d00" stroke-width="1.5"/>
+  <rect x="12" y="13" width="40" height="38" rx="11" fill="#ffd200" stroke="#8a6d00" stroke-width="2.5"/>
+  <rect x="17" y="17" width="7" height="28" rx="3.5" fill="#fff3a6" opacity=".75"/>
+  <rect x="21" y="50" width="22" height="9" rx="2" fill="#f2c300" stroke="#8a6d00" stroke-width="2"/>
+</svg>

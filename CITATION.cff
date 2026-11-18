@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "Si vous reprenez ou citez ce projet, merci d'indiquer son auteur (voir AUTHORS.md et LICENCE)."
+title: "Briquothèque"
+type: software
+authors:
+  - name: "Clýde Hørd"
+    alias: "ClydeHord"
+repository-code: "https://github.com/ClydeHord/briquotheque"

@@ -1,0 +1,114 @@
+<!doctype html>
+<!-- © 2026 Clýde Hørd (ClydeHord sur GitHub) — auteur de Briquothèque · source : https://github.com/ClydeHord/briquotheque · licence : LICENCE (mention à conserver) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Nouveautés LEGO — Briquothèque</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .guest-tag { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
+  .g-main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+  /* liens vers les autres pages publiques : en fin de rangée des listes, sous le titre, comme des onglets */
+  .pub-link { display: inline-flex; align-items: center; border: 1px solid var(--red); color: var(--red); background: var(--panel); border-radius: 99px;
+    padding: 7px 14px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .pub-link:hover { background: var(--red); color: #fff; }
+  @media (max-width: 520px) { .pub-link { padding: 6px 11px; font-size: 13.5px; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brick" aria-hidden="true"><i></i><i></i></span><span>Briquothèque</span></div>
+  <a class="ig-head" id="igHead" hidden target="_blank" rel="noopener" title="Le compte Instagram"><span class="ig-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="#fff" stroke="none"/></svg></span><span class="ig-name"></span></a><!-- compte Instagram (s'il est relié) -->
+  <span class="pub-links-head" id="pubLinksHead"></span>
+  <span class="head-tags"><span class="guest-tag">Nouveautés · lecture seule</span>
+  <a class="guest-tag gh-tag" href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener" title="Le projet Briquothèque (code source officiel)">Le projet sur GitHub</a></span>
+</header>
+<main class="g-main">
+  <h1 style="margin:0 0 10px">✨ Nouveautés LEGO</h1>
+  <div class="nov-bar">
+    <div class="choice nov-tabs"><label><input type="radio" name="novv" value="sets" checked><span>Sets</span></label><label><input type="radio" name="novv" value="figs"><span>Figurines exclusives</span></label></div>
+    <div class="choice nov-tabs"><label><input type="radio" name="novs" value="" checked><span>Tout</span></label><label><input type="radio" name="novs" value="soon"><span>À venir</span></label><label><input type="radio" name="novs" value="new"><span>Sorties récentes</span></label></div>
+    <select id="theme" aria-label="Thème"><option value="">Tous les thèmes</option></select>
+  </div>
+  <section id="b"><div class="loading"><span class="spinner"></span>Chargement…</div></section>
+</main>
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const nf = new Intl.NumberFormat("fr-FR");
+const money = v => (v ?? 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const img = u => u ? "/nouveautes/img?u=" + encodeURIComponent(u) : "";
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const relKey = x => { const m = String(x.release || "").match(/(?:(\p{L}+)\s+)?(\d{4})/u); if (!m) return 0; return +m[2] * 13 + (m[1] ? MOIS.indexOf(m[1].toLowerCase()) + 1 : 0); };
+let data = { items: [] };
+function draw() {
+  const view = $("input[name=novv]:checked").value, st = $("input[name=novs]:checked").value, th = $("#theme").value, B = $("#b");
+  const list = data.items.filter(x => (!st || x.kind === st) && (!th || x.theme === th))
+    .sort((a, b) => relKey(b) - relKey(a) || (a.pos ?? 1e9) - (b.pos ?? 1e9) || (parseInt(b.number) || 0) - (parseInt(a.number) || 0) || a.name.localeCompare(b.name, "fr"));
+  const when = x => x.release ? ` · 📅 ${x.kind === "soon" ? "Sortie" : "Sorti"} : ${esc(x.release)}` : "";
+  if (view === "sets") {
+    B.innerHTML = list.length ? `<div class="nov-grid">${list.map(x => `<div class="nov-card"><div class="nov-pic"><img src="${img(x.image)}" alt="" loading="lazy" data-zoom data-n="${esc(x.number)}">
+        <span class="badge ${x.kind === "soon" ? "upcoming" : "onsale"}">${x.kind === "soon" ? "À venir" : "Nouveau"}</span></div>
+      <div class="nov-txt"><b>${esc(x.name)}</b><small>${[esc(x.number), esc(x.theme), x.pieces ? nf.format(x.pieces) + " pièces" : ""].filter(Boolean).join(" · ")}</small>
+      <small>${x.price != null ? `<b>${money(x.price)}</b>` : ""}${when(x)}</small>
+      ${x.figs?.length ? `<small class="nov-figs">🟡 ${x.figs.length} figurine${x.figs.length > 1 ? "s" : ""} exclusive${x.figs.length > 1 ? "s" : ""}</small>` : ""}</div></div>`).join("")}</div>`
+      : `<div class="loading">Aucune nouveauté pour ces filtres.</div>`;
+  } else {
+    const figs = [], seen = new Set();
+    for (const x of list) for (const f of x.figs || []) if (!seen.has(f.fig)) { seen.add(f.fig); figs.push({ f, x }); }
+    B.innerHTML = figs.length ? `<div class="nov-grid">${figs.map(({ f, x }) => `<div class="nov-card"><div class="nov-pic fig">${f.image ? `<img src="${img(f.image)}" alt="" loading="lazy" data-zoom data-fig data-name="${esc(f.name)}" data-n="${esc(x.number)}">`
+      : `<span class="nov-noimg" data-zoom data-fig data-name="${esc(f.name)}" data-n="${esc(x.number)}">🟡<small>Photo pas encore disponible</small></span>`}</div>
+      <div class="nov-txt"><b>${esc(f.name)}</b><small>dans « ${esc(x.name)} » (${esc(x.number)})${x.theme ? " · " + esc(x.theme) : ""}</small><small>${x.price != null ? `<b>${money(x.price)}</b>` : ""}${when(x)}</small></div></div>`).join("")}</div>`
+      : `<div class="loading">${data.figs_done ? "Aucune figurine exclusive pour ces filtres." : "Analyse des figurines en cours…"}</div>`;
+  }
+  $$("[data-zoom]", B).forEach(im => im.onclick = () => {   // en grand (figurine : la photo de son set) ; set : ses photos officielles sur le côté
+    const x = im.dataset.n ? data.items.find(y => y.number === im.dataset.n) : null, fig = im.hasAttribute("data-fig");
+    const setPics = x ? (x.images?.length ? x.images : [x.image]).filter(Boolean).map(img) : [];   // photos en grand (pas la miniature en double)
+    const all = fig ? [...(im.src ? [im.src] : []), ...setPics] : setPics;   // figurine : elle, puis les photos de son set
+    const url = x ? x.url || `https://www.lego.com/fr-fr/search?q=${encodeURIComponent(x.number.replace(/-1$/, ""))}` : "";
+    const z = document.createElement("div"); z.className = "zoomer";
+    z.innerHTML = (all.length > 1 ? `<div class="zoom-row"><img class="zg-main" src="${all[0]}" alt=""><div class="zoom-side">${all.map((u, k) =>
+      `<button type="button" class="zs-pic ${k ? "" : "on"}" data-zs="${k}"><img src="${u}" alt=""></button>`).join("")}</div></div>` : `<img src="${all[0] || im.dataset.set || im.src}" alt="">`)
+      + (fig && x ? `<div class="zg-set">Dans le set « ${esc(x.name)} » (${esc(x.number)})${x.price != null ? " · " + money(x.price) : ""}</div>` : "")
+      + (url ? `<a class="zg-lego" href="${esc(url)}" target="_blank" rel="noopener">🔗 ${fig ? "Le set sur lego.com" : "Voir sur lego.com"}</a>` : "")
+      + (fig && x?.kind === "new" && im.dataset.name ? ` <a class="zg-lego" href="https://www.bricklink.com/v2/search.page?q=${encodeURIComponent(im.dataset.name)}#T=M" target="_blank" rel="noopener">🔎 La figurine sur BrickLink</a>` : "");   // déjà sortie : recherche BrickLink (page publique : sans appel à l'API)
+    z.onclick = e => {
+      if (e.target.closest(".zg-lego")) return;   // le lien s'ouvre, l'image reste
+      const b = e.target.closest("[data-zs]");
+      if (!b) return z.remove();
+      z.querySelector(".zg-main").src = all[+b.dataset.zs];
+      z.querySelectorAll(".zs-pic").forEach(p => p.classList.toggle("on", p === b));
+    };
+    document.body.append(z);
+  });
+}
+/* liens entre les pages publiques : à la fin de la rangée des listes, sous le titre (même endroit sur chaque page) */
+function pubLinksHtml(page, owner) {
+  const col = owner ? `📚 Collection de ${owner}` : "📚 La collection", wish = owner ? `⭐ Liste de souhaits de ${owner}` : "⭐ Liste de souhaits";
+  const links = { collection: [["/wishlist", wish]], wishlist: [["/collection", col]],
+    watch: [["/collection", col], ["/wishlist", wish]], nouveautes: [["/collection", col], ["/wishlist", wish]] }[page] || [];
+  const esc_ = t => t.replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]);
+  return links.map(([u, t]) => `<a class="pub-link" href="${u}">${esc_(t)}</a>`).join("");
+}
+/* lien vers le compte Instagram, à droite du nom de l'appli (seulement si un compte est relié) */
+function setIgHead(u) {
+  const a = document.getElementById("igHead"); if (!a) return;
+  a.hidden = !u;
+  if (u) { a.href = "https://www.instagram.com/" + encodeURIComponent(u) + "/"; a.querySelector(".ig-name").textContent = "@" + u; a.title = "@" + u + " sur Instagram"; }
+}
+fetch("/nouveautes/data").then(r => r.json()).then(d => {
+  setIgHead(d.ig_user);
+  data = d;
+  document.getElementById("pubLinksHead").innerHTML = pubLinksHtml("nouveautes", d.owner);   // dans l'en-tête
+  const themes = [...new Set(d.items.map(x => x.theme).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  $("#theme").innerHTML = `<option value="">Tous les thèmes</option>` + themes.map(t => `<option>${esc(t)}</option>`).join("");
+  draw();
+}).catch(() => { $("#b").innerHTML = `<div class="loading">Nouveautés indisponibles pour le moment.</div>`; });
+$$("input[name=novv], input[name=novs]").forEach(r => r.onchange = draw);
+$("#theme").onchange = draw;
+</script>
+</body>
+</html>

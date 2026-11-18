@@ -1,0 +1,348 @@
+<!doctype html>
+<!-- © 2026 Clýde Hørd (ClydeHord sur GitHub) — auteur de Briquothèque · source : https://github.com/ClydeHord/briquotheque · licence : LICENCE (mention à conserver) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d01012">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Briquothèque">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>Briquothèque — Ma collection LEGO</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='10' width='28' height='18' rx='3' fill='%23e3000b'/><rect x='7' y='5' width='7' height='7' rx='2' fill='%23e3000b'/><rect x='18' y='5' width='7' height='7' rx='2' fill='%23e3000b'/></svg>">
+</head>
+<body>
+<div class="offline-bar" id="offlineBar" hidden>Hors ligne<span id="outboxCount"></span></div>
+<header class="topbar">
+  <button class="icon-btn only-mobile" id="btnMenu" aria-label="Menu">☰</button>
+  <div class="brand">
+    <span class="brick" aria-hidden="true"><i></i><i></i></span>
+    <span>Briquothèque</span>
+  </div>
+  <div class="top-views" id="topViews" hidden></div>
+  <div class="top-total" id="topTotal"></div>
+  <button class="btn primary" id="btnAdd">+ Nouveau</button>
+</header>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-title side-head"><span></span><span class="side-tools">
+      <button class="icon-btn side-ico" id="btnNewList" title="Nouvelle liste" aria-label="Nouvelle liste">＋</button>
+      <button class="icon-btn side-ico" id="btnReorder" title="Changer l'ordre des listes" aria-label="Changer l'ordre des listes">⇅</button>
+      <button class="icon-btn side-ico" id="btnSubLists" title="Afficher les sous-listes dans le menu" aria-label="Afficher les sous-listes dans le menu" aria-pressed="false">↳</button></span></div>
+    <nav id="listNav"></nav>
+    <nav id="todoNav"><div class="side-sep"></div><button class="nav-item" id="btnTodo"><span class="nm">📝 À faire</span><span class="ct"></span></button></nav>
+    <nav id="wishNav"></nav><!-- liste(s) de souhaits : toujours à la fin de « Mes listes » -->
+    <nav id="shareNav"></nav><!-- fiches partagées : ouvre la liste de tous les liens -->
+    <div class="side-sep"></div>
+    <div id="mocSection" hidden>
+      <nav>
+        <button class="nav-item" id="btnMocReview" hidden><span class="nm">🧪 MOC à valider</span><span class="ct"></span></button>
+      </nav>
+      <div class="side-sep"></div>
+    </div>
+    <nav id="partsNav"></nav>
+    <nav id="invNav"></nav>
+    <button type="button" class="nav-item new-inv" id="btnNewInv" title="Nouvel inventaire" aria-label="Nouvel inventaire"><span class="nm">+ Nouvel inventaire</span></button>
+    <div class="side-sep"></div>
+    <nav id="statsNav"></nav>
+    <div class="side-bottom"><!-- petit espace avant Réglages / déconnexion -->
+      <div class="side-sep"></div>
+      <button class="btn ghost full" id="btnSettings">⚙️ Réglages</button>
+      <button class="btn ghost full" id="btnPassword" hidden>🔑 Changer le mot de passe</button>
+      <button class="btn ghost full" id="btnLogout">↩ Se déconnecter</button>
+    </div>
+    <div class="side-sep" id="pubSep"></div>
+    <nav id="pubNav"><!-- démo et code source (les pages publiques : 📤 à côté du titre de leur page) -->
+      <button type="button" class="nav-item pub-row" data-pub="/demo" title="Copier le lien"><span class="nm">🧪 Mode Démo</span></button>
+      <a class="nav-item pub-row gh-link" href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener" title="Le code source officiel (s'ouvre dans un nouvel onglet)"><span class="nm">🐙 GitHub</span></a><!-- source officielle (présent aussi dans la version publiée) -->
+    </nav>
+    <p class="side-legal"><button type="button" class="link-like" data-legal>© 2026 Clýde Hørd · ⚖️ Mentions légales</button></p><!-- texte : LEGAL_HTML (app.js) -->
+  </aside>
+
+  <main class="main">
+    <button type="button" class="keys-banner" id="keysBanner" hidden></button><!-- clés API manquantes : ouvre les Réglages -->
+    <div class="top-views top-views2" id="topViews2" hidden></div><!-- la liste ouverte : mêmes boutons, pour elle — en haut de la colonne, au niveau du menu -->
+    <div class="list-head">
+      <div>
+        <h1 id="listTitle">Toute la collection</h1>
+        <div class="list-actions" id="listActions">
+          <button class="link list-edit" id="btnEditList" title="Modifier la liste (nom, logo, affichage, rangement, suppression)" aria-label="Modifier la liste">✏️</button>
+          <button class="link" id="btnRename">Renommer</button>
+          <button class="link" id="btnListLogo" title="Une image devant le nom de la liste (PNG transparent conseillé)">🖼️ Logo</button>
+          <button class="link" id="btnMoveList">Ranger dans…</button>
+          <button class="link danger" id="btnDeleteList">Supprimer la liste</button>
+          <button class="btn primary small-btn" id="btnOrderBL" hidden title="Mettre ces pièces dans ma wanted list BrickLink">🧾 Passer commande</button>
+          <button class="btn small-btn" id="btnCleanParts" hidden title="Retirer de la liste les pièces reçues (✔ OK)">🧹 Nettoyer</button>
+          <button class="btn nov-btn" id="btnNovelties" hidden>✨ Nouveautés</button>
+          <button class="btn gift-nav" id="btnGiftList" hidden title="À surveiller" aria-label="À surveiller">👀</button>
+          <button class="btn small-btn" id="btnGiftLink" hidden title="Lien public de la liste « À surveiller » (sans vos notes)">🔗 Copier le lien public</button>
+          <a class="link" id="lnkPublic" href="/wishlist" target="_blank" rel="noopener" hidden>🔗 Version publique</a>
+          <span class="pub-visits" id="pubVisits" hidden></span>
+        </div>
+        <div class="sub-chips" id="subChips" hidden></div><!-- sous-listes : « Tout », chacune, « Hors sous-listes » -->
+      </div>
+    </div>
+
+    <section class="stats" id="stats"></section>
+
+    <section id="statsView" hidden></section>
+    <section id="novView" hidden></section>
+    <div class="toolbar">
+      <div class="filt-box"><button type="button" class="icon-btn filt-reset" id="filtReset" title="Remettre les filtres à zéro" aria-label="Remettre les filtres à zéro">↺</button><!-- efface le texte et les étiquettes cochées -->
+        <input type="search" id="filter" placeholder="Filtrer par nom, numéro, thème…"></div>
+      <details class="filt-menu" id="filtMenu"><summary class="btn" title="Filtres" aria-label="Filtres">⚙️<span class="filt-w"> Filtres</span> <b class="filt-n" id="filtN" hidden></b></summary>
+        <div class="filt-pop" id="filtPop"></div><!-- une case par étiquette (Complet, Amélioré, Modifié, Set partiel, MOC), remplie par l'appli -->
+      </details>
+      <details class="filt-menu sort-menu" id="sortMenu"><summary class="btn" title="Tri" aria-label="Tri">⇅<span class="filt-w"> Tri</span><span class="sort-cur" id="sortCur"></span></summary>
+        <div class="filt-pop" id="sortPop"></div><!-- un choix par tri : la même fenêtre que « Filtres », remplie par syncSortMenu() à partir de la liste invisible ci-dessous -->
+      </details>
+      <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Renverser le tri (ordre inverse)" aria-label="Renverser le tri" aria-pressed="false">🔃</button>
+      <button type="button" class="btn trend-tog" id="trendTog" title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button><!-- 🔃 ordre inverse du tri en cours ; 📈 variations montrées ou cachées -->
+      <select id="sort" hidden aria-hidden="true" tabindex="-1">
+        <option value="modified">Dernière modification</option>
+        <option value="added">Ajout récent</option>
+        <option value="added_old">Ajout le plus ancien</option>
+        <option value="value">Valeur décroissante</option>
+        <option value="variation">Évolution du prix</option>
+        <option value="ecart">Écart de prix</option>
+        <option value="name">Nom (A → Z)</option>
+        <option value="number">Numéro</option>
+        <option value="year">Année</option>
+        <option value="qty">Nombre d'exemplaires</option>
+        <option value="pieces">Nombre de pièces</option>
+        <option value="figs">Nombre de figurines</option>
+        <option value="theme">Thème</option>
+      </select><!-- (invisible : elle garde le tri choisi ; ce qu'on voit est le menu « ⇅ Tri » juste au-dessus) -->
+    </div>
+
+    <section id="items"></section>
+  </main>
+</div>
+
+<!-- Fenêtre d'ajout / édition -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <button class="icon-btn" id="modalBack" hidden aria-label="Retour">←</button>
+      <h2 id="modalTitle">Ajouter : rechercher un set, une figurine…</h2>
+      <button class="icon-btn" id="modalRename" hidden title="Renommer" aria-label="Renommer">✏️</button>
+      <button class="icon-btn" id="modalShare" hidden title="Partager la fiche" aria-label="Partager la fiche">🔗</button>
+      <button class="icon-btn todo-btn" id="modalTodo" hidden title="À faire" aria-label="À faire">📝</button>
+      <button class="icon-btn" id="modalEdit" hidden title="Modifier la fiche" aria-label="Modifier la fiche">🔧</button>
+      <button class="icon-btn" id="modalCancel" hidden title="Annuler les modifications" aria-label="Annuler les modifications">↩️</button>
+      <button class="icon-btn" id="modalSave" hidden title="Enregistrer" aria-label="Enregistrer">💾</button>
+      <button class="icon-btn" id="modalClose" aria-label="Fermer">✕</button>
+    </div>
+
+    <!-- Étape 1 : recherche -->
+    <div id="stepFind">
+      <p class="hint replace-note" id="replaceNote" hidden></p>
+      <div class="find-top"><!-- ajouter sans rechercher, et (Instagram manuel) une publication par son lien -->
+        <button type="button" class="btn full no-image-btn" id="btnNoImage">✍️ Ajouter sans rechercher (MOC ou set partiel)</button>
+      </div>
+      <div id="panePhoto"><!-- photo : appareil (caméra en direct), galerie ou image glissée -->
+        <div class="cam-row find-photo">
+          <label class="btn">📷 Appareil photo<input type="file" capture="environment" id="photoCam" accept="image/*" hidden></label>
+          <label class="btn">📁 Importer une image<input type="file" id="photoPick" accept="image/*" hidden></label>
+        </div>
+        <div class="code-cam" id="codeCam" hidden title="Toucher l'image pour prendre la photo"><video id="codeVideo" playsinline muted></video><span class="code-aim"></span>
+          <button type="button" class="cam-x" data-camx aria-label="Fermer la caméra">✕</button><span class="cam-tip">Toucher l'image pour prendre la photo</span></div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+        <img id="photoPreview" class="photo-preview" alt="" hidden>
+      </div>
+      <form id="searchForm" class="search-row">
+        <input id="searchInput" autocomplete="off" placeholder="Ex : 75192, Millennium Falcon, sw0002, Boba Fett, 3001, brick 2 x 4…">
+        <button class="btn primary">Rechercher</button>
+      </form>
+      <div id="results" class="results"></div>
+    </div>
+
+    <!-- Étape 2 : configuration de l'exemplaire -->
+    <form id="stepConfig" hidden>
+        <div class="new-banner" id="newBanner" hidden>✨ Créer une nouvelle fiche</div><!-- fiche pas encore enregistrée (ajout, ou copie ⧉) -->
+        <div class="sample-banner" id="sampleBanner" hidden>🧪 Fiche de démo — un exemple fourni avec Briquothèque : modifiez-la ou supprimez-la librement.</div>
+      <div class="cfg-top">
+        <div class="cfg-pic"><img id="cfgImg" alt="">
+          <select id="cuKindSel" class="cu-kind-sel" hidden aria-label="Type de fiche">
+            <option value="cat">Set</option><option value="toset">🧱 Set complet</option><option value="tofig">🟡 Figurine</option><option value="partial">🧩 Set partiel</option><option value="moc">🛠️ Set MOC</option><option value="fig">🟡 Figurine</option></select></div>
+        <div>
+          <div class="cfg-price" id="cfgPrice"></div><!-- prix estimé, simplement (reflet de l'estimation en bas) -->
+          <div class="cfg-num" id="cfgNum"></div>
+          <h3 id="cfgName"></h3>
+          <div class="cfg-status" id="cfgStatus"></div><!-- étiquette d'état : Modifié, Amélioré, Set partiel, MOC -->
+          <div class="cfg-en" id="cfgNameEn" hidden></div>
+          <div class="cfg-meta" id="cfgMeta"></div>
+          <div class="cfg-actions">
+            <button type="button" class="btn small-btn via-photo" id="btnPhotoPick" hidden>📷 Photo</button>
+            <button type="button" class="btn small-btn" id="btnShowParts" hidden>🔶 Pièces</button>
+            <button type="button" class="btn small-btn" id="btnPlans" hidden>📘 Plan</button>
+            <button type="button" class="btn small-btn" id="btnTarifs" hidden>💶 Tarifs</button>
+            <button type="button" class="btn small-btn" id="btnAsPartial" hidden>🧩 Set partiel</button>
+            <button type="button" class="btn small-btn" id="btnSwapParts" hidden>🔁 Échanger des pièces</button>
+            <button type="button" class="btn small-btn" id="btnFigParts" hidden>🔁 Échanger des pièces</button>
+          </div>
+          <p class="dup-note" id="dupNote" hidden></p>
+          <p class="own-note" id="cfgInSetNote" hidden></p>
+          <button type="button" class="btn small-btn" id="btnIsMoc" hidden>🛠️ Enregistrer comme MOC</button>
+        </div>
+      </div>
+
+      <fieldset class="list-pick">
+        <legend id="listLegend" hidden>Liste</legend>
+        <div class="list-row"><select id="cfgList"></select>
+          <button type="button" class="btn" id="btnCfgNewList" title="Créer une nouvelle liste" aria-label="Créer une nouvelle liste">+</button></div>
+        <p class="field-err" id="listErr" hidden>Choisissez une liste pour enregistrer.</p>
+      </fieldset>
+      <div class="qty-row">
+        <div class="qty-box"><span class="lbl-like" id="qtyLabel">Quantité</span><input type="number" id="cfgQty" min="1" max="999" value="1">
+          <button type="button" class="link" id="btnSeparate" hidden>+ Exemplaire séparé</button></div>
+        <button type="button" class="btn small-btn" id="btnDupFig" hidden title="Une nouvelle fiche, copie de celle-ci, à modifier (tête changée…) ; un exemplaire est retiré de l'original à l'enregistrement">⧉ Copier cette fiche</button><!-- (à côté du cadre « Quantité », pas dedans) -->
+        <textarea id="cfgNotes" hidden></textarea><!-- notes : champ retiré, les notes déjà saisies sont conservées -->
+        <div class="box-row" id="boxRow"><label class="todo-chk"><input type="checkbox" id="cfgBox"> 📦 Boîte</label>
+          <label class="todo-chk"><input type="checkbox" id="cfgPlan"> 📘 Livret</label>
+          <label class="todo-chk"><input type="checkbox" id="cfgUnbuilt"> 🚧 À construire</label></div>
+        <div class="box-row" id="viewRow"><label class="todo-chk" title="Décochée : la fiche n'a pas de carte dans la vue générale (elle reste comptée et se retrouve par le filtre)"><input type="checkbox" id="cfgView" checked> 👁 Afficher dans la vue générale</label>
+          <span class="item-logo-row" title="Sur la vignette, ce logo remplace celui de la liste (ex. le logo d'un jeu, sans créer de liste)"><span class="lbl-like">Logo individuel</span><span id="itemLogoPv" class="item-logo-pv"></span><button type="button" class="btn small-btn" id="btnItemLogo">🖼️ Choisir…</button></span></div>
+      </div>
+      <fieldset id="altBox" hidden><legend>Apparences alternatives</legend><div class="cu-alts" id="cuAlts"></div></fieldset>
+
+      <fieldset id="customBox" hidden>
+        <legend>MOC</legend>
+        <p class="ask" id="cuIntro" hidden></p>
+        <div class="grid2">
+          <input id="cuName" type="hidden" maxlength="150"><!-- nom : ✏️ en haut de la fiche -->
+          <input id="cuRef" type="hidden">
+          <div class="cu-photo span2">
+            <label class="btn via-photo">📷 Appareil photo<input type="file" capture="environment" id="cuCam" accept="image/*" hidden></label>
+            <label class="btn via-photo">📁 Importer une image<input type="file" id="cuFile" accept="image/*" hidden></label>
+            <button type="button" class="btn via-photo" id="cuRecrop" hidden>✂️ Recadrer la photo</button>
+            <button type="button" class="btn" id="cuSearch" hidden>🔎 Rechercher à nouveau</button></div>
+        </div>
+        <div class="choice" id="cuTypeRow" hidden style="margin-top:10px">
+          <label><input type="radio" name="cutype" value="set" checked><span>🧱 Set</span></label>
+          <label><input type="radio" name="cutype" value="fig"><span>🟡 Figurine</span></label>
+        </div>
+        <div class="choice" id="cuKindRow" hidden style="margin-top:8px">
+          <label><input type="radio" name="cukind" value="partial"><span>🧩 Set partiel</span></label>
+          <label><input type="radio" name="cukind" value="moc" checked><span>🛠️ MOC</span></label>
+          <label><input type="radio" name="cukind" value="fig"><span>🟠 Figurine MOC</span></label>
+        </div>
+        <input id="cuSetNum" type="hidden"><span id="cuSetNumRow" hidden></span>
+        <div id="cuPartOf" class="cu-partof" hidden></div>
+        <div id="cuSetFigs" class="cu-setfigs"></div>
+        <div class="moc-box" id="mocBox">
+          <div id="mocReviewBox" class="moc-review-box" hidden></div>
+          <div id="mocFigRow" hidden>
+            <p class="hint scan-st" id="cuScanSt" hidden></p><!-- scan de la photo (figurine MOC pas encore enregistrée) -->
+            <div class="scan-pick" id="cuScanPick" hidden></div><!-- pièces repérées : à cocher et ajouter tout de suite -->
+            <div class="moc-lots" id="mocLots"></div>
+            <button type="button" class="btn" id="mocAddPart" style="margin-top:8px">+ Ajouter une pièce</button>
+            <button type="button" class="btn" id="mocRescan" hidden style="margin-top:8px">🔄 Rescanner la photo</button>
+          </div>
+          <div id="mocSetRow">
+          <div id="cuXmlBox" hidden>
+          <p class="hint" style="margin:2px 0 8px">Collez ici le contenu XML de la liste de pièces du MOC. Depuis Rebrickable : onglet <b>Inventory</b> → <b>Export</b> → <b>BrickLink XML</b>, puis copier. Un XML écrit à la main marche aussi — la couleur peut être son n° BrickLink ou son nom (ex. <code>Black</code>). Sans liste de pièces, pas d'estimation.</p>
+          <textarea id="cuXml" class="moc-xml" rows="5" spellcheck="false" autocomplete="off" placeholder="<INVENTORY>&#10;  <ITEM><ITEMTYPE>P</ITEMTYPE><ITEMID>3001</ITEMID><COLOR>11</COLOR><MINQTY>4</MINQTY></ITEM>&#10;  …&#10;</INVENTORY>"></textarea>
+          </div>
+          <div class="cam-row" style="margin:8px 0 0">
+            <button type="button" class="btn small-btn" id="cuXmlBtn">📄 Import XML</button>
+            <a class="btn small-btn" id="cuRbLink" target="_blank" rel="noopener" hidden>🔎 Le set sur BrickLink</a>
+            <button type="button" class="btn small-btn" id="cuPartFind">🔎 Rechercher des pièces</button>
+            <button type="button" class="btn" id="cuPartsShow" hidden>🔶 Liste des pièces</button>
+            <div class="pc-grid moc-set-lots" id="mocSetLots"></div><!-- MOC / set partiel : ses pièces en vignettes (comme une figurine) -->
+            <button type="button" class="btn danger-ghost" id="cuPartsDel" hidden>Retirer la liste</button>
+          </div>
+          <p class="hint" id="cuPartsInfo" style="margin:6px 0 0"></p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="wishBox" hidden>
+        <legend>État souhaité</legend>
+        <div class="choice">
+          <label><input type="checkbox" name="wcond" value="neuf"><span>📦 Neuf</span></label>
+          <label><input type="checkbox" name="wcond" value="occ"><span>Occasion</span></label>
+        </div>
+        <div class="wish-opts">
+          <label hidden><input type="checkbox" id="wBox"><span>Boîte</span></label><!-- souhait : boîte et plan jamais cherchés (gardés cachés pour le code) -->
+          <label hidden><input type="checkbox" id="wPlan"><span>Livret</span></label>
+          <label><input type="checkbox" id="wFigs"><span>Figurines</span></label>
+        </div>
+        <p class="hint" id="wishOnSale"><span class="badge onsale">En vente</span> En neuf, estimé à son prix public.</p>
+        <p class="hint" id="wishRetired"><span class="badge retired">Retiré</span> En neuf, estimé à sa valeur neuve sur le marché.</p>
+      </fieldset>
+
+      <div class="choice adjust-mode" id="adjustMode" hidden>
+        <label><input type="radio" name="amode" value="set" checked><span>🧱 Le set</span></label>
+        <label><input type="radio" name="amode" value="figs"><span>🟡 Uniquement les figurines</span></label>
+      </div>
+      <fieldset id="figOnlyBox" hidden>
+        <legend>Figurines à ajouter</legend>
+        <p class="ask">Choisissez combien de chaque figurine ajouter, en figurines seules :</p>
+        <div id="figOnlyList" class="fig-list"></div>
+      </fieldset>
+
+      <fieldset id="figBox">
+        <legend>Figurines <span class="muted" id="figCount"></span></legend>
+        <p class="ask">Voulez-vous enregistrer ce set <strong>avec</strong> ou <strong>sans</strong> ses figurines ?</p>
+        <div class="choice">
+          <label><input type="radio" name="figs" value="avec" checked><span>🟡 Avec figurines</span></label>
+          <label><input type="radio" name="figs" value="sans"><span>🚫 Sans figurines</span></label>
+        </div>
+        <div id="figList" class="fig-list"></div>
+        <p class="hint" id="figHint">Indiquez combien vous avez de chaque figurine avec − / + : en moins, leur valeur est déduite ; en plus (ex. 6 au lieu de 3), elle est ajoutée.</p>
+      </fieldset>
+      <div id="figExtra" class="fig-extra"></div>
+      <div class="fig-side"><!-- figurine : ses pièces à gauche, ses accessoires montés à droite -->
+      <fieldset id="figPartsBox" hidden>
+        <legend>Pièces</legend>
+        <div id="figPartsList" class="acc-list"></div>
+        <div class="fp-btns" hidden><button type="button" class="btn small-btn" id="fpShow">🛒 Commander des pièces</button>
+          <button type="button" class="btn small-btn" id="fpSwap">🔁 Échanger des pièces</button></div>
+      </fieldset>
+      <fieldset id="accBox" hidden>
+        <legend>Accessoires</legend>
+        <div class="fig-sub" id="accCount"></div>
+        <div id="accList" class="acc-list"></div>
+        <button type="button" class="btn small-btn" id="accAdd" style="margin-top:8px">+ Ajouter un accessoire</button>
+      </fieldset>
+      </div>
+
+
+
+      <fieldset id="partOfBox" hidden><legend>Partie de</legend></fieldset>
+      <div class="est-box" id="estBox">
+        <div class="est-top"><div class="muted" id="estLabel">Valeur estimée</div><button type="button" class="evo-hint" id="btnEvo">📈 Évolution</button></div>
+        <div class="est-value" id="estValue">—</div>
+        <div class="muted small" id="estDetail"></div>
+        <label class="todo-chk est-chk" id="partsEstRow" hidden><input type="checkbox" id="cfgPartsEst" checked> 🧱 Estimer par les pièces</label>
+      </div>
+      <div class="est-box add-prices" id="addPrices" hidden></div><!-- élément que je n'ai pas : les tarifs constatés à la place de l'estimation -->
+      <div class="cfg-prices" id="cfgPrices" hidden></div><!-- les prix : bouton « 💶 Tarifs » en haut -->
+      <div class="in-sets big" id="cfgInSets" hidden></div>
+      <div class="in-sets big" id="cfgCatSets" hidden></div>
+      <div class="links-row"><button type="button" class="btn small-btn gift-btn" id="modalGift" hidden title="À surveiller" aria-label="À surveiller">👀</button>
+        <div class="ext-links ext-bottom" id="cfgLinks"></div></div>
+      <div class="estimate">
+        <div class="est-actions">
+          <button type="button" class="btn danger-ghost" id="btnDeleteItem" hidden>Supprimer</button>
+          <button type="button" class="btn" id="btnAcquired" hidden>✔ Je l'ai acquis</button>
+          <button type="button" class="btn gift-cta" id="btnForGift" hidden>Ne pas ajouter, c'est à surveiller 👀</button>
+          <button class="btn primary" id="btnSave">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="selbar" id="selBar" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<script src="/app.js"></script>
+<script src="/help.js"></script><!-- « ? » : aide de la page en cours -->
+</body>
+</html>

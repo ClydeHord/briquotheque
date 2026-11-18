@@ -1,0 +1,30 @@
+# Consignes privées pour les IA (ce qui ne doit jamais être publié, données personnelles) : restent sur le serveur
+CLAUDE.md
+
+# Données de l'installation : collection, mot de passe, clés API, photos, sauvegardes, journaux — jamais dans le dépôt
+/data/
+/data_demo/
+
+# Fichiers temporaires
+__pycache__/
+*.pyc
+*.tmp
+*.bak
+*.log
+
+# Documentation : pages HTML intermédiaires ; la documentation technique reste privée (seul le guide est publié)
+docs/build/
+docs/__pycache__/
+docs/briquotheque-technique.pdf
+docs/wiki/guide-technique.html
+docs/wiki/guide-technique-ia.md
+docs/captures/tech-*
+docs/technique.py
+docs/tech_backoffice.py
+docs/techref.py
+docs/annotations.json
+seed/__pycache__/
+# extensions locales (jamais publiées)
+perso.py
+static/perso*
+docs/CHANGELOG-prive.md

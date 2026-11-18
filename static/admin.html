@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- © 2026 Clýde Hørd (ClydeHord sur GitHub) — auteur de Briquothèque · source : https://github.com/ClydeHord/briquotheque · licence : LICENCE (mention à conserver) -->
+<!-- Briquothèque — BACK OFFICE (page /backoffice, servie après le mot de passe du back office) : personnaliser et entretenir le site sans écrire de code. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Back office — Briquothèque</title>
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<header class="top">
+  <div class="logo">🛠️ <b>Back office</b><span class="tag" id="copyTag" hidden title="Cette copie est séparée du vrai site : rien de ce qui est fait ici ne le modifie.">copie de travail</span></div>
+  <div class="status" id="status"></div>
+  <div class="grow"></div>
+  <button type="button" class="b" id="btnUndo" title="Annuler la dernière modification (Ctrl + Z)">↶ Annuler</button>
+  <button type="button" class="b" id="btnRedo" title="Refaire ce qui vient d'être annulé (Ctrl + Y)">↷ Rétablir</button>
+  <button type="button" class="b" id="btnDiscard" title="Jeter tout ce qui n'est pas encore publié et revenir à la version du site">Abandonner le brouillon</button>
+  <button type="button" class="b primary" id="btnPublish" title="Appliquer vos modifications au site">✔ Publier sur le site</button>
+  <a class="b" href="/" target="_blank" rel="noopener" title="Ouvrir le site dans un autre onglet">Ouvrir le site ↗</a>
+</header>
+<div class="main">
+  <nav class="nav" id="nav" aria-label="Rubriques du back office"></nav>
+  <section class="panel" id="panel" aria-live="polite"></section>
+  <section class="prev">
+    <div class="prev-bar">
+      <b>Aperçu</b>
+      <select id="pvPage" title="Page affichée dans l'aperçu">
+        <option value="/">Le site (connecté)</option>
+        <option value="/collection">Page publique « Collection »</option>
+        <option value="/wishlist">Page publique « Liste de souhaits »</option>
+        <option value="/nouveautes">Page publique « Nouveautés »</option>
+        <option value="/a-surveiller">Page publique « À surveiller »</option>
+        <option value="/login?bo=apercu">Page de connexion</option>
+      </select>
+      <div class="seg" id="pvMode" role="group" aria-label="Que fait un clic dans l'aperçu ?">
+        <button type="button" data-mode="use" title="L'aperçu se comporte comme le site : naviguez jusqu'à l'endroit à modifier">👆 Utiliser le site</button>
+        <button type="button" data-mode="pick" title="Un clic sur un élément de l'aperçu le sélectionne pour le modifier">🖱️ Cliquer pour modifier</button>
+        <button type="button" data-mode="move" title="Attraper un élément de l'aperçu et le déposer ailleurs">✋ Déplacer</button>
+      </div>
+      <div class="seg" id="pvSize" role="group" aria-label="Largeur de l'aperçu">
+        <button type="button" data-w="" title="Aperçu en largeur d'ordinateur">🖥️</button>
+        <button type="button" data-w="820" title="Aperçu en largeur de tablette">▭</button>
+        <button type="button" data-w="400" title="Aperçu en largeur de téléphone">📱</button>
+      </div>
+      <div class="seg" id="pvZoom" role="group" aria-label="Zoom de l'aperçu">
+        <button type="button" data-z="-1" title="Dézoomer l'aperçu">−</button>
+        <button type="button" data-z="0" title="Zoom normal (100 %)" id="pvZoomN">100 %</button>
+        <button type="button" data-z="1" title="Zoomer l'aperçu">+</button>
+      </div>
+      <label class="chk" title="Dans l'aperçu, ce que vous avez masqué reste visible en transparence (pour pouvoir le recliquer)"><input type="checkbox" id="pvGhost"> Montrer ce qui est masqué</label>
+      <div class="grow"></div>
+      <button type="button" class="b small" id="pvReload" title="Recharger l'aperçu">⟳</button>
+    </div>
+    <div class="prev-wrap"><iframe id="preview" title="Aperçu du site avec vos modifications"></iframe></div>
+    <div class="prev-note" id="pvNote">L'aperçu montre votre <b>brouillon</b> : vous seul le voyez tant que vous n'avez pas publié.</div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="/admin.js"></script>
+<script src="/admin-plus.js"></script><!-- rubriques avancées et outils du serveur -->
+<script src="/admin-max.js"></script><!-- étiquettes, boutons, pages, page Réglages, comportements, images, mots de passe -->
+</body>
+</html>

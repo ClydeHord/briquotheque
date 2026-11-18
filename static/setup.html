@@ -1,0 +1,118 @@
+<!doctype html>
+<!-- © 2026 Clýde Hørd (ClydeHord sur GitHub) — auteur de Briquothèque · source : https://github.com/ClydeHord/briquotheque · licence : LICENCE (mention à conserver) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d01012">
+<link rel="icon" href="/icon.svg">
+<title>Installation — Briquothèque</title>
+<!-- Première installation : créer le mot de passe (obligatoire), puis les clés API Rebrickable et BrickLink (facultatives).
+     Le serveur n'accepte cette page que tant qu'aucun mot de passe n'existe ; depuis Internet, il demande en plus le code
+     d'installation affiché dans la console du serveur (personne d'autre ne peut « prendre » une installation neuve). -->
+<style>
+  :root { --bg:#f4f5f7; --panel:#fff; --ink:#1b1d22; --muted:#6b7280; --line:#e4e6eb; --red:#d01012; --ok:#1f8a4c; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111317; --panel:#1b1e24; --ink:#eceef2; --muted:#9aa1ad; --line:#2b2f37; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:16px;
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  form { width:min(560px,100%); background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:26px 24px; box-shadow:0 10px 40px rgba(0,0,0,.08); }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:800; font-size:21px; margin-bottom:6px; }
+  .brick { position:relative; width:30px; height:20px; background:var(--red); border-radius:4px; margin-top:6px; }
+  .brick i { position:absolute; top:-6px; width:9px; height:7px; background:var(--red); border-radius:3px 3px 0 0; }
+  .brick i:first-child { left:4px; } .brick i:last-child { right:4px; }
+  h2 { font-size:16px; margin:20px 0 4px; } h2 small { font-weight:500; color:var(--muted); }
+  p, li { color:var(--muted); font-size:13.5px; } p { margin:4px 0 10px; } ol { margin:4px 0 10px; padding-left:20px; }
+  label { display:block; font-weight:600; font-size:13px; margin:10px 0 5px; }
+  input { width:100%; font:inherit; font-size:16px; color:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+  input:focus { outline:2px solid var(--red); outline-offset:-1px; border-color:transparent; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; } @media (max-width:520px) { .grid { grid-template-columns:1fr; } }
+  details { border:1px solid var(--line); border-radius:10px; padding:6px 10px; margin:8px 0; } summary { cursor:pointer; font-weight:600; font-size:13.5px; }
+  a { color:var(--red); }
+  button { width:100%; margin-top:18px; font:inherit; font-weight:700; padding:12px; border:0; border-radius:10px; background:var(--red); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  .err { color:var(--red); font-size:13.5px; min-height:20px; margin-top:10px; white-space:pre-line; }
+  .ok { color:var(--ok); }
+  #codeRow[hidden] { display:none; }
+  .legal { font-size:11.5px; color:var(--muted); margin-top:16px; text-align:center; }
+</style>
+</head>
+<body>
+<form id="f" autocomplete="off">
+  <div class="brand"><span class="brick"><i></i><i></i></span>Briquothèque</div>
+  <p>Bienvenue ! Trois étapes, une seule obligatoire. Des <b>fiches de démo</b> (un exemple de chaque type) et un inventaire
+     vous attendent dans la liste « Exemples » : modifiez-les ou supprimez-les librement.</p>
+
+  <h2>1. Votre mot de passe <small>(obligatoire)</small></h2>
+  <p>Il protège toute modification de votre collection. 10 caractères au moins ; une phrase est plus sûre qu'un mot.</p>
+  <div class="grid">
+    <div><label for="p1">Mot de passe</label><input type="password" id="p1" autocomplete="new-password" required minlength="10"></div>
+    <div><label for="p2">Confirmation</label><input type="password" id="p2" autocomplete="new-password" required minlength="10"></div>
+  </div>
+  <div id="codeRow" hidden><label for="code">Code d'installation</label>
+    <input id="code" inputmode="text" autocomplete="off" placeholder="affiché dans la console du serveur au démarrage">
+    <p>Vous installez depuis Internet : ce code, écrit dans la console du serveur (et dans <code>data/setup_code.txt</code>), prouve que l'installation est la vôtre.</p></div>
+
+  <h2>2. Clé API Rebrickable <small>(facultatif, recommandé)</small></h2>
+  <p><b>Pourquoi ?</b> Le catalogue LEGO : recherche des sets et des pièces, images, inventaires, pièces des figurines.</p>
+  <details><summary>Comment l'obtenir (gratuit, 2 minutes)</summary><ol>
+    <li>Créez un compte sur <a href="https://rebrickable.com/" target="_blank" rel="noopener">rebrickable.com</a>.</li>
+    <li>Ouvrez <i>Profil → Paramètres → API</i>, puis « Générer une nouvelle clé ».</li>
+    <li>Copiez la clé et collez-la ici.</li></ol></details>
+  <label for="rb">Clé Rebrickable</label><input id="rb" autocomplete="off" spellcheck="false" placeholder="facultatif">
+
+  <h2>3. Codes de l'API BrickLink <small>(facultatif)</small></h2>
+  <p><b>Pourquoi ?</b> Les prix réels des annonces (neuf et occasion), en France d'abord, sinon en Europe, sinon dans le monde.
+     Sans eux, les prix viennent de BrickOwl quand c'est possible.</p>
+  <details><summary>Comment les obtenir (gratuit)</summary><ol>
+    <li>Connectez-vous à BrickLink, puis ouvrez <a href="https://www.bricklink.com/v2/api/register_consumer.page" target="_blank" rel="noopener">la page de l'API</a>.</li>
+    <li>Acceptez les conditions : BrickLink donne la <b>ConsumerKey</b> et le <b>ConsumerSecret</b>.</li>
+    <li>Créez un « Access Token » avec l'<b>adresse IP publique de votre serveur</b> (IP Mask 255.255.255.255) :
+        BrickLink donne le <b>TokenValue</b> et le <b>TokenSecret</b>.</li></ol></details>
+  <div class="grid">
+    <div><label for="ck">ConsumerKey</label><input id="ck" autocomplete="off" spellcheck="false"></div>
+    <div><label for="cs">ConsumerSecret</label><input id="cs" type="password" autocomplete="off" spellcheck="false"></div>
+    <div><label for="tk">TokenValue</label><input id="tk" autocomplete="off" spellcheck="false"></div>
+    <div><label for="ts">TokenSecret</label><input id="ts" type="password" autocomplete="off" spellcheck="false"></div>
+  </div>
+  <p>Les clés restent sur votre serveur et ne sont jamais réaffichées. Vous pourrez les ajouter ou les changer plus tard dans ⚙️ Réglages.</p>
+
+  <button id="b">Terminer l'installation</button>
+  <div class="err" id="err"></div>
+  <p class="legal">© 2026 Clýde Hørd — tous droits réservés · <a href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener">source officielle</a></p>
+</form>
+<script>
+/* étape 1 : mot de passe (et code d'installation depuis Internet) → session ; étapes 2 et 3 : les routes habituelles des Réglages */
+const $ = id => document.getElementById(id);
+const post = (u, body) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+  .then(async r => ({ ok: r.ok, d: await r.json().catch(() => ({})) }));
+fetch("/api/setup").then(r => r.json()).then(s => { if (s.configured) location.href = "/"; $("codeRow").hidden = !s.code_needed; }).catch(() => {});
+$("f").onsubmit = async e => {
+  e.preventDefault();
+  const err = $("err"), b = $("b");
+  err.className = "err"; err.textContent = "";
+  if ($("p1").value.length < 10) { err.textContent = "Le mot de passe doit faire au moins 10 caractères."; return; }
+  if ($("p1").value !== $("p2").value) { err.textContent = "Les deux mots de passe ne sont pas identiques."; return; }
+  b.disabled = true;
+  try {
+    const r = await post("/api/setup", { password: $("p1").value, code: $("code").value.trim() });
+    if (!r.ok) { err.textContent = r.d.erreur || "Installation impossible"; b.disabled = false; return; }
+    const notes = [];
+    if ($("rb").value.trim()) {
+      const k = await post("/api/settings", { rebrickable_key: $("rb").value.trim() });
+      notes.push(k.ok ? "✅ Clé Rebrickable enregistrée." : "⚠️ Clé Rebrickable : " + (k.d.erreur || "refusée") + " (à corriger dans les Réglages).");
+    }
+    const bl = { consumer_key: $("ck").value.trim(), consumer_secret: $("cs").value.trim(), token: $("tk").value.trim(), token_secret: $("ts").value.trim() };
+    if (Object.values(bl).some(Boolean)) {
+      const k = await post("/api/settings/bricklink", bl);
+      notes.push(k.ok ? "✅ Codes BrickLink enregistrés." : "⚠️ BrickLink : " + (k.d.erreur || "refusé") + " (à corriger dans les Réglages).");
+    }
+    if (notes.some(n => n.startsWith("⚠️"))) {   // mot de passe créé : on montre ce qui reste à corriger, puis on entre
+      err.textContent = notes.join("\n") + "\nMot de passe créé : ouverture de votre collection…";
+      setTimeout(() => location.href = "/", 4500);
+    } else location.href = "/";
+  } catch { err.textContent = "Serveur injoignable"; b.disabled = false; }
+};
+</script>
+</body>
+</html>

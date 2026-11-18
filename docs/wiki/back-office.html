@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">
+<title>Notice du back office — Briquothèque</title><link rel="icon" href="/icon.svg"><style>
+:root{--bg:#f4f5f7;--panel:#fff;--ink:#1b1d22;--muted:#6b7280;--line:#e4e6eb;--red:#d01012;--tip:#fff7dc;--tipb:#e2b33c;--code:#f2f3f6;--mark:#ffe58a;--link:#2563eb}
+@media (prefers-color-scheme:dark){:root{--bg:#14161b;--panel:#1c1f26;--ink:#f1f2f4;--muted:#9aa1ad;--line:#2c313b;--tip:#3a3118;--tipb:#8a6d1a;--code:#262a33;--mark:#7a6412;--link:#7fb0ff}}
+*{box-sizing:border-box}html{scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--link)}
+.wk-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:9px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.wk-menu{display:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;font-size:18px;line-height:1;padding:6px 10px;cursor:pointer}
+.wk-home{color:var(--red);font-weight:700;text-decoration:none;white-space:nowrap}
+.wk-title{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-search{flex:1 1 180px;min-width:0;max-width:420px;margin-left:auto;padding:7px 12px;border:1px solid var(--line);border-radius:99px;background:var(--bg);color:var(--ink);font:inherit}
+.wk-others{display:flex;gap:6px;flex-wrap:wrap}.wk-others a{font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:4px 10px;color:var(--ink);background:var(--panel);white-space:nowrap}
+.wk-others a:hover,.wk-toc a:hover{border-color:var(--red)}
+.wk-wrap{display:grid;grid-template-columns:280px minmax(0,1fr);align-items:start}
+.wk-side{position:sticky;top:52px;max-height:calc(100vh - 52px);overflow:auto;padding:16px 12px 30px;border-right:1px solid var(--line);font-size:14px}
+.wk-toc{list-style:none;margin:0;padding:0}.wk-toc>li{margin:1px 0}
+.wk-toc a{display:block;padding:5px 9px;border-radius:8px;border:1px solid transparent;color:var(--ink);text-decoration:none}
+.wk-toc a.on{background:var(--panel);border-color:var(--line);font-weight:700;color:var(--red)}
+.wk-sub{list-style:none;margin:2px 0 6px;padding:0 0 0 14px;border-left:2px solid var(--line)}.wk-sub a{padding:3px 8px;font-size:13px;color:var(--muted)}
+.wk-meta{color:var(--muted);font-size:12.5px;margin:18px 8px 0}
+.wk-links{display:none;gap:6px;flex-wrap:wrap;margin:16px 6px 0}.wk-links a{font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:5px 11px;color:var(--ink);background:var(--panel)}
+.wk-main{max-width:980px;padding:22px 34px 90px;min-width:0}
+.wk-page{display:none}.wk-page.on{display:block}
+.wk-crumb{color:var(--muted);font-size:13px;margin-bottom:2px}
+h1{font-size:28px;margin:0 0 12px;line-height:1.25}h2{font-size:22px;margin:30px 0 8px;color:var(--red)}h3{font-size:17.5px;margin:22px 0 6px}h4{font-size:15.5px;margin:16px 0 4px;color:var(--muted)}
+section.w{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:14px 0;overflow-wrap:anywhere}
+section.w>.gtext>h3:first-child,section.w>h3:first-child{margin-top:0}
+figure{margin:14px 0 2px}figure img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:10px;display:block;margin:0 auto;cursor:zoom-in}
+figure.shot img{max-height:560px}figcaption{font-size:13px;color:var(--muted);text-align:center;margin-top:6px}
+figure svg{max-width:100%;height:auto}
+.tip{background:var(--tip);border-left:4px solid var(--tipb);padding:9px 12px;border-radius:6px}
+code{font-family:ui-monospace,Consolas,monospace;font-size:13.5px;background:var(--code);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:14.5px;display:block;overflow-x:auto}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+a.go{display:inline-block;margin:2px 0;padding:4px 11px;border:1px solid var(--line);border-radius:99px;background:var(--panel);font-size:13.5px;font-weight:700;text-decoration:none}
+ol,ul{padding-left:22px}li{margin:3px 0}ol.rec li{margin:9px 0}
+.fn{border-left:3px solid var(--line);padding:3px 0 3px 10px;margin:6px 0 10px;font-size:14px}.fn-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.fn-n{font-weight:700;background:none;padding:0}.fn-l{color:var(--muted);font-size:12.5px}.fn-x{color:var(--muted);font-size:13px}.muted{color:var(--muted)}p.idx{font-size:13px;line-height:1.7}
+.wk-nav{display:flex;justify-content:space-between;gap:10px;margin-top:40px;padding-top:14px;border-top:1px solid var(--line);flex-wrap:wrap}
+.wk-nav a{text-decoration:none;font-weight:700;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel);color:var(--ink);max-width:48%}.wk-nav a:hover{border-color:var(--red)}
+.wk-nav small{display:block;color:var(--muted);font-weight:400}
+.wk-results{margin-bottom:20px}.wk-results h2{margin-top:0}.wk-hit{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 12px;margin:6px 0;cursor:pointer;font:inherit}
+.wk-hit:hover{border-color:var(--red)}.wk-hit b{display:block}.wk-hit span{color:var(--muted);font-size:13.5px}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.wk-zoom{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}.wk-zoom img{max-width:100%;max-height:100%;border-radius:8px}
+.legal h3{font-size:15.5px}
+@media (max-width:900px){.wk-menu{display:block}.wk-wrap{display:block}.wk-title{display:none}
+ .wk-side{display:none;position:fixed;top:52px;left:0;right:0;bottom:0;max-height:none;z-index:15;background:var(--bg);border-right:0}
+ body.wk-open .wk-side{display:block}.wk-main{padding:16px 14px 70px}.wk-others{display:none}.wk-links{display:flex}h1{font-size:23px}section.w{padding:13px 14px}.wk-nav a{max-width:100%;flex:1 1 100%}}
+@media print{.wk-top,.wk-side,.wk-nav,.wk-results{display:none!important}.wk-wrap{display:block}.wk-page{display:block!important;break-before:page}.wk-main{max-width:none;padding:0}body{background:#fff;color:#000}section.w{border:0;padding:0}}
+</style></head><body data-wiki="Notice du back office">
+<header class="wk-top"><button type="button" class="wk-menu" aria-label="Sommaire">☰</button><a class="wk-home" href="/backoffice">← Back office</a><b class="wk-title">Notice du back office</b>
+<input type="search" class="wk-search" placeholder="Chercher dans ce guide…" aria-label="Chercher dans ce guide"><span class="wk-others"><a href="/backoffice/guide/ia">🤖 Condensé pour IA</a><a href="/guide-utilisateur">📘 Guide utilisateur</a></span></header>
+<div class="wk-wrap"><nav class="wk-side"><ol class="wk-toc"><li><a href="#/debut" data-page="debut">Avant de commencer</a></li><li><a href="#/accueil" data-page="accueil">L&#x27;écran du back office</a></li><li><a href="#/souris" data-page="souris">Modifier à la souris</a></li><li><a href="#/apparence" data-page="apparence">Apparence, boutons et tailles</a></li><li><a href="#/textes" data-page="textes">Textes</a></li><li><a href="#/etiquettes" data-page="etiquettes">Étiquettes et pastilles</a></li><li><a href="#/fiches" data-page="fiches">Fiches, champs, liens, cartes, menu</a></li><li><a href="#/pages" data-page="pages">Pages</a></li><li><a href="#/reglages" data-page="reglages">Page « Réglages » de l&#x27;appli</a></li><li><a href="#/comportements" data-page="comportements">Comportements</a></li><li><a href="#/images" data-page="images">Images</a></li><li><a href="#/calculs" data-page="calculs">Avancé : calculs, règles, tuiles, vues</a></li><li><a href="#/donnees" data-page="donnees">Données : fiches, catalogue, tableur</a></li><li><a href="#/modifs" data-page="modifs">Suivi : mes modifications, historique</a></li><li><a href="#/sauvegardes" data-page="sauvegardes">Serveur : sauvegardes, état, sécurité</a></li><li><a href="#/fichiers" data-page="fichiers">Serveur : fichiers, paramètres, code</a></li><li><a href="#/secours" data-page="secours">En cas de problème</a></li><li><a href="#/recettes" data-page="recettes">Dix recettes pas à pas</a></li><li><a href="#/mentions-legales" data-page="mentions-legales">Mentions légales</a></li></ol><p class="wk-links"><a href="/backoffice/guide/ia">🤖 Condensé pour IA</a><a href="/guide-utilisateur">📘 Guide utilisateur</a></p><p class="wk-meta">Version du 18/11/2026<br>Captures prises sur des données d'exemple.<br>Imprimer cette page imprime tout le guide.</p></nav>
+<main class="wk-main"><div class="wk-results" hidden></div>
+<article class="wk-page" id="p-debut" data-title="Avant de commencer"><div class="wk-crumb">Notice du back office › Avant de commencer</div><h1>Avant de commencer</h1>
+<p>Le <b>back office</b> est l'atelier de la Briquothèque : on y change son apparence, ses textes, ses fiches, ses étiquettes, on y crée
+des pages, on y fait les sauvegardes, on y corrige une donnée — <b>sans écrire de code et sans ligne de commande</b>.</p>
+<p class="tip"><b>⚠️ Ce sont les entrailles de l'application.</b> Ce qui se règle ici change réellement le site. Rien de grave ne peut arriver
+si vous suivez trois habitudes : regarder l'<b>aperçu</b> avant de publier, faire une <b>sauvegarde</b> avant un gros changement,
+et vous souvenir de <code>?bo=off</code> (voir <a href="#secours">En cas de problème</a>).</p><section class="w"><div class="gtext">
+<h3>Y entrer</h3>
+<ol><li>Dans la Briquothèque : <b>⚙️ Réglages → 🛠 Back office → Ouvrir le back office</b>. Ou tapez directement l'adresse de votre site suivie de
+<code>/backoffice</code>.</li>
+<li><b>La première fois</b>, le back office vous demande de créer <b>son mot de passe</b> (10 caractères au moins). Il faut être connecté à la
+Briquothèque ce jour-là. Deux choix : un mot de passe <b>à part</b>, ou <b>le même</b> que celui de la Briquothèque (on vous le redemande pour confirmer).</li>
+<li>Cochez « J'ai lu et compris », puis <b>Créer le mot de passe et entrer</b>.</li></ol>
+<p class="tip"><b>🔑 Ne perdez surtout pas ce mot de passe.</b> Il ne peut pas être retrouvé depuis l'application. S'il est perdu, il faut supprimer
+le fichier <code>data/backoffice_auth.json</code> sur le serveur (il faut donc un accès aux fichiers du serveur), puis rouvrir
+<code>/backoffice</code> pour en créer un nouveau. Notez-le dans un endroit sûr.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-premiere-visite.jpg" alt="" loading="lazy"><figcaption>Première visite : création du mot de passe du back office</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Se connecter, se déconnecter</h3>
+<ul><li>Les fois suivantes, seul le mot de passe du back office est demandé. « <b>Rester connecté sur cet ordinateur</b> » garde la session 30 jours
+(sinon 12 heures).</li>
+<li>Ce mot de passe <b>ouvre aussi la Briquothèque</b> : c'est la clé maîtresse. Il permet même de changer le mot de passe de la Briquothèque
+s'il a été oublié (<a href="#securite">Mots de passe et sécurité</a>).</li>
+<li>Après <b>10 essais ratés</b>, l'adresse est bloquée 15 minutes (et bannie 4 heures si elle vient d'Internet).</li>
+<li>Pour sortir : bouton <b>⎋ Quitter</b>, en haut à droite.</li></ul>
+<h3>Ordinateur conseillé</h3>
+<p>Le back office est pensé pour un <b>ordinateur</b> : grand écran et souris. Sur tablette ou téléphone, il s'ouvre mais vous prévient :
+« cliquer pour modifier » et « déplacer à la souris » y sont peu pratiques, et les panneaux sont à l'étroit.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-connexion.jpg" alt="" loading="lazy"><figcaption>Les fois suivantes : la porte du back office</figcaption></figure></section><footer class="wk-nav"><span></span><a href="#/accueil" style="text-align:right"><small>Suivant →</small>L&#x27;écran du back office</a></footer></article>
+<article class="wk-page" id="p-accueil" data-title="L&#x27;écran du back office"><div class="wk-crumb">Notice du back office › L&#x27;écran du back office</div><h1>L&#x27;écran du back office</h1>
+<p>Trois colonnes : à gauche les <b>rubriques</b>, au milieu les <b>réglages</b> de la rubrique ouverte, à droite l'<b>aperçu</b> du site.</p><section class="w"><div class="gtext">
+<h3>Brouillon, puis « Publier »</h3>
+<ol><li><b>Vous modifiez</b> dans une rubrique. L'aperçu à droite montre le résultat tout de suite.</li>
+<li>C'est un <b>brouillon</b> : vous seul le voyez. Il est enregistré automatiquement (« brouillon enregistré », en haut).</li>
+<li><b>✔ Publier sur le site</b> l'applique pour de bon. Un petit mot vous est proposé pour vous y retrouver plus tard dans l'historique.</li></ol>
+<p><b>↶ Annuler / ↷ Rétablir</b> (ou Ctrl + Z / Ctrl + Y) reviennent en arrière pas à pas. <b>Abandonner le brouillon</b> jette tout ce qui n'est pas publié.</p>
+<h3>L'aperçu</h3>
+<ul><li>La liste déroulante choisit la page montrée : le site connecté, les pages publiques, la page de connexion.</li>
+<li><b>👆 Utiliser le site</b> : l'aperçu se comporte comme le site (pour aller à l'endroit à modifier).
+<b>🖱️ Cliquer pour modifier</b> : un clic sélectionne un élément. <b>✋ Déplacer</b> : on attrape un élément et on le pose ailleurs.</li>
+<li>🖥️ ▭ 📱 : largeur d'ordinateur, de tablette, de téléphone. <b>− 100 % +</b> : zoom de l'aperçu (gardé sur l'appareil). « Montrer ce qui est masqué » laisse voir en transparence ce que vous avez caché.</li>
+<li>L'aperçu s'ouvre toujours sur l'<b>accueil</b> (pas sur la dernière fiche ouverte dans l'appli).</li></ul>
+<h3>Fonctions avancées</h3>
+<p>L'interrupteur <b>Fonctions avancées</b> (en haut) montre les rubriques pour aller plus loin : calculs, règles « si… alors », tuiles, vues,
+corrections du catalogue, tableur, fichiers de données, paramètres du serveur, code.</p>
+<p class="tip"><b>Deux sortes de rubriques.</b> Celles qui <b>personnalisent</b> (apparence, textes, étiquettes, pages…) passent par le brouillon et
+« Publier ». Les <b>outils du serveur</b> (sauvegardes, images, mots de passe, fichiers, paramètres, code) agissent <b>tout de suite</b>.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-accueil.jpg" alt="" loading="lazy"><figcaption>L&#x27;accueil : toutes les rubriques, classées</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Publier</h3>
+<p>« ✔ Publier sur le site » demande un mot facultatif (« nouvelles couleurs », « page à vendre »…). Chaque publication est gardée dans
+<a href="#historique">Historique et secours</a> : vous pouvez reprendre n'importe laquelle.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-publier.jpg" alt="" loading="lazy"><figcaption>Publier : un mot pour s&#x27;y retrouver</figcaption></figure></section><footer class="wk-nav"><a href="#/debut"><small>← Précédent</small>Avant de commencer</a><a href="#/souris" style="text-align:right"><small>Suivant →</small>Modifier à la souris</a></footer></article>
+<article class="wk-page" id="p-souris" data-title="Modifier à la souris"><div class="wk-crumb">Notice du back office › Modifier à la souris</div><h1>Modifier à la souris</h1>
+<p>La façon la plus directe : <b>cliquer sur ce qu'on veut changer</b>. Tout élément du site — un bouton, un titre, une image, une ligne des
+Réglages, une carte — se sélectionne et se règle. <a class="go" href="/backoffice#souris" target="_blank" rel="noopener">Ouvrir : Modifier à la souris ↗</a></p><section class="w"><div class="gtext">
+<h3>Choisir un élément</h3>
+<ol><li>Ouvrez <b>Modifier à la souris</b> : l'aperçu passe en « 🖱️ Cliquer pour modifier ».</li>
+<li><b>Cliquez l'élément</b> dans l'aperçu : il s'entoure d'orange. Le bouton « ⬆ Sélectionner ce qui l'entoure » remonte d'un cran (la zone qui le contient).</li>
+<li>Besoin d'aller ailleurs (ouvrir une fiche, le menu, la page Réglages) ? Repassez sur « 👆 Utiliser le site », allez-y, puis revenez sur
+« 🖱️ Cliquer pour modifier ».</li></ol>
+<h3>Ce qu'on peut faire d'un élément</h3>
+<ul><li><b>À quoi appliquer</b> : seulement cet élément, ou <b>tous ceux du même genre</b> (toutes les cartes, tous les boutons de ce type) ; sur cette page, ou sur toutes.</li>
+<li><b>Texte</b> : le renommer (texte affiché, texte grisé d'un champ, info-bulle).</li>
+<li><b>Masquer</b> l'élément.</li>
+<li><b>Position</b> : le mettre en premier ou en dernier parmi ses voisins.</li>
+<li><b>Style</b> : couleurs, taille du texte, gras, alignement, coins arrondis, bordure, espaces, largeur, hauteur, opacité.</li>
+<li><b>Ajouter quelque chose à côté</b> : un texte, un titre, un bouton-lien, une image, un trait.</li>
+<li><b>↺ Remettre cet élément comme à l'origine</b> annule tout pour lui.</li></ul></div><figure class="wshot"><img src="/backoffice/guide/img/bo-souris.jpg" alt="" loading="lazy"><figcaption>Un élément choisi (ici le bouton « + Nouveau ») et ses réglages</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Icône ou image</h3>
+<p>Pour <b>changer l'apparence d'un bouton</b> (ou de n'importe quel élément) :</p>
+<ul><li><b>Une icône</b> : un émoji ou un petit texte, placé avant le texte, après, ou <b>à la place</b> du texte (avec sa taille).</li>
+<li><b>Une image</b> : « 🖼️ Choisir… » ouvre vos images (ou en envoie une). Elle se place avant ou après le texte, <b>à la place</b> du texte
+(un bouton-image), ou <b>en fond</b> de l'élément. Réglez sa largeur et sa hauteur.</li></ul>
+<h3>Lien et action au clic</h3>
+<ul><li>Pour un <b>lien</b> : changer son adresse, l'ouvrir dans un nouvel onglet.</li>
+<li><b>Quand on clique dessus</b> : comme à l'origine · ne rien faire · demander une confirmation · ouvrir une adresse · une liste ·
+« Toute la collection » · une vue · une page créée · une fiche · « + Nouveau » · la recherche · les Réglages · remonter · revenir en arrière.</li></ul>
+<p class="tip"><b>Exemple.</b> Vous voulez que le logo ouvre votre tableau de bord : cliquez le logo → « Quand on clique dessus » →
+« Ouvrir une page créée » → « Tableau de bord ». Si un jour vous supprimez cette page, le logo reprend simplement son comportement d'origine.</p>
+<h3>Décalage, échelle, rotation</h3>
+<p>Pour un réglage fin : décaler de quelques pixels, agrandir ou réduire (en %), incliner (en degrés).</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-souris-icone.jpg" alt="" loading="lazy"><figcaption>Icône ou image d&#x27;un bouton, lien, action au clic, décalage</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Tout replacer à la souris</h3>
+<ol><li>Au-dessus de l'aperçu, choisissez <b>✋ Déplacer</b>.</li>
+<li><b>Attrapez</b> un élément (cliquez, gardez appuyé), <b>glissez</b> : une barre verte montre où il se posera (avant ou après l'élément survolé).</li>
+<li><b>Lâchez</b>. Échap annule. Chaque déplacement est listé dans la rubrique, avec un bouton pour le défaire.</li></ol>
+<p>Un bloc de fiche déplacé change l'ordre de la fiche ; une entrée du menu déplacée change l'ordre du menu : c'est la même chose que les rubriques
+<a href="#fiches">Fiches</a> et <a href="#menu">Menu</a>, à la souris.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-deplacer.jpg" alt="" loading="lazy"><figcaption>Le mode « ✋ Déplacer »</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Le clic droit : tous les outils d'un élément</h3>
+<p>Dans l'aperçu, <b>cliquez du bouton droit</b> sur n'importe quel élément, quel que soit le mode (« Utiliser le site », « Cliquer pour modifier », « Déplacer ») :
+un menu s'ouvre, avec le nom de l'élément en titre.</p>
+<ul><li><b>✏️ Modifier</b> : ouvre ses réglages (texte, style, lien, action…), comme si vous l'aviez cliqué en mode « Cliquer pour modifier ».</li>
+<li><b>👁 Masquer</b> : il disparaît du site (la case « Montrer ce qui est masqué », au-dessus de l'aperçu, le fait réapparaître en transparence).</li>
+<li><b>🎨 Copier le style</b>, puis sur un autre élément <b>🖌️ Coller le style</b> : couleurs, taille et graisse du texte, arrondi, bordure, transparence.</li>
+<li><b>🔤 Copier le texte</b> et <b>🧷 Copier le sélecteur</b> (son adresse CSS, pour la feuille de style libre ou le script libre).</li>
+<li><b>✂️ Couper</b>, puis sur un autre élément <b>📌 Coller avant</b> ou <b>📌 Coller après</b> : il change de place (c'est le mode « Déplacer », sans glisser).</li>
+<li><b>⬅️ Reculer d'un cran</b> / <b>➡️ Avancer d'un cran</b> : il passe avant son voisin de gauche, ou après celui de droite.</li>
+<li><b>⤴️ Élément parent</b> : le même menu pour ce qui le contient (le bouton → sa barre → le bloc…).</li>
+<li><b>↩️ Annuler ses modifications</b> : retire tout ce que vous avez changé sur cet élément (textes, style, ajouts, déplacement).</li></ul>
+<p class="tip">Tout passe par le brouillon : ↶ Annuler défait la dernière action, et rien n'est visible sur le site avant « Publier ».
+<b>Maj + clic droit</b> ouvre le menu habituel du navigateur.</p></div></section><footer class="wk-nav"><a href="#/accueil"><small>← Précédent</small>L&#x27;écran du back office</a><a href="#/apparence" style="text-align:right"><small>Suivant →</small>Apparence, boutons et tailles</a></footer></article>
+<article class="wk-page" id="p-apparence" data-title="Apparence, boutons et tailles"><div class="wk-crumb">Notice du back office › Apparence, boutons et tailles</div><h1>Apparence, boutons et tailles</h1><section class="w"><div class="gtext">
+<h3>Apparence</h3>
+<p><a class="go" href="/backoffice#apparence" target="_blank" rel="noopener">Ouvrir : Apparence ↗</a></p>
+<ul><li><b>Nom du site</b> et <b>logo</b> (un émoji, ou une image).</li>
+<li><b>Couleurs</b>, pour le thème clair et le thème sombre : couleur principale, fond, panneaux, texte… Des palettes toutes prêtes (Bleu, Vert, Violet…) font le gros du travail.</li>
+<li><b>Coins arrondis</b>, <b>police</b>, <b>taille générale</b> du site.</li></ul>
+<p class="tip"><b>Exemple : passer le site en bleu.</b> Apparence → palette « Bleu » → regardez l'aperçu → Publier.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-apparence.jpg" alt="" loading="lazy"><figcaption>Apparence : nom, logo, couleurs, arrondis, police</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="boutons">Boutons et tailles</h3>
+<p><a class="go" href="/backoffice#boutons" target="_blank" rel="noopener">Ouvrir : Boutons et tailles ↗</a></p>
+<ul><li><b>Tous les boutons</b> d'un coup : coins arrondis, hauteur, largeur, taille et graisse du texte, bordure, MAJUSCULES, ombre.</li>
+<li><b>Couleurs</b> des boutons ordinaires, des boutons principaux (« + Nouveau », « Enregistrer ») et des boutons de suppression.</li>
+<li><b>Un bouton en particulier</b> (son icône, son image, son lien) : « 🖱️ Cliquer un bouton dans l'aperçu »
+(voir <a href="#souris">Modifier à la souris</a>).</li>
+<li><b>Tailles générales</b> : largeur du menu, largeur de la fenêtre d'une fiche, largeur maximale du contenu, espace entre les cartes, taille du titre.</li></ul>
+<p>Une case vide = la valeur d'origine. « ↺ Boutons et tailles d'origine » remet tout.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-boutons.jpg" alt="" loading="lazy"><figcaption>Boutons et tailles</figcaption></figure></section><footer class="wk-nav"><a href="#/souris"><small>← Précédent</small>Modifier à la souris</a><a href="#/textes" style="text-align:right"><small>Suivant →</small>Textes</a></footer></article>
+<article class="wk-page" id="p-textes" data-title="Textes"><div class="wk-crumb">Notice du back office › Textes</div><h1>Textes</h1><section class="w"><div class="gtext">
+<h3>Remplacer un texte</h3>
+<p><a class="go" href="/backoffice#textes" target="_blank" rel="noopener">Ouvrir : Textes ↗</a></p>
+<ol><li>« Choisir dans la page » liste les textes visibles dans l'aperçu ; ou tapez vous-même le texte à remplacer.</li>
+<li>Indiquez par quoi le remplacer. Le remplacement vaut partout où ce texte apparaît (boutons, titres, messages).</li></ol>
+<p class="tip"><b>Exemple.</b> Remplacer « Liste de souhaits » par « Mes envies » : une ligne suffit, le menu, les titres et les boutons suivent.</p>
+<p>Pour renommer un seul élément précis, préférez <a href="#souris">Modifier à la souris</a>.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-textes.jpg" alt="" loading="lazy"><figcaption>Remplacer un mot ou une phrase partout</figcaption></figure></section><footer class="wk-nav"><a href="#/apparence"><small>← Précédent</small>Apparence, boutons et tailles</a><a href="#/etiquettes" style="text-align:right"><small>Suivant →</small>Étiquettes et pastilles</a></footer></article>
+<article class="wk-page" id="p-etiquettes" data-title="Étiquettes et pastilles"><div class="wk-crumb">Notice du back office › Étiquettes et pastilles</div><h1>Étiquettes et pastilles</h1>
+<p>Les <b>étiquettes</b> sont les petits mots posés sous le nom d'une fiche (« Modifié », « MOC », « Set partiel »…) ; les <b>pastilles</b> sont
+posées sur l'image (« Retiré », « Neuf », « ×2 »…). Vous pouvez modifier celles de l'application et créer les vôtres. <a class="go" href="/backoffice#etiquettes" target="_blank" rel="noopener">Ouvrir : Étiquettes et pastilles ↗</a></p><section class="w"><div class="gtext">
+<h3>Créer une étiquette</h3>
+<ol><li><b>+ Nouvelle étiquette</b> (ou un exemple prêt à adapter : « 💰 Plus de 100 € », « 🕰️ Avant 2000 », « 📦 Avec sa boîte »…).</li>
+<li>Son <b>texte</b> (il peut reprendre une valeur de la fiche : <code>{annee}</code>, <code>{theme}</code>, un de vos champs…), son <b>icône</b>, son
+<b>genre</b> (étiquette sous le nom, ou pastille sur l'image), ses <b>couleurs</b>.</li>
+<li><b>Affichée si la fiche remplit…</b> : une ou plusieurs conditions (« Valeur estimée » « est plus grand que » « 100 »). Sans condition : toutes les fiches.
+Le compteur indique combien de fiches la remplissent.</li>
+<li><b>Sur quelles fiches</b> (sets, figurines, MOC…), <b>où</b> (cartes, haut de la fiche), et « <b>Proposer dans le menu ⚙️ Filtres</b> » pour
+pouvoir ne montrer que ces fiches-là.</li></ol>
+<p class="tip"><b>Exemple : une étiquette « À vendre ».</b> 1) Rubrique « Champs personnalisés » : créez une case à cocher « À vendre ».
+2) Ici : nouvelle étiquette « 🏷️ À vendre », condition « À vendre » « est oui », cochez « Proposer dans ⚙️ Filtres ».
+3) Publiez. Cochez la case sur les fiches concernées : l'étiquette apparaît, et le menu Filtres propose « À vendre ».</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-etiquettes.jpg" alt="" loading="lazy"><figcaption>Vos étiquettes : texte, icône, couleurs, condition</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Modifier une étiquette de l'application</h3>
+<p>Chaque étiquette et chaque pastille d'origine a son bouton <b>Modifier</b> :</p>
+<ul><li><b>Nouveau texte</b> et icône (pour celles qui comptent, écrivez <code>{n}</code> à la place du nombre : « {n} fig. en plus »).</li>
+<li><b>Couleurs</b> : texte, fond, bordure.</li>
+<li><b>Masquer complètement</b>.</li>
+<li><b>L'afficher seulement si…</b> : une condition (par exemple ne montrer « Modifié » que sur les sets).</li></ul>
+<p>Les pastilles de l'application sont masquées sur les cartes de la collection ; une case permet de les y montrer.</p>
+<p>Les étiquettes que l'on pose <b>à la main</b> sur une fiche de l'application (« + Étiquette » : Complet, Amélioré, Modifié, Set partiel, MOC) sont les
+mêmes que celles-ci : elles suivent les mêmes réglages (texte, couleurs, masquage). « Complet » n'existe que posée à la main : elle a sa ligne,
+« Complet (étiquette posée à la main) ».</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-etiquettes-origine.jpg" alt="" loading="lazy"><figcaption>Une étiquette de l&#x27;application, renommée</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Résultat sur le site</h3>
+<p>Après publication, les étiquettes modifiées et les vôtres apparaissent sur les cartes et en haut des fiches. Le renommage, les couleurs et le
+masquage valent aussi sur les pages publiques ; les conditions, elles, se lisent sur le site connecté.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-site-etiquettes.jpg" alt="" loading="lazy"><figcaption>Sur le site : « MOC » renommé en « 🎨 Création », étiquettes et calcul sur les cartes</figcaption></figure></section><footer class="wk-nav"><a href="#/textes"><small>← Précédent</small>Textes</a><a href="#/fiches" style="text-align:right"><small>Suivant →</small>Fiches, champs, liens, cartes, menu</a></footer></article>
+<article class="wk-page" id="p-fiches" data-title="Fiches, champs, liens, cartes, menu"><div class="wk-crumb">Notice du back office › Fiches, champs, liens, cartes, menu</div><h1>Fiches, champs, liens, cartes, menu</h1><section class="w"><div class="gtext">
+<h3>Fiches</h3>
+<p><a class="go" href="/backoffice#fiches" target="_blank" rel="noopener">Ouvrir : Fiches ↗</a> Pour chaque type de fiche (set, figurine, MOC, set partiel, figurine personnalisée, et leurs versions « liste de souhaits ») :</p>
+<ul><li><b>l'ordre des blocs</b> : glissez la poignée ⠿, ou ▲ ▼ ;</li><li><b>masquer</b> un bloc dont vous ne vous servez pas ;</li>
+<li><b>renommer</b> le titre d'un bloc.</li></ul>
+<p>L'aperçu ouvre une fiche d'exemple du type choisi : chaque changement s'y voit aussitôt.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-fiches.jpg" alt="" loading="lazy"><figcaption>Le squelette d&#x27;une fiche : ordre et visibilité des blocs</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="champs">Champs personnalisés</h3>
+<p><a class="go" href="/backoffice#champs" target="_blank" rel="noopener">Ouvrir : Champs personnalisés ↗</a> Ajoutez vos informations aux fiches : texte court ou long, nombre, montant, date, case à cocher, liste de choix, étoiles, lien, fiche liée, liste liée.</p>
+<ol><li><b>+ Nouveau champ</b> : son nom, son type, sur quelles fiches.</li>
+<li>Rangez-le dans un <b>bloc</b> (par défaut « Informations personnelles », que vous pouvez renommer ou multiplier).</li>
+<li>Cochez « sur les cartes » pour le montrer aussi dans les listes.</li></ol>
+<p>Un champ devient une <b>variable</b> : utilisable dans les étiquettes, les calculs, les règles, les filtres, les pages.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-champs.jpg" alt="" loading="lazy"><figcaption>Vos propres champs sur les fiches</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="liens">Liens automatiques</h3>
+<p><a class="go" href="/backoffice#liens" target="_blank" rel="noopener">Ouvrir : Liens automatiques ↗</a> Un bouton ajouté en bas des fiches, vers le site de votre choix. Dans l'adresse, <code>{numero}</code>, <code>{nom}</code>,
+<code>{annee}</code>, <code>{theme}</code> (ou un de vos champs) sont remplacés par ceux de la fiche.</p>
+<p class="tip"><b>Exemple.</b> Nom : « BrickLink » — adresse : <code>https://www.bricklink.com/v2/search.page?q={numero}</code>. Des modèles tout prêts sont proposés.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-liens.jpg" alt="" loading="lazy"><figcaption>Des boutons vers d&#x27;autres sites, sur chaque fiche</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="cartes">Cartes des listes</h3>
+<p><a class="go" href="/backoffice#cartes" target="_blank" rel="noopener">Ouvrir : Cartes des listes ↗</a> Taille minimale des cartes, format de l'image, nombre de lignes du nom, parties affichées (numéro, quantité, thème, valeur…).</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-cartes.jpg" alt="" loading="lazy"><figcaption>Les cartes des listes</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="menu">Menu</h3>
+<p><a class="go" href="/backoffice#menu" target="_blank" rel="noopener">Ouvrir : Menu ↗</a> L'ordre des entrées (glisser ⠿), les entrées masquées, et vos <b>raccourcis</b> : vers une adresse, une liste, une fiche, une vue.
+Les pages que vous créez et vos vues enregistrées y apparaissent aussi, et s'ordonnent ici.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-menu.jpg" alt="" loading="lazy"><figcaption>Le menu latéral</figcaption></figure></section><footer class="wk-nav"><a href="#/etiquettes"><small>← Précédent</small>Étiquettes et pastilles</a><a href="#/pages" style="text-align:right"><small>Suivant →</small>Pages</a></footer></article>
+<article class="wk-page" id="p-pages" data-title="Pages"><div class="wk-crumb">Notice du back office › Pages</div><h1>Pages</h1>
+<p>Une idée nouvelle ? <b>Créez une page.</b> Un tableau de bord, la liste des sets à vendre, vos notes, une page publique à partager…
+Une page se compose de <b>blocs</b> empilés. <a class="go" href="/backoffice#pages" target="_blank" rel="noopener">Ouvrir : Pages ↗</a></p><section class="w"><div class="gtext">
+<h3>Créer une page</h3>
+<ol><li><b>📄 Page vide</b>, <b>📊 Tableau de bord</b> (totaux, fiches les plus chères, derniers ajouts) ou <b>📝 Page de notes</b>.</li>
+<li>Donnez-lui un <b>titre</b> et une <b>icône</b>. Elle apparaît dans le <b>menu latéral</b> (décochez « Dans le menu latéral » pour une page
+ouverte seulement par un bouton ou un raccourci clavier).</li></ol></div><figure class="wshot"><img src="/backoffice/guide/img/bo-pages.jpg" alt="" loading="lazy"><figcaption>Vos pages, et trois modèles pour démarrer</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Les blocs</h3>
+<table><tr><th>Bloc</th><th>Ce qu'il montre</th></tr>
+<tr><td>🔠 Titre</td><td>Un titre (grand, moyen, petit).</td></tr>
+<tr><td>📝 Texte</td><td>Un texte : <code>**gras**</code>, <code>*italique*</code>, <code>[texte du lien](https://…)</code>, lignes commençant par <code>- </code> pour une liste.</td></tr>
+<tr><td>💡 Encadré coloré</td><td>Une information mise en avant, de la couleur de votre choix.</td></tr>
+<tr><td>🖼️ Image</td><td>Une de vos images, avec largeur, légende et lien facultatifs.</td></tr>
+<tr><td>🔘 Bouton</td><td>Un bouton qui ouvre une adresse, une liste, une vue, une page, une fiche…</td></tr>
+<tr><td>🧱 Liste de fiches</td><td>Des fiches choisies par une <b>condition</b>, triées, en nombre limité. Un clic ouvre la fiche.</td></tr>
+<tr><td>🔢 Total (tuile)</td><td>Un nombre de fiches, une somme, une moyenne, un minimum, un maximum.</td></tr>
+<tr><td>📋 Tableau</td><td>Un tableau de fiches, colonnes au choix (vos champs et calculs compris).</td></tr>
+<tr><td>➖ Trait · ↕️ Espace</td><td>Pour aérer.</td></tr>
+<tr><td>🧩 HTML libre</td><td>Pour qui connaît le HTML (scripts, formulaires et cadres en sont retirés par sécurité).</td></tr>
+<tr><td>🪟 Page d'un autre site</td><td>Un cadre qui montre une autre page web.</td></tr></table>
+<p>Chaque bloc prend <b>toute la largeur, la moitié ou un tiers</b> : trois tuiles « un tiers » se rangent côte à côte. « Copier » duplique un bloc,
+⠿ et ▲ ▼ changent l'ordre.</p>
+<p class="tip"><b>Exemple : une page « À vendre ».</b> Page vide → bloc « Encadré coloré » (« Sets que je vends, contactez-moi ») → bloc « Liste de fiches »,
+condition « À vendre » « est oui », triées par « Valeur estimée ». Ajoutez un bloc « Total » : somme de <code>{valeur}</code>, même condition.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-page-edition.jpg" alt="" loading="lazy"><figcaption>L&#x27;éditeur d&#x27;une page : ses blocs, et le résultat en direct</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Page publique</h3>
+<p>Cochez « <b>Publique</b> » : la page reçoit une adresse <code>/p/son-adresse</code>, visible <b>sans connexion</b>, à donner à qui vous voulez.
+Les visiteurs n'y voient que les blocs <b>sans données</b> (titres, textes, encadrés, images, boutons vers une adresse, HTML, cadres) —
+jamais vos fiches, vos totaux ni vos prix.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-site-page.jpg" alt="" loading="lazy"><figcaption>La page, dans le site</figcaption></figure></section><footer class="wk-nav"><a href="#/fiches"><small>← Précédent</small>Fiches, champs, liens, cartes, menu</a><a href="#/reglages" style="text-align:right"><small>Suivant →</small>Page « Réglages » de l&#x27;appli</a></footer></article>
+<article class="wk-page" id="p-reglages" data-title="Page « Réglages » de l&#x27;appli"><div class="wk-crumb">Notice du back office › Page « Réglages » de l&#x27;appli</div><h1>Page « Réglages » de l&#x27;appli</h1><section class="w"><div class="gtext">
+<h3>Réorganiser la page Réglages</h3>
+<p><a class="go" href="/backoffice#reglages" target="_blank" rel="noopener">Ouvrir : Page « Réglages » de l&#x27;appli ↗</a></p>
+<ol><li><b>⚙️ Ouvrir la page Réglages dans l'aperçu</b> pour voir le résultat en direct.</li>
+<li>Glissez les sections (⠿ ou ▲ ▼) pour changer leur <b>ordre</b> ; tapez un nouveau <b>titre</b> ; décochez « visible » pour <b>masquer</b> une section.</li>
+<li>Pour une <b>option précise</b> (une ligne, un bouton, un texte de la page Réglages) : « 🖱️ Cliquer pour modifier », puis cliquez-la dans l'aperçu.
+Vous pouvez aussi y <b>ajouter</b> un texte, un lien ou une image (« Ajouter quelque chose à côté »).</li></ol>
+<p>Une section masquée garde ses réglages. Le back office reste toujours accessible par <code>/backoffice</code>, même si vous masquez sa section.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-reglages.jpg" alt="" loading="lazy"><figcaption>Les sections de la page Réglages : ordre, titres, visibilité</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Le lien vers le back office</h3>
+<p>La page Réglages de la Briquothèque a une section « 🛠 Back office » : « Ouvrir le back office » et cette notice en PDF.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-site-reglages.jpg" alt="" loading="lazy"><figcaption>Dans la Briquothèque : la section « 🛠 Back office » des Réglages</figcaption></figure></section><footer class="wk-nav"><a href="#/pages"><small>← Précédent</small>Pages</a><a href="#/comportements" style="text-align:right"><small>Suivant →</small>Comportements</a></footer></article>
+<article class="wk-page" id="p-comportements" data-title="Comportements"><div class="wk-crumb">Notice du back office › Comportements</div><h1>Comportements</h1><section class="w"><div class="gtext">
+<h3>Régler les comportements</h3>
+<p><a class="go" href="/backoffice#comportements" target="_blank" rel="noopener">Ouvrir : Comportements ↗</a></p>
+<ul><li><b>À l'ouverture du site</b> : par quoi commencer (toute la collection, une liste, une vue, une de vos pages) ; ce qui est montré (tout, les sets, les figurines).</li>
+<li><b>Tri par défaut</b> : pour « Toute la collection », pour une liste, pour une liste de souhaits. (Votre choix du moment, liste par liste, reste prioritaire.)</li>
+<li><b>Raccourcis clavier</b> : une touche (avec Ctrl ou Alt si vous voulez) → une action : nouvelle fiche, ouvrir une page, une liste, la recherche…</li>
+<li><b>Clics et liens modifiés</b> : la liste de tout ce que vous avez changé avec « Lien et action au clic », avec un bouton pour le retirer.</li>
+<li><b>Figurines identiques</b> : regrouper ou non, proposer ou non « est-ce celle de ce set ? » (voir ci-dessous).</li>
+<li><b>Prix et variations</b> : ne pas afficher les flèches ↑ ↓ ~ à côté des prix ; masquer le bouton « 🔍 Comprendre les variations » des statistiques ;
+<b>apparence des flèches</b> — affichées d'office ou non dans la vue générale (le bouton 📈 de l'appli les montre ou les cache à la volée), « ~ » quand le prix
+est stable, pourcentage, taille (curseur). Les seuils de hausse et de baisse se règlent dans l'application (Réglages → 🧮 Estimations). L'aperçu suit en direct ; « Publier » les applique ; « ↺ Revenir aux valeurs
+enregistrées » retire vos changements.</li>
+<li><b>Fiches et pièces</b> : ouvrir les fiches directement en modification (sans la clé 🔧) ; toucher une pièce l'agrandit au lieu d'ouvrir sa fiche.</li>
+<li><b>Pages publiques</b> : ne pas garder les listes dans la barre collée en haut.</li>
+<li><b>Divers</b> : le titre de l'onglet du navigateur ; réduire les animations.</li>
+<li><b>Avancé : script libre</b> (facultatif) : un morceau de JavaScript exécuté une fois au chargement de l'application — jamais sur les pages publiques.
+S'il casse l'affichage : ajoutez <code>?bo=off</code> à l'adresse du site, puis videz la case.</li></ul>
+<p class="tip"><b>Exemple.</b> Touche <code>n</code> → « Ajouter une fiche » ; touche <code>t</code> → « Ouvrir une page créée : Tableau de bord ».
+Un raccourci n'agit jamais pendant que vous tapez dans une case.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-comportements.jpg" alt="" loading="lazy"><figcaption>Ce que fait le site : départ, tri, raccourcis, clics</figcaption></figure></section><section class="w"><div class="gtext">
+<h3>Figurines identiques</h3>
+<p>D'origine, une même figurine que vous avez <b>à la fois seule et dans un set</b> (ou dans plusieurs sets) n'a qu'<b>une carte</b>, marquée « ×N », et
+qu'une fiche ; et quand vous ajoutez un set dont vous aviez déjà une figurine seule, l'application demande <b>« est-ce celle de ce set ? »</b>.
+Deux cases règlent cela :</p>
+<ul><li><b>Ne pas regrouper…</b> : chaque exemplaire retrouve sa carte (celle du set, celle achetée à part). L'aperçu le montre tout de suite ; les pages
+publiques suivent après publication.</li>
+<li><b>Ne pas demander « est-ce celle de ce set ? »</b> : le set ajouté garde sa propre figurine, la vôtre reste seule.</li></ul>
+<p>La tâche automatique « Photo à faire » se règle dans <a href="#parametres">Paramètres du serveur</a> ; la décote « modifié », dans les Réglages de
+l'application (Estimations).</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-comportements-figurines.jpg" alt="" loading="lazy"><figcaption>Figurines identiques : regrouper ou non, proposer ou non</figcaption></figure></section><footer class="wk-nav"><a href="#/reglages"><small>← Précédent</small>Page « Réglages » de l&#x27;appli</a><a href="#/images" style="text-align:right"><small>Suivant →</small>Images</a></footer></article>
+<article class="wk-page" id="p-images" data-title="Images"><div class="wk-crumb">Notice du back office › Images</div><h1>Images</h1><section class="w"><div class="gtext">
+<h3>Envoyer et réutiliser des images</h3>
+<p><a class="go" href="/backoffice#images" target="_blank" rel="noopener">Ouvrir : Images ↗</a> Les images des boutons, des pages et des éléments ajoutés sont gardées sur le serveur.</p>
+<ul><li><b>⬆ Envoyer des images…</b> : PNG, JPEG, WebP, GIF, SVG, ICO, AVIF — 4 Mo au plus (une photo plus lourde est réduite toute seule).</li>
+<li>Chaque image a une <b>adresse</b> (<code>/bo-img/…</code>) : « Copier l'adresse », ou plus simple, le bouton « 🖼️ Choisir… » présent partout où une image est demandée.</li>
+<li>La bibliothèque indique si une image est <b>utilisée</b> ; supprimez celles qui ne servent plus.</li></ul>
+<p>Effet immédiat : pas besoin de publier pour envoyer ou supprimer une image.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-images.jpg" alt="" loading="lazy"><figcaption>Votre bibliothèque d&#x27;images</figcaption></figure></section><footer class="wk-nav"><a href="#/comportements"><small>← Précédent</small>Comportements</a><a href="#/calculs" style="text-align:right"><small>Suivant →</small>Avancé : calculs, règles, tuiles, vues</a></footer></article>
+<article class="wk-page" id="p-calculs" data-title="Avancé : calculs, règles, tuiles, vues"><div class="wk-crumb">Notice du back office › Avancé : calculs, règles, tuiles, vues</div><h1>Avancé : calculs, règles, tuiles, vues</h1>
+<p>Ces rubriques apparaissent quand l'interrupteur <b>Fonctions avancées</b> est allumé. Elles partagent le même petit langage de <b>formules</b>.</p><section class="w"><div class="gtext">
+<h3>Calculs et variables</h3>
+<p><a class="go" href="/backoffice#calculs" target="_blank" rel="noopener">Ouvrir : Calculs et variables ↗</a> Un <b>calcul</b> est un champ dont la valeur vient d'une formule ; il s'affiche sur la fiche, et sur les cartes si vous le cochez.
+Une <b>variable</b> est une valeur à vous (un taux, un seuil) réutilisable dans les formules.</p>
+<table><tr><th>On écrit</th><th>Pour</th></tr>
+<tr><td><code>{valeur}</code></td><td>une variable de la fiche, entre accolades (bouton « variable » pour la choisir dans la liste)</td></tr>
+<tr><td><code>"Neuf"</code></td><td>un texte, entre guillemets</td></tr>
+<tr><td><code>+ - * /</code> · <code>= &lt;&gt; &gt; &lt; &gt;= &lt;=</code></td><td>calculer · comparer</td></tr>
+<tr><td><code>et</code> <code>ou</code> <code>non</code> · <code>&amp;</code></td><td>la logique · coller deux textes</td></tr>
+<tr><td><code>si(condition ; alors ; sinon)</code></td><td>une fonction : ses valeurs se séparent par <code>;</code></td></tr></table>
+<p class="tip"><b>Exemples.</b> Plus-value : <code>{valeur} - sivide({prix_achat} ; 0)</code> · Prix par pièce : <code>{valeur} / {pieces}</code> ·
+Âge du set : <code>annee(aujourdhui()) - {annee}</code> · Mention : <code>si({valeur} &gt; 100 ; "précieux" ; "courant")</code>.</p>
+<p>Parmi les variables d'une fiche : <code>{statut}</code> (Complet, Amélioré, Modifié, Set partiel, MOC — comme l'étiquette calculée),
+<code>{etiquettes}</code> (celles posées à la main), <code>{exemplaires}</code> (le total d'une figurine, seule et dans vos sets), <code>{dans_un_set}</code>,
+<code>{accessoires}</code> (valeur des accessoires chiffrés par leurs pièces). Exemple : une vue « Modifiés » = condition « État de la fiche » « = » « Modifié ».</p>
+<p>Le résultat s'affiche en direct sous la formule, sur une fiche d'exemple ; une erreur est expliquée en français. L'aide-mémoire, en bas de la rubrique,
+liste toutes les variables et toutes les fonctions.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-calculs.jpg" alt="" loading="lazy"><figcaption>Un champ calculé par une formule, avec son résultat en direct</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="regles">Règles « si… alors »</h3>
+<p><a class="go" href="/backoffice#regles" target="_blank" rel="noopener">Ouvrir : Règles « si… alors » ↗</a> Si une fiche remplit une <b>condition</b>, alors : une étiquette, une pastille, une couleur de carte, un message en haut de la fiche,
+un bloc de la fiche masqué. Plusieurs effets par règle.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-regles.jpg" alt="" loading="lazy"><figcaption>Une règle : si la fiche vaut plus de 100 €, alors…</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="tuiles">Tuiles et totaux</h3>
+<p><a class="go" href="/backoffice#tuiles" target="_blank" rel="noopener">Ouvrir : Tuiles et totaux ↗</a> Une tuile de plus au-dessus des listes : nombre de fiches, somme, moyenne, minimum ou maximum d'une formule, avec une condition facultative
+(« valeur moyenne », « nombre de sets de plus de 100 € »…).</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-tuiles.jpg" alt="" loading="lazy"><figcaption>Vos totaux, à côté de ceux de l&#x27;application</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="vues">Vues, tris et filtres</h3>
+<p><a class="go" href="/backoffice#vues" target="_blank" rel="noopener">Ouvrir : Vues, tris et filtres ↗</a></p>
+<ul><li>Une <b>vue</b> est une liste filtrée prête à ouvrir depuis le menu (« Précieux », « À construire cet hiver »…).</li>
+<li>Un <b>tri</b> à vous s'ajoute au menu « ⇅ Tri » du site (marqué ★).</li>
+<li>Un <b>filtre</b> à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).</li></ul></div><figure class="wshot"><img src="/backoffice/guide/img/bo-vues.jpg" alt="" loading="lazy"><figcaption>Vues enregistrées, tris et filtres</figcaption></figure></section><footer class="wk-nav"><a href="#/images"><small>← Précédent</small>Images</a><a href="#/donnees" style="text-align:right"><small>Suivant →</small>Données : fiches, catalogue, tableur</a></footer></article>
+<article class="wk-page" id="p-donnees" data-title="Données : fiches, catalogue, tableur"><div class="wk-crumb">Notice du back office › Données : fiches, catalogue, tableur</div><h1>Données : fiches, catalogue, tableur</h1>
+<p class="tip">Ces rubriques touchent directement la collection, <b>sans passer par « Publier »</b>. Une sauvegarde automatique est faite avant chaque écriture.</p><section class="w"><div class="gtext">
+<h3>Données</h3>
+<p><a class="go" href="/backoffice#donnees" target="_blank" rel="noopener">Ouvrir : Données ↗</a> Chercher une fiche et voir — ou corriger — chacune de ses valeurs brutes, ligne par ligne. Pour le cas où aucun écran de
+l'application ne permet la correction.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-donnees.jpg" alt="" loading="lazy"><figcaption>Une fiche telle qu&#x27;elle est enregistrée</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="catalogue">Corrections du catalogue</h3>
+<p><a class="go" href="/backoffice#catalogue" target="_blank" rel="noopener">Ouvrir : Corrections du catalogue ↗</a> Un nom, un thème, une année, un nombre de pièces, une image ou un prix du catalogue est faux ? Cherchez le set ou la figurine,
+remplissez seulement ce qui est faux : votre correction passe par-dessus le catalogue, pour toutes les fiches concernées. Videz la case pour la retirer.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-catalogue.jpg" alt="" loading="lazy"><figcaption>Corriger ce qui vient du catalogue</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="tableur">Tableur (CSV)</h3>
+<p><a class="go" href="/backoffice#tableur" target="_blank" rel="noopener">Ouvrir : Tableur (CSV) ↗</a> <b>Exporter</b> vos fiches (colonnes au choix, champs et calculs compris) vers Excel ou LibreOffice. <b>Importer</b> un fichier pour
+remplir vos champs personnalisés en masse : gardez la colonne « id », modifiez les autres, réimportez.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-tableur.jpg" alt="" loading="lazy"><figcaption>Vers un tableur, et retour</figcaption></figure></section><footer class="wk-nav"><a href="#/calculs"><small>← Précédent</small>Avancé : calculs, règles, tuiles, vues</a><a href="#/modifs" style="text-align:right"><small>Suivant →</small>Suivi : mes modifications, historique</a></footer></article>
+<article class="wk-page" id="p-modifs" data-title="Suivi : mes modifications, historique"><div class="wk-crumb">Notice du back office › Suivi : mes modifications, historique</div><h1>Suivi : mes modifications, historique</h1><section class="w"><div class="gtext">
+<h3>Mes modifications</h3>
+<p><a class="go" href="/backoffice#modifs" target="_blank" rel="noopener">Ouvrir : Mes modifications ↗</a> La liste de tous vos réglages, rubrique par rubrique : « Montrer » fait clignoter l'élément dans l'aperçu, ✕ retire le réglage.
+C'est ici qu'on retrouve un élément <b>masqué</b> pour le faire réapparaître.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-modifs.jpg" alt="" loading="lazy"><figcaption>Tout ce que vous avez changé, au même endroit</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="historique">Historique et secours</h3>
+<p><a class="go" href="/backoffice#historique" target="_blank" rel="noopener">Ouvrir : Historique et secours ↗</a></p>
+<ul><li><b>Reprendre</b> une ancienne publication : elle devient votre brouillon ; vérifiez, puis publiez.</li>
+<li><b>↺ Tout remettre d'origine</b> : vide le brouillon de tous vos réglages.</li>
+<li><b>Exporter / Importer</b> vos réglages dans un fichier (pour les garder ailleurs, ou les transférer). Un fichier importé est vérifié et remis d'aplomb par le serveur ;
+il arrive dans le brouillon : regardez l'aperçu avant de publier, et n'importez que des fichiers de confiance.</li>
+<li><b>Feuille de style libre</b> (pour qui connaît le CSS) : facultatif.</li></ul></div><figure class="wshot"><img src="/backoffice/guide/img/bo-historique.jpg" alt="" loading="lazy"><figcaption>Chaque publication est gardée</figcaption></figure></section><footer class="wk-nav"><a href="#/donnees"><small>← Précédent</small>Données : fiches, catalogue, tableur</a><a href="#/sauvegardes" style="text-align:right"><small>Suivant →</small>Serveur : sauvegardes, état, sécurité</a></footer></article>
+<article class="wk-page" id="p-sauvegardes" data-title="Serveur : sauvegardes, état, sécurité"><div class="wk-crumb">Notice du back office › Serveur : sauvegardes, état, sécurité</div><h1>Serveur : sauvegardes, état, sécurité</h1>
+<p class="tip">Les outils du serveur agissent <b>tout de suite</b>. Chaque action est notée dans le journal du back office.</p><section class="w"><div class="gtext">
+<h3>Sauvegardes</h3>
+<p><a class="go" href="/backoffice#sauvegardes" target="_blank" rel="noopener">Ouvrir : Sauvegardes ↗</a></p>
+<ul><li><b>Sauvegarder la collection</b> maintenant ; la liste montre aussi les sauvegardes automatiques.</li>
+<li><b>Télécharger</b> une sauvegarde pour la garder ailleurs ; en <b>déposer</b> une ; <b>restaurer</b> (l'état actuel est d'abord sauvegardé).</li>
+<li><b>Tout emporter</b> : un export <code>.zip</code> de toutes les données (avec ou sans les photos). Les mots de passe n'y sont jamais ;
+vos <b>clés API</b> (Rebrickable, BrickLink…), elles, y sont : gardez ce fichier pour vous.</li></ul>
+<p class="tip"><b>Avant un gros changement :</b> Sauvegardes → « Sauvegarder la collection ».</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-sauvegardes.jpg" alt="" loading="lazy"><figcaption>Sauvegarder, télécharger, restaurer</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="serveur">État et journal</h3>
+<p><a class="go" href="/backoffice#serveur" target="_blank" rel="noopener">Ouvrir : État et journal ↗</a> Depuis quand le serveur tourne, la place disponible sur le disque, la mémoire, la taille des données ; le <b>journal</b>
+(avec recherche et « erreurs seulement ») ; le bouton <b>Redémarrer</b>.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-serveur.jpg" alt="" loading="lazy"><figcaption>La santé du serveur et le journal</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="securite">Mots de passe et sécurité</h3>
+<p><a class="go" href="/backoffice#securite" target="_blank" rel="noopener">Ouvrir : Mots de passe et sécurité ↗</a></p>
+<ul><li><b>Changer le mot de passe du back office</b> (l'actuel est demandé ; les autres appareils sont déconnectés).</li>
+<li><b>Changer le mot de passe de la Briquothèque</b> : seul celui du back office est demandé — c'est le secours si celui de la Briquothèque est oublié.
+Tous les appareils devront se reconnecter.</li>
+<li><b>Sessions</b> : combien sont ouvertes, « Fermer les autres », se déconnecter.</li>
+<li><b>Outils sensibles depuis Internet</b> : le code, les réglages de démarrage, la restauration d'un .zip et la page de secours ne répondent que
+depuis le <b>réseau local</b> (chez vous). Une case permet de les ouvrir aussi depuis Internet ; elle ne se change que depuis le réseau local.</li></ul></div><figure class="wshot"><img src="/backoffice/guide/img/bo-securite.jpg" alt="" loading="lazy"><figcaption>Mots de passe et sécurité</figcaption></figure></section><footer class="wk-nav"><a href="#/modifs"><small>← Précédent</small>Suivi : mes modifications, historique</a><a href="#/fichiers" style="text-align:right"><small>Suivant →</small>Serveur : fichiers, paramètres, code</a></footer></article>
+<article class="wk-page" id="p-fichiers" data-title="Serveur : fichiers, paramètres, code"><div class="wk-crumb">Notice du back office › Serveur : fichiers, paramètres, code</div><h1>Serveur : fichiers, paramètres, code</h1>
+<p>Pour les cas rares. Ces trois rubriques demandent l'interrupteur « Fonctions avancées ».</p><section class="w"><div class="gtext">
+<h3>Fichiers de données</h3>
+<p><a class="go" href="/backoffice#fichiers" target="_blank" rel="noopener">Ouvrir : Fichiers de données ↗</a> Tous les fichiers de données du serveur (collection, caches, réglages…), en lecture et en correction ligne par ligne, avec recherche.
+Une copie de l'ancien fichier est gardée à chaque écriture. Les fichiers de mots de passe n'y figurent pas.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-fichiers.jpg" alt="" loading="lazy"><figcaption>N&#x27;importe quelle donnée enregistrée, ligne par ligne</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="parametres">Paramètres du serveur</h3>
+<p><a class="go" href="/backoffice#parametres" target="_blank" rel="noopener">Ouvrir : Paramètres du serveur ↗</a> Les durées de garde des caches, les quotas d'appels, les tailles d'images, la durée des sessions… appliqués <b>à chaud</b>.
+Les réglages de démarrage (port, proxy, démonstration publique) demandent un redémarrage, proposé sur place.</p>
+<p><b>Tâche « Photo à faire »</b> : l'application la pose d'office sur une figurine sans aucune image disponible ni photo, et la retire dès qu'une image
+existe. Ce paramètre règle le rythme de la vérification (toutes les 24 h d'origine) ; <b>0 = jamais</b> (les tâches déjà posées restent : retirez-les à la main).</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-parametres.jpg" alt="" loading="lazy"><figcaption>Durées, quotas, tailles ; port, proxy, démonstration</figcaption></figure></section><section class="w"><div class="gtext">
+<h3 id="code">Code de l'application</h3>
+<p><a class="go" href="/backoffice#code" target="_blank" rel="noopener">Ouvrir : Code de l&#x27;application ↗</a> En dernier recours, les fichiers du programme se modifient depuis le navigateur :</p>
+<ol><li>la <b>syntaxe est vérifiée</b> avant d'enregistrer (un fichier faux est refusé, avec la ligne de l'erreur) ;</li>
+<li>chaque <b>version précédente est gardée</b> et se remet d'un clic ;</li>
+<li>si le serveur ne redémarre pas avec un fichier modifié, l'<b>ancienne version revient toute seule</b>.</li></ol>
+<p>En tout dernier recours : la <a href="#secours">page de secours</a>.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-code.jpg" alt="" loading="lazy"><figcaption>Le code de l&#x27;application, avec trois filets de sécurité</figcaption></figure></section><footer class="wk-nav"><a href="#/sauvegardes"><small>← Précédent</small>Serveur : sauvegardes, état, sécurité</a><a href="#/secours" style="text-align:right"><small>Suivant →</small>En cas de problème</a></footer></article>
+<article class="wk-page" id="p-secours" data-title="En cas de problème"><div class="wk-crumb">Notice du back office › En cas de problème</div><h1>En cas de problème</h1><section class="w"><div class="gtext">
+<h3>Les bons réflexes</h3>
+<table><tr><th>Ce qui se passe</th><th>Quoi faire</th></tr>
+<tr><td>Un réglage rend le site illisible ou inutilisable</td><td>Ajoutez <code>?bo=off</code> à la fin de l'adresse du site : il s'affiche <b>sans aucune personnalisation</b>.
+Puis ouvrez <code>/backoffice</code> (jamais personnalisé, toujours utilisable) → « Mes modifications » pour retirer le réglage fautif,
+ou « Historique et secours » pour reprendre une version d'avant.</td></tr>
+<tr><td>Un élément a disparu</td><td>Aperçu → cochez « Montrer ce qui est masqué » ; ou « Mes modifications » → ✕ sur la ligne « masqué ».</td></tr>
+<tr><td>Un clic ne fait plus rien</td><td>« Comportements » → « Clics et liens modifiés » → ✕.</td></tr>
+<tr><td>Je veux tout remettre comme avant le back office</td><td>« Historique et secours » → « ↺ Tout remettre d'origine », puis Publier.</td></tr>
+<tr><td>Une donnée a été abîmée</td><td>« Sauvegardes » → Restaurer la sauvegarde d'avant.</td></tr>
+<tr><td>Le site ne répond plus après une modification du code</td><td>Attendez dix secondes (l'ancienne version revient seule). Sinon : <code>/backoffice/secours</code> →
+mot de passe du back office → « Afficher les versions gardées » → remettre la version d'avant → Redémarrer.</td></tr>
+<tr><td>Mot de passe de la Briquothèque oublié</td><td>Back office → « Mots de passe et sécurité » → « Changer le mot de passe de la Briquothèque ».</td></tr>
+<tr><td>Mot de passe du back office oublié</td><td>Il ne se retrouve pas : supprimez <code>data/backoffice_auth.json</code> sur le serveur, puis rouvrez <code>/backoffice</code>.</td></tr>
+<tr><td>« Trop de tentatives »</td><td>Attendez 15 minutes. Une adresse bannie se débloque dans Réglages → Sécurité de la Briquothèque.</td></tr>
+<tr><td>Un outil répond « seulement depuis le réseau local »</td><td>Ouvrez le back office depuis chez vous ; ou cochez « Outils sensibles depuis Internet » (depuis chez vous).</td></tr></table>
+<h3>Ce que le back office ne fait pas</h3>
+<p>Une fonction entièrement nouvelle de l'application (une nouvelle source de prix, par exemple) demande toujours du code — mais ce code se modifie
+depuis la rubrique « Code de l'application », sans ligne de commande. Tout le reste se règle ici.</p></div><figure class="wshot"><img src="/backoffice/guide/img/bo-secours.jpg" alt="" loading="lazy"><figcaption>La page de secours : /backoffice/secours</figcaption></figure></section><footer class="wk-nav"><a href="#/fichiers"><small>← Précédent</small>Serveur : fichiers, paramètres, code</a><a href="#/recettes" style="text-align:right"><small>Suivant →</small>Dix recettes pas à pas</a></footer></article>
+<article class="wk-page" id="p-recettes" data-title="Dix recettes pas à pas"><div class="wk-crumb">Notice du back office › Dix recettes pas à pas</div><h1>Dix recettes pas à pas</h1><section class="w"><div class="gtext">
+<ol class="rec">
+<li><b>Changer la couleur du site.</b> Apparence → choisissez une palette → Publier.</li>
+<li><b>Mettre votre logo.</b> Apparence → Logo → « Choisir un fichier… » → Publier.</li>
+<li><b>Renommer « MOC » en « Création ».</b> Étiquettes et pastilles → ligne « MOC » → Modifier → Nouveau texte : « Création » → Publier.</li>
+<li><b>Un bouton avec une image.</b> Images → envoyez l'image. Modifier à la souris → cliquez le bouton → « Icône ou image » → « Une image » →
+« 🖼️ Choisir… » → place « à la place du texte » → réglez largeur et hauteur → Publier.</li>
+<li><b>Masquer une section des Réglages.</b> Page « Réglages » de l'appli → décochez « visible » sur la section → Publier.</li>
+<li><b>Un champ « Emplacement » sur les sets.</b> Champs personnalisés → + Nouveau champ → « Emplacement », texte court, fiches « Sets » → Publier.
+Remplissez-le ensuite sur chaque fiche.</li>
+<li><b>Une étiquette pour les sets chers.</b> Étiquettes et pastilles → exemple « 💰 Plus de 100 € » → ajustez le montant → Publier.</li>
+<li><b>Un tableau de bord en page de départ.</b> Pages → « 📊 Tableau de bord ». Puis Comportements → Page de départ → « Une page créée… » → Tableau de bord → Publier.</li>
+<li><b>Une page publique de contact.</b> Pages → Page vide → blocs Texte et Bouton (« Ouvrir une adresse » : <code>mailto:contact@example.org</code>) →
+cochez « Publique » → Publier → donnez l'adresse <code>/p/…</code>.</li>
+<li><b>Revenir à hier.</b> Historique et secours → « Reprendre » sur la publication d'hier → vérifiez l'aperçu → Publier.</li>
+</ol></div></section><footer class="wk-nav"><a href="#/secours"><small>← Précédent</small>En cas de problème</a><a href="#/mentions-legales" style="text-align:right"><small>Suivant →</small>Mentions légales</a></footer></article>
+<article class="wk-page" id="p-mentions-legales" data-title="Mentions légales"><div class="wk-crumb">Notice du back office › Mentions légales</div><h1>Mentions légales</h1><div class="legal"><h3>Briquothèque</h3>
+<p>Application personnelle de gestion de collection LEGO® (sets, figurines, MOC, pièces), non commerciale.</p>
+<h3>Auteur et propriétaire</h3>
+<p><b>Clýde Hørd</b> — concept, conception et propriété de l'application et de sa documentation.
+Développement réalisé avec Claude Code (Anthropic), sur les instructions et selon le concept de Clýde Hørd.</p>
+<h3>Éditeur</h3>
+<p>Ce site est édité par la personne qui l'a installé.</p>
+<h3>Propriété intellectuelle</h3>
+<p>© 2026 Clýde Hørd — tous droits réservés. L'application (code, interface, textes, graphismes) et sa documentation sont protégées
+par le droit d'auteur (Code de la propriété intellectuelle). C'est un logiciel propriétaire : seuls son installation chez soi
+(auto-hébergement) et son usage personnel, non commercial, sont autorisés, gratuitement, à partir du seul dépôt GitHub officiel de
+Clýde Hørd. Toute redistribution (même gratuite), toute commercialisation, toute modification ou réutilisation, l'hébergement pour
+autrui, la suppression des mentions de propriété et l'utilisation pour entraîner une intelligence artificielle sont interdits sans
+l'autorisation écrite préalable de Clýde Hørd (articles L.122-4 et L.335-2 du Code de la propriété intellectuelle). Conditions
+complètes : fichier LICENCE. Les photographies fournies (exemples, guide) sont des œuvres de Clýde Hørd, signées d'un filigrane et de
+métadonnées : aucune réutilisation hors de l'application, aucune retouche, ni retrait du filigrane ou des métadonnées.</p>
+<h3>Marques et contenus de tiers</h3>
+<p>LEGO® est une marque du groupe LEGO, qui ne parraine, n'autorise ni n'approuve ce site. BrickLink®, Rebrickable, BrickOwl et les
+autres noms cités appartiennent à leurs détenteurs respectifs. Les images des sets, figurines et pièces restent la propriété de leurs auteurs.</p>
+<h3>Prix et données</h3>
+<p>Prix et catalogues issus de BrickLink (API officielle), Rebrickable, BrickOwl et LEGO.com, donnés à titre indicatif, sans garantie d'exactitude.</p>
+<h3>Données personnelles et cookies</h3>
+<p>Seuls des cookies techniques indispensables sont utilisés (connexion, mode démo). Les pages publiques comptent les visites de façon
+anonyme : l'adresse IP est transformée de manière irréversible et jamais conservée en clair ; les compteurs sont gardés 90 jours.
+Aucune publicité, aucun traçage, aucune revente de données.</p></div><footer class="wk-nav"><a href="#/recettes"><small>← Précédent</small>Dix recettes pas à pas</a></footer></article>
+</main></div>
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const pages = $$(".wk-page"), toc = $(".wk-toc"), res = $(".wk-results"), search = $(".wk-search");
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const E = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");   // texte → HTML sûr
+  pages.forEach(p => $$("h2, h3", p).forEach((h, k) => { if (!h.id) h.id = p.id.slice(2) + "--" + (k + 1); }));   // une ancre par titre
+  const unmark = () => $$("mark.wk-m").forEach(m => m.replaceWith(document.createTextNode(m.textContent)));
+  const mark = (root, q) => {   // surligne le mot cherché dans la page ouverte
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = []; let n;
+    while ((n = w.nextNode())) if (n.nodeValue.trim() && !n.parentElement.closest("script, style, mark, svg")) nodes.push(n);
+    let first = null;
+    for (const t of nodes) {
+      const i = norm(t.nodeValue).indexOf(q); if (i < 0 || norm(t.nodeValue).length !== t.nodeValue.length) continue;
+      const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + q.length);
+      const m = document.createElement("mark"); m.className = "wk-m"; try { r.surroundContents(m); } catch { continue; } first = first || m;
+    }
+    return first;
+  };
+  function show(id, anchor, q) {
+    const p = pages.find(x => x.id === "p-" + id) || pages[0];
+    unmark(); res.hidden = true;
+    pages.forEach(x => x.classList.toggle("on", x === p));
+    $$("a", toc).forEach(a => a.classList.toggle("on", a.dataset.page === p.id.slice(2)));
+    $$(".wk-sub", toc).forEach(u => u.remove());
+    const heads = $$("h2, h3", p);
+    if (heads.length > 1) {   // « sur cette page »
+      const u = document.createElement("ul"); u.className = "wk-sub";
+      u.innerHTML = heads.map(h => `<li><a href="#/${E(p.id.slice(2))}/${E(h.id)}">${E(h.textContent)}</a></li>`).join("");
+      $("a.on", toc)?.after(u);
+    }
+    document.title = p.dataset.title + " — " + document.body.dataset.wiki;
+    document.body.classList.remove("wk-open");
+    const hit = q ? mark(p, q) : null, t = hit || (anchor && document.getElementById(anchor));
+    if (t) t.scrollIntoView({ block: hit ? "center" : "start" }); else scrollTo(0, 0);
+  }
+  function route() {
+    const h = decodeURIComponent(location.hash || "");
+    if (h.startsWith("#/")) { const [id, anchor] = h.slice(2).split("/"); return show(id, anchor); }
+    const t = h.length > 1 && (document.getElementById(h.slice(1)) || document.getElementById("p-" + h.slice(1)));   // ancienne ancre (ex. #souris, #fn-…) : la page qui la contient
+    const p = t && t.closest(".wk-page");
+    if (p) return show(p.id.slice(2), t === p ? "" : t.id);
+    show(pages[0].id.slice(2));
+  }
+  addEventListener("hashchange", route);
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (a && !a.getAttribute("href").startsWith("#/")) {   // lien interne vers une ancre : sa page, puis l'ancre
+      const t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1))), p = t && t.closest(".wk-page");
+      if (p) { e.preventDefault(); location.hash = "#/" + p.id.slice(2) + (t === p ? "" : "/" + t.id); }
+      return;
+    }
+    const img = e.target.closest("figure img");
+    if (img) { const z = document.createElement("div"); z.className = "wk-zoom"; z.innerHTML = `<img src="${E(img.src)}" alt="">`; z.onclick = () => z.remove(); document.body.append(z); }
+  });
+  $(".wk-menu").onclick = () => document.body.classList.toggle("wk-open");
+  let timer = 0;
+  search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => {
+    const q = norm(search.value.trim());
+    if (q.length < 2) { res.hidden = true; if (!$(".wk-page.on")) route(); return; }
+    const hits = [];
+    for (const p of pages) for (const b of $$("section, .wk-block", p).concat($$(":scope > p, :scope > ul, :scope > table, :scope > div.fn", p))) {
+      const txt = b.textContent.replace(/\s+/g, " "), i = norm(txt).indexOf(q); if (i < 0) continue;
+      const h = b.querySelector("h2, h3") || [...$$("h2, h3", p)].filter(x => x.compareDocumentPosition(b) & 4).pop();
+      hits.push({ p, h, snip: (i > 60 ? "… " : "") + txt.slice(Math.max(0, i - 60), i + 110) + " …" });
+      if (hits.length >= 60) break;
+    }
+    unmark(); pages.forEach(x => x.classList.remove("on")); res.hidden = false;
+    res.innerHTML = `<h2>${hits.length ? hits.length + (hits.length >= 60 ? "+" : "") + " résultat" + (hits.length > 1 ? "s" : "") : "Aucun résultat"} pour « ${E(search.value)} »</h2>`
+      + hits.map((x, k) => `<button type="button" class="wk-hit" data-k="${k}"><b>${E(x.p.dataset.title)}${x.h ? " › " + E(x.h.textContent) : ""}</b><span>${E(x.snip)}</span></button>`).join("");
+    $$(".wk-hit", res).forEach(b => b.onclick = () => { const x = hits[+b.dataset.k]; history.replaceState(null, "", "#/" + x.p.id.slice(2)); show(x.p.id.slice(2), x.h?.id, q); });
+    scrollTo(0, 0);
+  }, 180); });
+  search.addEventListener("keydown", e => { if (e.key === "Escape") { search.value = ""; res.hidden = true; route(); } });
+  route();
+})();
+</script></body></html>

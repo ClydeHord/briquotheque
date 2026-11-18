@@ -1,0 +1,1114 @@
+<!doctype html>
+<!-- © 2026 Clýde Hørd (ClydeHord sur GitHub) — auteur de Briquothèque · source : https://github.com/ClydeHord/briquotheque · licence : LICENCE (mention à conserver) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Collection LEGO — Briquothèque</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .guest-tag { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
+  .tabs-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 6px; }
+  .tabs-row button { border: 1px solid var(--line); background: var(--panel); border-radius: 99px; padding: 7px 14px; cursor: pointer; font-weight: 600; }
+  .tabs-row button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .tabs-row .sep { width: 1px; background: var(--line); margin: 0 4px; }
+  .g-main { max-width: 1280px; margin: 0 auto; padding: 22px 20px 60px; }
+  .card { cursor: default; }
+  .card:hover { transform: none; }
+  .figs-line { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  @media (max-width: 600px) {
+    .g-main { padding: 14px 12px 40px; }
+    /* onglets des listes : retour à la ligne (plus de défilement horizontal) */
+    .tabs-row { flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .tabs-row button { padding: 6px 11px; font-size: 13.5px; line-height: 1.25; text-align: left; max-width: 100%; }
+    .tabs-row .sep { flex-basis: 100%; width: auto; height: 0; margin: 2px 0; background: none; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stats .main-stat { grid-column: auto; }
+    .stats .main-stat .val { font-size: 19px; }
+    .guest-tag { font-size: 11px; }
+    .brand span:last-child { display: inline; font-size: 16px; }
+  }
+  .card[data-i] { cursor: pointer; }
+  .card[data-i]:hover { border-color: var(--muted); }
+  .prices3 { color: var(--ink); } .prices3 b { font-variant-numeric: tabular-nums; }
+  .gdetail { position: fixed; inset: 0; z-index: 60; background: rgba(10,12,16,.6); display: grid; place-items: center; padding: 16px; }
+  .gd-box { position: relative; background: var(--panel); border-radius: 18px; width: min(760px, 100%); max-height: calc(100vh - 32px); overflow: auto; }
+  .gd-x { position: absolute; top: 8px; right: 8px; z-index: 2; border: 0; background: var(--panel); border-radius: 50%; width: 38px; height: 38px; font-size: 20px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .gd-img { display: block; width: 100%; max-height: 52vh; object-fit: contain; background: #fff; border-radius: 18px 18px 0 0; cursor: zoom-in; }
+  .gd-img.big { max-height: none; cursor: zoom-out; }
+  .gd-body { padding: 14px 18px 18px; }
+  .gd-body h2 { margin: 2px 0 4px; font-size: 20px; }
+  .gd-status { margin: 10px 0 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .gd-prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; }
+  .gd-prices div { background: var(--bg); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; }
+  .gd-prices span { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .gd-prices b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .gd-figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin: 12px 0; }
+  .gd-figs figure { margin: 0; text-align: center; font-size: 11.5px; }
+  .gd-figs img { width: 100%; aspect-ratio: 3/4; object-fit: contain; background: #fff; border-radius: 8px; border: 1px solid var(--line); }
+  .gd-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .gd-links a { font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 99px; border: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+  .gd-links a:hover { border-color: var(--red); color: var(--red); }
+  @media (max-width: 600px) { .gdetail { padding: 0; place-items: end stretch; } .gd-box { border-radius: 18px 18px 0 0; max-height: 92vh; } }
+  .tab-sub { font-size: 11px; font-weight: 700; opacity: .65; margin-left: 2px; }
+  .gstats { margin: 0 0 14px; padding: 12px 16px; }
+  .stat-btn { cursor: pointer; }
+  .stat-btn:hover { border-color: var(--red); }
+  .gp-box { width: min(980px, 100%); }
+  .gp-tools { display: flex; gap: 8px; margin: 10px 0; }
+  .gp-tools input { flex: 1 1 auto; min-width: 0; }
+  .gp-tools select { flex: 0 0 auto; max-width: 45%; }
+  .gp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  @media (max-width: 600px) { .gp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .gp-card { display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    font: inherit; font-size: 12.5px; color: inherit; text-align: left; cursor: pointer; }
+  div.gp-card { cursor: default; }
+  .gp-card:hover { border-color: var(--muted); }
+  .gp-pic { aspect-ratio: 1 / 1; background: #fff; border-radius: 8px; display: grid; place-items: center; overflow: hidden; margin-bottom: 4px; font-size: 28px; }
+  .gp-pic img { width: 100%; height: 100%; object-fit: contain; }
+  .gp-id { color: var(--muted); font-size: 11.5px; font-weight: 600; }
+  .gp-name { font-weight: 600; line-height: 1.25; display: flex; align-items: center; gap: 5px; }
+  .gp-sw { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); flex: none; }
+  .gp-more { grid-column: 1 / -1; justify-self: center; margin-top: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 99px; padding: 7px 14px; cursor: pointer; font: inherit; }
+  .gstats > summary { cursor: pointer; font-weight: 700; color: var(--ink); font-size: 15px; }
+  .gstats[open] > summary { margin-bottom: 10px; }
+  .gs-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .gs-kpis div { background: var(--bg); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; }
+  .gs-kpis span { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .gs-kpis b { font-size: 18px; font-variant-numeric: tabular-nums; }
+  .gstats h3 { font-size: 14.5px; margin: 14px 0 4px; }
+  .gstats .vx { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+  .gd-acc-t { font-size: 14px; margin: 14px 0 6px; }
+  .gd-zoom { cursor: zoom-in; }
+  .gd-noimg { aspect-ratio: 3/4; display: grid; place-items: center; font-size: 28px; background: var(--bg); border-radius: 8px; }
+  .gd-zoomed { position: fixed; inset: 0; z-index: 100; background: rgba(10,12,16,.88); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+  .gd-zoomed img { max-width: 94vw; max-height: 90vh; object-fit: contain; background: #fff; border-radius: 12px; }
+  .subtabs { padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; margin: 2px 0 10px; }
+  .subtabs button { font-size: 13.5px; padding: 6px 12px; background: var(--bg); border-color: transparent; }
+  .subtabs button.all { background: none; border-color: var(--line); }
+  .subtabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  #title .crumbs { margin-bottom: 2px; }
+  @media (max-width: 600px) { .subtabs { margin: 2px 0 10px; border-radius: 12px; } }
+  .figs-line img { width: 26px; height: 32px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 4px; }
+.acc-line .acc-noimg { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 6px; background: #fff; font-size: 17px; }
+  .acc-line img { width: 34px; height: 34px; }
+  .acc-line .more-parts { width: 34px; height: 34px; font-size: 13px; font-weight: 700; }
+  .gd-lots { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; max-height: 420px; overflow: auto; }
+  .gd-lot { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 5px; font-size: 13px; }
+  .gd-lot img, .gd-lot .gd-noimg { width: 40px; height: 40px; flex: none; object-fit: contain; background: #fff; border-radius: 6px; display: grid; place-items: center; }
+  .gd-lot img { cursor: zoom-in; }
+  .gd-lot span { min-width: 0; } .gd-lot b { font-weight: 600; } .gd-lot em { font-style: normal; color: var(--muted); }
+  .gd-lot small { display: block; color: var(--muted); font-size: 11.5px; }
+  .more-parts { width: 28px; height: 28px; border-radius: 6px; border: 1px dashed var(--muted); background: transparent; color: var(--ink); font-size: 18px; line-height: 1; cursor: pointer; display: inline-grid; place-items: center; padding: 0; }
+  .more-parts:hover { border-color: var(--red); color: var(--red); }
+  .to-top { bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important; }
+  .topbar { flex-wrap: wrap; row-gap: 6px; }
+  /* liens vers les autres pages publiques : en fin de rangée des listes, sous le titre, comme des onglets */
+  .pub-link { display: inline-flex; align-items: center; border: 1px solid var(--red); color: var(--red); background: var(--panel); border-radius: 99px;
+    padding: 7px 14px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .pub-link:hover { background: var(--red); color: #fff; }
+  @media (max-width: 520px) { .pub-link { padding: 6px 11px; font-size: 13.5px; } }
+  /* fiche : même présentation que la fiche de la page privée (lecture seule) */
+  .gs-box { width: min(760px, 100%); padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .gs-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .gs-head h2 { flex: 1; margin: 0; font-size: 19px; line-height: 1.25; }
+  .gs-head .gd-x { position: static; box-shadow: none; flex: none; width: 34px; height: 34px; font-size: 18px; background: transparent; color: var(--ink); }
+  .gs-head .gd-x:hover { background: var(--bg); }
+  .gs-body { padding: 12px 18px 18px; overflow: auto; }
+  .gs-body .cfg-top .gd-img { width: 100%; aspect-ratio: 4/3; max-height: none; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--line); cursor: zoom-in; }
+  .gs-price { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .gs-num { font-size: 13px; font-weight: 700; color: var(--muted); margin: 2px 0; }
+  .gs-qty { font-size: 13.5px; margin-top: 8px; }
+  .card.gs-tags { all: unset; display: block; margin-top: 6px; }
+  .gs-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .gs-figs .fig.figq { grid-template-columns: 44px minmax(0, 1fr); align-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    padding: 5px 6px 5px 5px; gap: 4px 9px; min-width: 0; cursor: default; font: inherit; color: inherit; text-align: left; }
+  .gs-figs .fq-pic { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .gs-figs .fq-pic img, .gs-figs .fq-pic .gd-noimg { width: 44px; height: 44px; object-fit: contain; background: #fff; border-radius: 8px; padding: 2px; box-sizing: border-box; aspect-ratio: auto; font-size: 20px; }
+  .gs-figs .fq-pic img.wide { object-fit: cover; padding: 0; }   /* photo prise en largeur : recadrée, même taille que les autres */
+  .gs-figs .fq-n { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .gs-figs .fq-txt .fn { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+  .gs-figs .fq-txt .fv { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+  .gs-figs button.gs-set { cursor: pointer; } .gs-figs button.gs-set:hover { border-color: var(--red); }
+  .gs-est { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+  .gs-est-t { color: var(--muted); font-size: 14px; } .gs-est > b { display: block; font-size: 20px; margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+  .gs-est-l { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); } .gs-est-l b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  @media (max-width: 600px) { .gs-head { padding: 12px 14px 8px; } .gs-body { padding: 10px 14px 16px; } }
+  /* 2e ligne (la liste ouverte) : en haut de la page, collée sous l'en-tête en défilant — comme la page privée */
+  .g-main > .top-views2 { position: sticky; top: var(--hdr-h, 58px); z-index: 15; display: flex; justify-content: flex-end; gap: 4px;
+    margin: -22px -20px 14px; padding: 8px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .g-main > .top-views2[hidden] { display: none; }
+  @media (max-width: 820px) { .g-main > .top-views2 { margin: -14px -12px 10px; padding: 6px 12px; justify-content: flex-start; flex-wrap: wrap; } }
+  .stat-link { cursor: pointer; }
+  /* figurines ouvertes en grand : chaque exemplaire, un par un (page publique seulement) */
+  .gs-figs [data-parade] { cursor: zoom-in; }
+  .parade { position: fixed; inset: 0; z-index: 120; background: rgba(8, 10, 14, .92); overflow: auto; padding: 22px 16px 40px; cursor: zoom-out; }
+  .parade h2 { color: #fff; text-align: center; margin: 0 0 4px; font-size: 20px; }
+  .parade .parade-sub { color: rgba(255,255,255,.7); text-align: center; font-size: 13.5px; margin-bottom: 18px; }
+  .parade .parade-grid { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 14px; max-width: 1400px; margin: 0 auto; }
+  .parade figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0; transform: translateY(26px) scale(.9);
+    animation: parade-in .45s cubic-bezier(.2, .8, .3, 1.2) forwards; }
+  .parade figure img { height: min(46vh, 340px); width: auto; max-width: 42vw; object-fit: contain; background: #fff; border-radius: 14px; padding: 8px; box-sizing: border-box; }
+  .parade figure img.wide { height: min(34vh, 260px); }
+  .parade figcaption { color: rgba(255,255,255,.85); font-size: 12.5px; font-weight: 700; text-align: center; max-width: 220px; }
+  .parade figcaption small { display: block; font-weight: 500; opacity: .75; }
+  .parade.many figure img { height: min(28vh, 200px); }
+  .parade .parade-x { position: fixed; top: 12px; right: 12px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.15); color: #fff; font-size: 20px; cursor: pointer; }
+  @keyframes parade-in { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .parade figure { animation: none; opacity: 1; transform: none; } }
+/* logo d'une liste (devant son nom : menu, titre, pastilles ; pages publiques aussi) */
+.list-logo { height: 1.15em; width: auto; max-width: 6em; object-fit: contain; vertical-align: -0.2em; margin-right: .3em; background: transparent !important; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+.list-logo.big { height: 1em; }   /* hauteur d'un emoji, largeur selon le recadrage du logo */
+.list-emo { margin-right: .3em; }   /* emoji choisi (ou d'office) devant le nom : comme un logo */
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* lu, pas affiché (nom de liste masqué) */
+#listTitle .list-logo:has(+ .vh), #title .list-logo:has(+ .vh) { height: 1.8em; }   /* titre sans nom : le logo, plus grand */
+#listTitle .list-emo:has(+ .vh), #title .list-emo:has(+ .vh) { font-size: 1.6em; }
+/* carte : logo de la liste, tout petit, à gauche de la référence (vues de plusieurs listes) */
+.num-list { display: inline-flex; align-items: center; margin-right: .35em; vertical-align: -0.1em; }
+.list-logo.tiny { height: 1em; max-width: 4.5em; margin-right: 0; }
+.num-list .list-emo { margin-right: 0; font-size: .95em; }
+/* étiquette « Incomplet » : quelque chose a été retiré sans rien à la place */
+.tg.tg-inc, .card .tagline .tg.tg-inc { color: #8a6d00; border-color: rgba(176, 140, 0, .45); font-size: 10px; padding: 0 5px; line-height: 1.5; font-weight: 600; background: none; }
+@media (prefers-color-scheme: dark) { .tg.tg-inc, .card .tagline .tg.tg-inc { color: #e6c84f; border-color: rgba(230, 200, 79, .4); } }
+/* carte : logo de la liste en bas à droite, plus gros (vues de plusieurs listes) */
+.card { position: relative; }
+.card .num .num-list { position: absolute; right: 12px; bottom: 12px; margin: 0; z-index: 1; pointer-events: none; }
+.card .num .num-list .list-logo.tiny { height: 20px; max-width: 76px; }
+.card .num .num-list .list-emo { font-size: 18px; line-height: 1; }
+
+/* barre du haut d'une liste : logo devant le nom ; nom masqué : le logo seul, un peu plus grand (sans grandir la pastille) */
+.tv-home .nm .list-logo { height: 1.25em; vertical-align: -0.28em; }
+.tv-home .nm .list-logo:has(+ .vh) { height: 1.7em; margin: -.3em 0; vertical-align: middle; }
+.tv-home .nm .list-emo:has(+ .vh) { margin-right: 0; font-size: 1.15em; }
+
+  /* variation d'un prix depuis le dernier relevé (↑ ↓ ~) : très discrète */
+  .trend { display: inline-block; margin-left: .32em; font-size: calc(.82em * var(--trend-k, 1)); font-weight: 800; line-height: 1; vertical-align: .08em; font-style: normal; }
+  .trend.up { color: #16a34a; } .trend.down { color: #dc2626; } .trend.eq { color: var(--trend-eq, #2563eb); opacity: 1; }
+  @media (prefers-color-scheme: dark) { :root { --trend-eq: #60a5fa; } }   /* (« ~ » en sombre : un bleu plus clair, qui ressort sans crier) */
+  .trend i { font-style: normal; font-weight: 600; margin-left: .25em; }
+
+  /* barre collée : retour à toute la collection + listes principales (une ligne, défile de côté) — les listes restent à portée en défilant */
+  .g-main > .top-views2:has(.g-nav:not(.only-back):not([hidden])) { flex-wrap: wrap; }
+  .g-nav { display: flex; gap: 6px; align-items: center; flex: 1 0 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .g-nav::-webkit-scrollbar { display: none; }
+  .g-nav.only-back { flex: 0 0 auto; margin-right: auto; overflow: visible; }
+  .g-nav.only-back [data-gl] { display: none; }
+  .g-nav[hidden] { display: none; }
+  .g-nav button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 99px; padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: 13.5px; white-space: nowrap; }
+  .g-nav button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .g-nav .g-back { background: transparent; color: var(--muted, #6b7280); }
+  .g-back-head { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+    color: var(--muted, #6b7280); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .g-back-head:hover { color: var(--ink); border-color: var(--red); }
+  .g-nav .g-back:hover { color: var(--ink); }
+
+/* carte : le logo de la liste dans la ligne du prix, à droite — le prix garde toute sa place, le logo prend ce qui reste (76 px au plus) et rétrécit s'il le faut */
+.card .foot { gap: 8px; }
+.card .foot .value { flex: 0 0 auto; max-width: 100%; }
+.card .foot .num-list { position: static; flex: 0 1 auto; min-width: 0; max-width: 76px; margin: 0 0 0 auto; align-self: flex-end; display: flex; justify-content: flex-end; overflow: hidden; pointer-events: none; }
+.card .foot .num-list .list-logo.tiny { height: 20px; width: auto; min-width: 0; max-width: 100%; margin: 0; object-fit: contain; object-position: right center; }
+.card .foot .num-list .list-emo { font-size: 18px; line-height: 1; margin: 0; }
+.card .foot.foot-logo { justify-content: flex-end; }
+
+  /* « 🔃 Renverser le tri » : bouton de la barre (téléphone compris) */
+  .toolbar > .sort-rev { flex: none; padding: 0 12px; }
+  @media (max-width: 600px) {   /* téléphone : le bouton tient dans la barre — marges resserrées, et sous 400 px « ⇅ » sans le mot « Tri » */
+    .toolbar > .sort-rev { padding: 0 9px; }
+    :is(.main, .g-main) > .toolbar .filt-menu > summary { padding: 0 8px; }
+  }
+  @media (max-width: 480px) { .toolbar .filt-menu .filt-w { display: none; } }   /* téléphone : « ⚙️ » et « ⇅ » seuls */
+  .toolbar > .trend-tog { flex: none; padding: 0 12px; }
+  .toolbar > .trend-tog[hidden] { display: none; }
+  .trend-tog.on { border-color: var(--red, #d01012); background: color-mix(in srgb, var(--red, #d01012) 12%, var(--panel)); }
+  @media (max-width: 600px) { .toolbar > .trend-tog { padding: 0 9px; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brick" aria-hidden="true"><i></i><i></i></span><span>Briquothèque</span></div>
+  <a class="ig-head" id="igHead" hidden target="_blank" rel="noopener" title="Le compte Instagram"><span class="ig-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="#fff" stroke="none"/></svg></span><span class="ig-name"></span></a><!-- compte Instagram (s'il est relié) -->
+  <span class="pub-links-head" id="pubLinksHead"></span><!-- l'autre page publique, à côté du compte -->
+  <span class="head-tags"><span class="guest-tag">Accès invité · lecture seule</span>
+  <a class="guest-tag gh-tag" href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener" title="Le projet Briquothèque (code source officiel)">Le projet sur GitHub</a></span>
+  <div class="top-views" id="gTop1" hidden></div>
+</header>
+<main class="g-main">
+  <div class="top-views top-views2" id="gTop2" hidden></div><!-- la liste ouverte (et ses sous-listes) : collée sous l'en-tête, comme la page privée -->
+  <h1 id="title" style="margin:0 0 10px">Collection</h1>
+  <div class="tabs-row" id="tabs"></div>
+  <div class="sub-chips" id="subChips" hidden></div><!-- sous-listes : comme la page privée (sur PC, dans la 2e ligne du haut) -->
+  <section class="stats" id="stats"></section>
+  <details class="viz gstats" id="gstats"><summary>📊 Statistiques</summary><div id="gstatsBody"></div></details>
+  <div class="toolbar">
+    <div class="filt-box"><button type="button" class="icon-btn filt-reset" id="filtReset" title="Remettre les filtres à zéro" aria-label="Remettre les filtres à zéro">↺</button>
+      <input type="search" id="filter" placeholder="Filtrer par nom, numéro, thème…"></div>
+    <details class="filt-menu" id="filtMenu"><summary class="btn" title="Filtres" aria-label="Filtres">⚙️<span class="filt-w"> Filtres</span> <b class="filt-n" id="filtN" hidden></b></summary>
+      <div class="filt-pop" id="filtPop"></div><!-- une case par étiquette (Complet, Amélioré, Modifié, Set partiel, MOC) -->
+    </details>
+    <details class="filt-menu sort-menu" id="sortMenu"><summary class="btn" title="Tri" aria-label="Tri">⇅<span class="filt-w"> Tri</span><span class="sort-cur" id="sortCur"></span></summary>
+      <div class="filt-pop" id="sortPop"></div><!-- un choix par tri : la même fenêtre que « Filtres », remplie par syncSortMenu() à partir de la liste invisible ci-dessous -->
+    </details>
+    <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Renverser le tri (ordre inverse)" aria-label="Renverser le tri" aria-pressed="false">🔃</button>
+    <button type="button" class="btn trend-tog" id="trendTog" hidden title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button>
+    <select id="sort" hidden aria-hidden="true" tabindex="-1">
+      <option value="modified">Dernière modification</option>
+      <option value="added">Ajout récent</option>
+      <option value="added_old">Ajout le plus ancien</option>
+      <option value="value">Valeur décroissante</option>
+      <option value="variation">Évolution du prix</option>
+        <option value="ecart">Écart de prix</option>
+      <option value="name">Nom (A → Z)</option>
+      <option value="number">Numéro</option>
+      <option value="year">Année</option>
+      <option value="qty">Nombre d'exemplaires</option>
+      <option value="pieces">Nombre de pièces</option>
+      <option value="figs">Nombre de figurines</option>
+      <option value="theme">Thème</option>
+    </select>
+  </div>
+  <section id="items"><div class="loading"><span class="spinner"></span>Chargement…</div></section>
+</main>
+<script>
+"use strict";
+/* image en cours de chargement : un rond qui tourne ; échec : « ↻ » — un appui la redemande */
+const IMG_RETRY = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cg fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M26.5 10.5a8 8 0 1 0 1.5 7'/%3E%3Cpath d='M27.5 5.5v5.5h-5.5'/%3E%3C/g%3E%3C/svg%3E";
+{
+  const mark = im => { const s = im.getAttribute("src") || ""; if (s && !/^(data|blob):/.test(s) && !im.complete) im.classList.add("img-ld"); else im.classList.remove("img-ld"); };
+  new MutationObserver(ms => { for (const m of ms) {
+    if (m.type === "attributes") { if (m.target.tagName === "IMG") mark(m.target); continue; }
+    for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.tagName === "IMG") mark(n); else if (n.querySelectorAll) n.querySelectorAll("img").forEach(mark); }
+  } }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
+  document.querySelectorAll("img").forEach(mark);
+  document.addEventListener("load", e => { if (e.target.tagName === "IMG") e.target.classList.remove("img-ld"); }, true);
+  document.addEventListener("click", e => {   // ↻ : on réessaie (sans ouvrir la fiche dessous)
+    const t = e.target;
+    if (t.tagName !== "IMG" || !t.classList.contains("img-retry")) return;
+    e.preventDefault(); e.stopPropagation();
+    const s = (t.dataset.orig || "").replace(/([?&])r=\d+/, "");
+    if (!s) return;
+    t.classList.remove("img-retry"); t.dataset.retry = 0; t.src = s + (s.includes("?") ? "&" : "?") + "r=" + Date.now();
+  }, true);
+}
+
+const $ = s => document.querySelector(s);
+const nf = new Intl.NumberFormat("fr-FR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const base = location.pathname.replace(/\/$/, "");
+/* images BrickEconomy (site bloqué : servies depuis BrickLink / Rebrickable) : adresse changée une fois pour que le navigateur
+   oublie les anciennes photos gardées en mémoire — la même image partout */
+const beBust = u => /brickeconomy\.com\//.test(u) ? "&r=3" : "";   /* r=3 (16/11/2026) : copies refaites — des appareils gardaient une image que le serveur n'a plus */
+const img = u => !u ? "" : u.startsWith("/api/upload/") ? base + "/upload/" + u.split("/").pop() : base + "/img?u=" + encodeURIComponent(u) + beBust(u);
+const LIST_EMOJIS = ["🧱", "🚀", "🏰", "🚗", "🛸", "🦖", "🤖", "🛡️", "⚔️", "🌋", "🏙️", "🚂", "✈️", "🐉", "👾", "🎮", "🎬", "🌌", "🏎️", "🚓", "🚒", "🏝️", "🎪", "🧩", "💎", "🔧", "🌲", "🐲", "🦸", "🧙", "🏴‍☠️", "⚓", "🚁", "🛰️", "🌍", "🎸", "🍕", "🐺", "🦁", "🐼"];
+const listEmoDefault = l => { if (!l || l.emoji_off || (l.kind || "collection") !== "collection" || /\p{Extended_Pictographic}/u.test(l.name || "")) return "";   // (le nom a déjà son emoji)
+  let h = 0; for (const c of String(l.id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return LIST_EMOJIS[h % LIST_EMOJIS.length]; };   // au hasard, mais toujours le même pour une liste
+/* affichage d'une liste, à la carte : ctx « menu » (menu de gauche ; pages publiques : la rangée des listes) ou « view » (tout le reste) →
+   {e: émoji, l: logo, n: nom}. Sans réglage : comme avant (le logo s'il y en a un, sinon l'émoji ; le nom sauf « hide_name »). Jamais rien : le nom. */
+const listShow = (l, ctx = "view") => {
+  if (!l) return { e: false, l: false, n: true };
+  const s = l.show?.[ctx], hasL = !!l.logo, emo = l.emoji || listEmoDefault(l);
+  /* d'office (rien de réglé) : titre = le logo seul ; vignettes = le logo ; barre supérieure = logo + nom ; menu latéral = comme avant (sans logo : l'émoji + le nom) */
+  const r = s ? { e: !!s.e, l: !!s.l && hasL, n: !!s.n }
+    : ctx === "title" ? (hasL ? { e: false, l: true, n: false } : { e: true, l: false, n: true })
+    : ctx === "bar" || ctx === "view" ? { e: !hasL, l: hasL, n: true }
+    : { e: !hasL, l: hasL, n: !(l.hide_name && (l.logo || l.emoji)) };
+  if (r.e && !emo) r.e = false;
+  if (!r.e && !r.l) r.n = true;
+  return r;
+};
+const listNm = (l, name, ctx = "view") => l && name === l.name && !listShow(l, ctx).n ? `<span class="vh">${esc(name)}</span>` : esc(name);   // nom masqué : il reste lu
+const listLogo = (l, cls = "list-logo", ctx = "view") => { const r = listShow(l, ctx);   // émoji puis logo, selon le réglage
+  return (r.e ? `<span class="list-emo">${esc(l.emoji || listEmoDefault(l))}</span>` : "") + (r.l ? `<img class="${cls}" src="${img(l.logo)}" alt="">` : ""); };
+const thumb = u => !u ? "" : img(u) + (u.startsWith("/api/upload/") ? "?w=600" : "&w=600");   // grille : version réduite
+const ALL = "__all__";
+const figPhoto = u => u ? u.replace(/_thumb\.png$/, "_medium.jpg") : u;
+const setPhoto = i => {
+  const inf = i.info || {}, figs = inf.minifigs || [];
+  const useFig = figs.length && (i.photo === "fig" || (i.photo !== "set" && inf.minifig_count === 1 && (inf.pieces || 0) <= 40));
+  if (i.photo_url) return i.photo_url;   // photo choisie par le propriétaire
+  return useFig ? figPhoto(figs[0].image) : inf.image;
+};
+document.addEventListener("error", e => { const t = e.target; if (t.tagName !== "IMG") return;
+  if (t.classList.contains("img-retry")) return;
+  if (t.src.includes("_medium.jpg")) t.src = t.src.replace("_medium.jpg", "_thumb.png");
+  else if (!t.classList.contains("img-missing") && +(t.dataset.retry || 0) < 1 && !/^(data|blob):/.test(t.getAttribute("src") || "")) {   // échec : une nouvelle tentative, puis ↻
+    const s0 = t.getAttribute("src"); t.dataset.retry = 1; setTimeout(() => { if (t.isConnected && t.getAttribute("src") === s0) t.src = s0 + (s0.includes("?") ? "&" : "?") + "r=1"; }, 2000); }
+  else if (!t.classList.contains("img-missing") && !/^(data|blob):/.test(t.getAttribute("src") || "")) { t.classList.remove("img-ld"); t.dataset.orig = t.getAttribute("src"); t.classList.add("img-retry"); t.src = IMG_RETRY; }
+  else if (!t.classList.contains("img-missing")) { t.classList.add("img-missing"); t.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cg fill='none' stroke='%23888' stroke-width='1.5' opacity='.55'%3E%3Crect x='6' y='12' width='28' height='13' rx='2'/%3E%3Crect x='10' y='7' width='7' height='5' rx='1'/%3E%3Crect x='23' y='7' width='7' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E"; } }, true);
+/* liens entre les pages publiques : à la fin de la rangée des listes, sous le titre (même endroit sur chaque page) */
+function pubLinksHtml(page, owner) {
+  const col = owner ? `📚 Collection de ${owner}` : "📚 La collection", wish = owner ? `⭐ Liste de souhaits de ${owner}` : "⭐ Liste de souhaits";
+  const links = { collection: [["/wishlist", wish]], wishlist: [["/collection", col]],
+    watch: [["/collection", col], ["/wishlist", wish]], nouveautes: [["/collection", col], ["/wishlist", wish]] }[page] || [];
+  const esc_ = t => t.replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]);
+  return links.map(([u, t]) => `<a class="pub-link" href="${u}">${esc_(t)}</a>`).join("");
+}
+let data = { lists: [], items: [] }, current = ALL;
+const gv = { sets: true, figs: true };   // à chaque visite : sets ET figurines affichés, du dernier modifié au plus ancien
+
+const kindOf = id => data.lists.find(l => l.id === id)?.kind;
+/* arborescence des listes (sous-listes) */
+const parentOf = l => { const p = l?.parent_id && data.lists.find(x => x.id === l.parent_id); return p && p.kind === l.kind ? p.id : ""; };
+const childLists = id => data.lists.filter(l => l.id !== id && parentOf(l) === id);
+function listTree(kind) {
+  const out = [], seen = new Set();
+  const walk = (pid, depth) => { for (const l of data.lists.filter(x => x.kind === kind && parentOf(x) === pid)) {
+    if (seen.has(l.id)) continue; seen.add(l.id); out.push({ l, depth }); walk(l.id, depth + 1); } };
+  walk("", 0); return out;
+}
+const isFigLike = i => (i.kind === "fig" && !i.as_set) || (i.kind === "custom" && i.custom_type === "fig");
+const isMoc = i => i.kind === "custom" && !i.partial_set && !i.catalog_set;   // vrai MOC (pas un set partiel, ni un set hors catalogue)
+/* nombre de pièces : plusieurs exemplaires → le total, puis l'unité (« 10 218 pièces (3 406 l'unité) ») */
+const piecesTxt = (p, q = 1) => !p ? "" : (q || 1) > 1 ? `${nf.format(p * q)} pièces (${nf.format(p)} l'unité)` : `${nf.format(p)} pièces`;
+
+const retired = i => (i.info?.availability || "").toLowerCase() === "retired";
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+function rDate(s) {
+  if (!s) return null; const t = s.toLowerCase(), y = +(t.match(/(20\d\d)/) || [])[1]; if (!y) return null;
+  const mi = MONTHS.findIndex(m => t.includes(m));
+  if (mi >= 0) return { d: new Date(y, mi + 1, 0), txt: MOIS[mi] + " " + y };
+  if (/end|late/.test(t)) return { d: new Date(y, 11, 31), txt: "fin " + y };
+  if (/mid/.test(t)) return { d: new Date(y, 5, 30), txt: "mi-" + y };
+  if (/early|start|beginning/.test(t)) return { d: new Date(y, 2, 31), txt: "début " + y };
+  return { d: new Date(y, 11, 31), txt: String(y) };
+}
+const upcoming = i => /pending|upcoming|coming soon/i.test(i.info?.availability || "");
+const releaseTxt = i => upcoming(i) ? `Sortie prévue : ${rDate(i.info?.releasing)?.txt || i.info?.year || "date inconnue"}` : "";
+const soon = i => { const r = !retired(i) && rDate(i.info?.retirement); return !!r && r.d - Date.now() < 365 * 864e5; };
+/* « À surveiller » : l'état recherché (« Neuf », « Occasion · boîte · plan · figurines ») */
+const wishLabel = i => i.condition === "neuf" ? "Neuf" + (i.with_minifigs === false && i.info?.minifig_count ? " · sans figurines" : "")
+  : ["Occasion", i.has_box ? "boîte" : "sans boîte", i.no_plan ? "sans livret" : "livret", ...(i.info?.minifig_count ? [i.with_minifigs === false ? "sans figurines" : "figurines"] : [])].join(" · ");
+const wantLabel = i => i.also_used ? `${wishLabel(i)} ou ${wishLabel({ ...i, condition: "occasion" }).toLowerCase()}` : wishLabel(i);
+const isWatch = i => !!i.watch;
+const itemsOf = id => id === ALL ? data.items.filter(i => kindOf(i.list_id) === "collection" && !i.in) : data.items.filter(i => i.list_id === id && !i.in);   // figurines rangées dans un set : comptées avec lui
+/* une liste et toutes ses sous-listes ; « Non classées » (pubDirect) : seulement ce qui est rangé directement dans la liste */
+const descOf = (id, seen = new Set()) => childLists(id).flatMap(l => seen.has(l.id) ? [] : (seen.add(l.id), [l.id, ...descOf(l.id, seen)]));
+let pubDirect = null;
+const shownOf = id => id === ALL || pubDirect === id || !descOf(id).length ? itemsOf(id) : [id, ...descOf(id)].flatMap(itemsOf);
+
+function figCount(i) {   // = summary (app.js) : figurines seules, celles du set que j'ai, et celles rangées dedans (ajoutées, MOC)
+  if (isFigLike(i)) return i.quantity;
+  const added = (i.info?.minifigs || []).filter(m => m.added);
+  const addE = added.length, addQ = added.reduce((a, m) => a + (m.qty || 1), 0);   // (la page privée : une par fiche rangée si la liste du set est connue, sinon leur nombre)
+  if (i.kind === "custom") return addQ;   // (la quantité de chaque lot ajouté, comme l'appli)
+  if (i.kind !== "set" || !i.with_minifigs) return addQ;
+  if (i.listed) return (i.figs || 0) + addQ;
+  return Math.max(0, (i.info?.minifig_count || 0) * (i.quantity || 1) - (i.missing || 0)) + addQ;
+}
+
+/* toutes les pièces (sans prix) : une carte par pièce, couleurs réunies ; une pièce → ses couleurs */
+function gModal(title) {
+  const d = document.createElement("div");
+  d.className = "gdetail";
+  d.innerHTML = `<div class="gd-box gp-box" role="dialog" aria-modal="true"><button class="gd-x" aria-label="Fermer">✕</button>
+    <div class="gd-body"><h2>${title}</h2><div data-b></div></div></div>`;
+  document.body.append(d);
+  const close = () => { d.remove(); document.removeEventListener("keydown", key); };
+  const key = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", key);
+  d.onclick = e => { if (e.target === d || e.target.closest(".gd-x")) close(); };
+  return d;
+}
+function openGuestParts(listId) {
+  const list = data.lists.find(l => l.id === listId);
+  const d = gModal(`Pièces — ${esc(list ? list.name : "toute la collection")}`), b = d.querySelector("[data-b]");
+  b.innerHTML = `<div class="loading"><span class="spinner"></span>Rassemblement des pièces…</div>`;
+  let parts = [], limit = 120;
+  const draw = () => {
+    const q = b.querySelector("[data-q]").value.trim().toLowerCase().split(/\s+/).filter(Boolean), sort = b.querySelector("[data-sort]").value;
+    let shown = parts.filter(p => q.every(w => `${p.name} ${p.part_num}`.toLowerCase().includes(w)));
+    shown = [...shown].sort({ total: (a, c) => c.total - a.total, colors: (a, c) => c.colors.length - a.colors.length || c.total - a.total,
+      name: (a, c) => a.name.localeCompare(c.name, "fr") }[sort]);
+    b.querySelector("[data-g]").innerHTML = shown.slice(0, limit).map(p => `<button type="button" class="gp-card" data-p="${esc(p.part_num)}">
+        <span class="gp-pic">${p.image ? `<img src="${img(p.image)}" alt="" loading="lazy">` : "🧱"}</span>
+        <span class="gp-id">${esc(p.part_num)}</span><span class="gp-name">${esc(p.name)}</span><b>×${nf.format(p.total)}</b></button>`).join("")
+      + (shown.length > limit ? `<button type="button" class="gp-more" data-more>Afficher plus (${nf.format(shown.length - limit)})</button>` : "")
+      || `<div class="empty">Aucune pièce ne correspond.</div>`;
+    b.querySelector("[data-more]")?.addEventListener("click", () => { limit += 240; draw(); });
+    b.querySelectorAll("[data-p]").forEach(x => x.onclick = () => openGuestPartColors(parts.find(p => p.part_num === x.dataset.p)));
+  };
+  fetch(base + "/parts" + (listId !== ALL ? "?list=" + encodeURIComponent(listId) : "")).then(r => r.json()).then(r => {
+    parts = r.parts || [];
+    const pieces = parts.reduce((a, p) => a + p.total, 0), ncol = new Set(parts.flatMap(p => p.colors.map(c => c.color_id))).size;
+    b.innerHTML = `<div class="gs-kpis"><div><span>Pièces</span><b>${nf.format(pieces)}</b></div><div><span>Différentes</span><b>${nf.format(parts.length)}</b></div><div><span>Couleurs</span><b>${nf.format(ncol)}</b></div></div>
+      <div class="gp-tools"><input type="search" data-q placeholder="Filtrer : nom, référence…">
+        <select data-sort><option value="total">Quantité</option><option value="colors">Nombre de couleurs</option><option value="name">Nom (A → Z)</option></select></div>
+      <div class="gp-grid" data-g></div>`;
+    b.querySelector("[data-q]").oninput = () => { limit = 120; draw(); };
+    b.querySelector("[data-sort]").onchange = draw;
+    draw();
+  }).catch(() => { b.innerHTML = `<div class="empty">Pièces indisponibles pour le moment.</div>`; });
+}
+function openGuestPartColors(p) {
+  const d = gModal(`${esc(p.name)} <small class="muted">${esc(p.part_num)}</small>`), b = d.querySelector("[data-b]");
+  const draw = imgs => {
+    b.innerHTML = `<div class="gs-kpis"><div><span>Pièces</span><b>${nf.format(p.total)}</b></div><div><span>Couleurs</span><b>${p.colors.length}</b></div></div>
+      <div class="gp-grid">${p.colors.map(c => `<div class="gp-card">
+        <span class="gp-pic"><img src="${img(imgs[c.color_id] || p.image)}" alt="" loading="lazy" class="gd-zoom"></span>
+        <span class="gp-name"><span class="gp-sw" style="background:#${/^[0-9a-f]{6}$/i.test(c.rgb || "") ? c.rgb : "ccc"}"></span>${esc(c.color_fr)}</span><b>×${nf.format(c.qty)}</b></div>`).join("")}</div>`;
+    b.querySelectorAll(".gd-zoom").forEach(im => im.onclick = e => {   // photo en grand, rien d'autre
+      e.stopPropagation();
+      const z = document.createElement("div"); z.className = "gd-zoomed";
+      z.innerHTML = `<img src="${im.src}" alt="">`; z.onclick = () => z.remove(); document.body.append(z);
+    });
+  };
+  draw({});
+  fetch(base + "/partcolors?p=" + encodeURIComponent(p.part_num)).then(r => r.json()).then(m => { if (d.isConnected) draw(m); }).catch(() => {});
+}
+
+/* statistiques insolites de la page publique : ordres de grandeur amusants, jamais de prix */
+function guestOdd(items) {
+  const out = [], card = (ico, val, txt) => out.push(`<div class="odd"><div class="odd-ico">${ico}</div><div><b>${val}</b><p>${txt}</p></div></div>`);
+  const fr = (v, d = 1) => v.toLocaleString("fr-FR", { maximumFractionDigits: d });
+  const nPieces = items.filter(i => i.kind === "set").reduce((a, i) => a + Math.round((i.info?.pieces || 0) * (i.portion ?? 100) / 100) * i.quantity, 0);
+  if (nPieces) {
+    const hgt = nPieces * 0.0096;   // une hauteur de brique (9,6 mm) par pièce
+    card("🗼", hgt >= 1000 ? `${fr(hgt / 1000, 2)} km` : `${fr(hgt, 0)} m`, `de haut si toutes les pièces étaient empilées${hgt > 330 ? `, soit <b>${fr(hgt / 330)}</b> tour${hgt / 330 >= 2 ? "s" : ""} Eiffel` : ` (la tour Eiffel fait 330 m)`}.`);
+    const kg = nPieces * 1.5 / 1000;   // environ 1,5 g par pièce
+    card("⚖️", kg >= 1000 ? `≈ ${fr(kg / 1000, 2)} t` : `≈ ${fr(kg, 0)} kg`, `de plastique (environ 1,5 g par pièce), soit à peu près ${kg >= 80 ? `le poids de <b>${fr(kg / 80)}</b> adulte${kg / 80 >= 2 ? "s" : ""}` : `<b>${fr(kg / 12)}</b> pack${kg / 12 >= 2 ? "s" : ""} de 12 bouteilles d'eau`}.`);
+    const hrs = nPieces / 500;   // environ 500 pièces montées par heure
+    card("⏱️", `${fr(hrs, 0)} h`, `de montage pour tout reconstruire (à environ 500 pièces par heure)${hrs > 24 ? `, soit <b>${fr(hrs / 24)}</b> jours sans dormir` : ""}.`);
+  }
+  const figs = new Map();   // figurines : seules et dans les sets
+  for (const i of items) {
+    if (isFigLike(i)) { const k = i.number; figs.set(k, { name: i.info?.name || k, n: (figs.get(k)?.n || 0) + i.quantity }); continue; }
+    for (const f of i.info?.minifigs || []) figs.set(f.id, { name: f.name, n: (figs.get(f.id)?.n || 0) + (f.qty || 1) });   // nombre déjà possédé (tous exemplaires)
+  }
+  const nFigs = items.reduce((a, i) => a + figCount(i), 0);
+  if (nFigs) card("🚶", `${fr(nFigs * 0.04, 1)} m`, `de figurines si les ${nf.format(nFigs)} se tenaient côte à côte (4 cm chacune).`);
+  const topFig = [...figs.values()].sort((a, b) => b.n - a.n)[0];
+  if (topFig?.n > 1) card("👯", `×${topFig.n}`, `<b>${esc(topFig.name)}</b> est la figurine la plus présente : une petite armée à elle seule.`);
+  const words = new Map();
+  for (const f of figs.values()) for (const w of (f.name || "").split(/[\s,()'’-]+/)) {
+    const k = w.trim(); if (k.length < 4 || /^(avec|dans|from|with|pour|sans|the)$/i.test(k)) continue;
+    words.set(k.toLowerCase(), { w: k, n: (words.get(k.toLowerCase())?.n || 0) + f.n });
+  }
+  const tw = [...words.values()].sort((a, b) => b.n - a.n)[0];
+  if (tw?.n > 2) card("🔤", `« ${esc(tw.w)} »`, `est le mot qui revient le plus dans les noms des figurines (${tw.n} fois).`);
+  const dated = items.filter(i => i.kind === "set" && parseInt(i.info?.year));
+  if (dated.length) {
+    const y = new Date().getFullYear(), old = dated.reduce((a, i) => parseInt(i.info.year) < parseInt(a.info.year) ? i : a);
+    const avg = dated.reduce((a, i) => a + (y - parseInt(i.info.year)), 0) / dated.length;
+    card("🕰️", `${y - parseInt(old.info.year)} ans`, `pour le doyen, <b>${esc(old.display_name || old.info.name || old.number)}</b> (${old.info.year}). Âge moyen des sets : ${fr(avg)} ans.`);
+  }
+  return out.length ? `<h3>🤯 Insolite</h3><p class="muted small" style="margin:0 0 8px">Ordres de grandeur amusants (hauteur, poids et temps de montage approximatifs).</p><div class="odd-grid">${out.join("")}</div>` : "";
+}
+
+/* statistiques de la page publique : années, gammes, pièces… (aucun prix) */
+function drawGuestStats(items) {
+  const box = $("#gstatsBody"); if (!box) return;
+  const sets = items.filter(i => i.kind === "set");
+  const nSets = sets.reduce((a, i) => a + i.quantity, 0);
+  if (!items.length) { $("#gstats").hidden = true; return; }
+  $("#gstats").hidden = false;
+  const byYear = new Map(), byTheme = new Map();
+  for (const i of sets) {
+    const y = parseInt(i.info?.year); if (y) byYear.set(y, (byYear.get(y) || 0) + i.quantity);
+    const t = i.info?.theme; if (t) byTheme.set(t, (byTheme.get(t) || 0) + i.quantity);
+  }
+  const ys = [...byYear.keys()].sort((a, b) => a - b);
+  const yearRows = ys.length ? Array.from({ length: ys.at(-1) - ys[0] + 1 }, (_, k) => [ys[0] + k, byYear.get(ys[0] + k) || 0]) : [];
+  const yMax = Math.max(1, ...yearRows.map(r => r[1]));
+  const step = Math.max(1, Math.ceil(yearRows.length / 12));
+  const themes = [...byTheme].sort((a, b) => b[1] - a[1]);
+  const top = themes.slice(0, 8), rest = themes.slice(8).reduce((a, t) => a + t[1], 0);
+  if (rest) top.push(["Autres gammes", rest]);
+  const tMax = Math.max(1, ...top.map(t => t[1]));
+  const withPieces = sets.filter(i => i.info?.pieces);
+  const avgPieces = withPieces.length ? Math.round(withPieces.reduce((a, i) => a + i.info.pieces, 0) / withPieces.length) : 0;
+  const biggest = withPieces.reduce((a, i) => !a || i.info.pieces > a.info.pieces ? i : a, null);
+  const nRet = sets.filter(retired).length;
+  const figs = items.reduce((a, i) => a + figCount(i), 0);
+  const peak = yearRows.reduce((a, r) => r[1] > a[1] ? r : a, [0, 0]);
+  box.innerHTML = `<div class="gs-kpis">
+      <div><span>Gammes</span><b>${nf.format(byTheme.size)}</b></div>
+      ${ys.length ? `<div><span>Années</span><b>${ys[0]} → ${ys.at(-1)}</b></div>` : ""}
+      ${peak[1] ? `<div><span>Année la plus représentée</span><b>${peak[0]}</b><small class="muted">${peak[1]} set${peak[1] > 1 ? "s" : ""}</small></div>` : ""}
+      ${avgPieces ? `<div><span>Pièces par set</span><b>${nf.format(avgPieces)}</b><small class="muted">en moyenne</small></div>` : ""}
+      ${biggest ? `<div><span>Le plus gros</span><b>${nf.format(biggest.info.pieces)} pièces</b><small class="muted">${esc(biggest.info.name || biggest.number)}</small></div>` : ""}
+      ${nSets ? `<div><span>Déjà retirés</span><b>${Math.round(nRet / sets.length * 100)} %</b><small class="muted">${nRet} sur ${sets.length}</small></div>` : ""}
+      ${figs ? `<div><span>Figurines</span><b>${nf.format(figs)}</b></div>` : ""}
+    </div>
+    ${yearRows.length > 1 ? `<h3>Sets par année de sortie</h3>
+      <div class="vbars" style="--n:${yearRows.length}">${yearRows.map(([y, n], k) => `<div class="vcol" title="${y} : ${n} set${n > 1 ? "s" : ""}">
+        <div class="vbar" style="height:${n ? Math.max(2, n / yMax * 100) : 0}%"></div>${k % step === 0 ? `<span class="vx">${y}</span>` : ""}</div>`).join("")}</div>
+      <div class="vaxis">Barre la plus haute : ${yMax} set${yMax > 1 ? "s" : ""}</div>` : ""}
+    ${top.length ? `<h3>Gammes</h3><div class="hbars">${top.map(([t, n], k) => `<div class="hrow ${k === 8 ? "other" : ""}">
+        <span class="hl">${esc(t)}</span><span class="htrack"><span class="hbar" style="width:${Math.max(1, n / tMax * 100)}%"></span></span><span class="hv">${n}</span></div>`).join("")}</div>` : ""}
+    ${guestOdd(items)}`;
+}
+
+/* boutons de l'en-tête : toujours sur PC ; sur téléphone quand les tuiles Sets / Figurines sont sorties de l'écran */
+/* ------------------------------------------------------------------ affichage : le même que la page privée (app.js)
+   RÈGLE : la page publique suit TOUJOURS la page privée (en-tête, tuiles, barre de filtres, cartes, fiche), sans le menu de gauche,
+   sans rien de modifiable, et sans aucun prix si « Réglages › Pages publiques › prix » n'est pas coché (data.show_prices).
+   Toute retouche de l'affichage privé (render, cardBody, cardOf, tagLine, openEdit…) doit être reportée ici. */
+const isCustom = i => i.kind === "custom";
+const itemName = i => i.display_name || i.info?.name || i.number;
+const APX = `<small class="apx" title="Estimation partielle : certaines pièces sans prix sont calquées sur des pièces similaires">~</small>`;   // = APX (app.js)
+const moneyA = (v, a) => (a && v != null && !isNaN(v) ? APX : "") + money(v);
+const approxN = n => n < 1000 ? nf.format(n) : "~" + nf.format(Math.round(n / (n < 10000 ? 100 : 1000)) * (n < 10000 ? 100 : 1000));
+const qtyTag = n => n > 1 ? ` <span class="qty-tag">×${nf.format(n)}</span>` : "";
+const figKey = n => { const m = String(n || "").toLowerCase().match(/^([a-z]+)0*(\d+)([a-z]?)$/); return m ? m[1] + m[2] + m[3] : String(n || "").toLowerCase(); };
+const PRICES = () => !!data.show_prices;
+const isWishId = id => kindOf(id) === "wishlist";
+/* état d'une fiche (calculé par le serveur comme itemStatus de app.js) → filtre « Filtres » et étiquettes sous le nom */
+const stOf = i => i.st || {};
+const statusOf = i => { const s = statusOf0(i); return (i.tags_off || []).includes(s) ? "complet" : s; };   // (étiquette retirée de la fiche)
+const statusOf0 = i => isMoc(i) ? "moc" : isCustom(i) && i.partial_set ? "partiel" : stOf(i).mod || stOf(i).fig_rep ? "modifie" : stOf(i).inc ? "incomplet" : stOf(i).add_parts || stOf(i).fig_add ? "ameliore" : "complet";
+const STATUS_TAGS = [["complet", "Complet"], ["ameliore", "Amélioré"], ["modifie", "Modifié"], ["partiel", "Set partiel"], ["moc", "MOC"]];
+/* étiquettes ajoutées à la main sur une fiche (item.tags), parmi celles du menu « Filtres » ; celle déjà calculée n'est pas répétée */
+const TAG_CLS = { ameliore: "tg-imp", modifie: "tg-mod", incomplet: "tg-inc", partiel: "tg-part", moc: "tg-moc", complet: "" };
+const tagWord = (k, fig) => k === "modifie" && fig ? "Modifiée" : k === "ameliore" && fig ? "Améliorée" : k === "incomplet" && fig ? "Incomplète" : STATUS_TAGS.find(([x]) => x === k)?.[1] || k;
+const handTags = i => (Array.isArray(i?.tags) ? i.tags : []).filter(k => k !== statusOf(i) && STATUS_TAGS.some(([x]) => x === k));
+const handTagHtml = i => handTags(i).map(k => `<span class="tg tg-hand ${TAG_CLS[k] || ""}">${esc(tagWord(k, i.kind === "fig"))}</span>`).join("");
+function tagLine(i) {   // = tagLine (app.js) : sans les étiquettes calculées retirées de la fiche
+  const off = i.tags_off || [], s0 = statusOf0(i);
+  let h = off.includes("moc") && isMoc(i) ? "" : off.includes(s0) && ["modifie", "ameliore"].includes(s0) ? tagLine0({ ...i, st: { ...stOf(i), mod: false, fig_rep: 0, fig_add: 0, add_parts: false } }) : tagLine0(i);
+  if (off.includes("partiel")) h = h.replace(/<span class="tg tg-part">Set partiel<\/span>/, "");
+  { const hand = (i?.tags || []).some(t => t === "modifie" || t === "ameliore");   // retirée de la fiche, ou remplacée par une étiquette à la main
+    if (hand || off.includes("ameliore")) h = h.replace(/<span class="tg tg-imp">Améliorée?<\/span>/, "");
+    if (hand || off.includes("modifie")) h = h.replace(/<span class="tg tg-mod">Modifiée?<\/span>/, ""); }
+  return h + handTagHtml(i);
+}
+function tagLine0(i) {   // = tagLine0 (app.js)
+  if (isMoc(i)) return `<span class="tg tg-moc">MOC</span>`;
+  const t = [], fig = i.kind === "fig", s = stOf(i);
+  if (isCustom(i) && i.partial_set) t.push("Set partiel");
+  // (« Prix par les pièces », « Sans figurines » : plus d'étiquette, 17/11)
+  if (s.mod || s.fig_rep) t.push(fig ? "Modifiée" : "Modifié");   // (sans détail, 17/11 : comme la page privée)
+  else if (s.inc) t.push(fig ? "Incomplète" : "Incomplet");
+  else if (s.add_parts || s.fig_add) t.push(fig ? "Améliorée" : "Amélioré");
+  return t.map(x => `<span class="tg${/^Incomplète?$/.test(x) ? " tg-inc" : ""}${x === "MOC" ? " tg-moc" : /^Modifiée?$/.test(x) ? " tg-mod" : /^\+ \d+ figurines? ajoutées?$/.test(x) ? " tg-add" : /^\d+ figurines? remplacées?$/.test(x) ? " tg-rep" : x === "Set partiel" ? " tg-part" : /^Améliorée?$/.test(x) ? " tg-imp" : ""}">${esc(x)}</span>`).join("");
+}
+/* prix (seulement si l'option est cochée) : comme valueFoot (app.js) — le prix, puis le « réel » s'il diffère, puis l'unité */
+const catUsed = i => i._virt ? i._cat : isCustom(i) || isWishId(i.list_id) ? null
+  : i.kind === "fig" ? (i.info?.used != null ? i.info.used * (i.quantity || 1) : null)
+  : i.info?.used_value != null ? i.info.used_value * (i.quantity || 1) : null;
+/* variation d'un prix depuis le dernier relevé (comme la page privée) : ↑ ↓ ~, selon les réglages du propriétaire */
+const trendOf = i => { const t = data.trend || {}, pct = i?.chg;
+  if (data.trend && !trendOf.sized) { trendOf.sized = true; document.documentElement.style.setProperty("--trend-k", String((t.size || 100) / 100)); }   // taille réglée par le propriétaire
+  if (!data.trend || pct == null || isNaN(pct) || !(gTrendOn ?? (t.on !== false))) return "";   // (📈 : montrées ou cachées à la volée)
+  const k = pct >= (t.up ?? 3) ? "up" : pct <= -(t.down ?? 3) ? "down" : "eq";
+  if (k === "eq" && t.stable === false) return "";
+  const p = t.pct && k !== "eq" && Math.abs(pct) >= 0.05 ? `<i>${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0).replace(".", ",")} %</i>` : "";
+  return `<span class="trend ${k}">${k === "up" ? "↑" : k === "down" ? "↓" : "~"}${p}</span>`; };
+const valueFoot = (cat, mine, apx, q, tr = "") => {
+  const diff = Math.abs((cat || 0) - (mine || 0)) >= 0.015;
+  const lines = [q > 1 ? `${money(mine / q)} l'unité` : ""].filter(Boolean);   /* (plus de ligne « réel / sans modifs. », 17/11) */
+  return `<span class="value">${lines.map(l => `<span class="qp-unit qp-top">${l}</span>`).join("")}<span class="qp-main">${moneyA(mine, apx)}${tr}</span></span>`;   // (réel, unité, puis le prix en gros tout en bas)
+};
+const footOf = (i, lg = "") => !PRICES() || isWishId(i.list_id) ? (lg ? `<div class="foot foot-logo">${lg}</div>` : "") : `<div class="foot">${catUsed(i) != null ? valueFoot(catUsed(i) + (i.info?.box_add || 0), i.info?.estimate, i.approx, i.quantity || 1, trendOf(i))
+  : i.info?.estimate != null ? `<span class="value">${moneyA(i.info.estimate, i.approx)}${trendOf(i)}</span>` : ""}${lg}</div>`;
+/* figurines des sets : une carte par figurine (comme la page privée), regroupée si elle est dans plusieurs sets */
+const figsInSets = list => {
+  const m = new Map();
+  for (const i of list) {
+    if (isFigLike(i) || isWishId(i.list_id) || i.in || i.fig_items) continue;   // set converti : ses figurines sont des fiches à part (cartes « Dans un set »)
+    for (const f of i.info?.minifigs || []) {
+      if (f.custom || f.added || !(f.qty > 0)) continue;   // (figurines rangées dans le set : leurs propres cartes)
+      const k = figKey(f.id), e = m.get(k) || { f, sets: [] };
+      e.sets.push({ i, n: f.qty }); if (f.mod) e.mod = true; m.set(k, e);
+    }
+  }
+  return m;
+};
+const virtOf = ([k, e]) => { const n = e.sets.reduce((a, x) => a + x.n, 0);
+  return { _virt: true, kind: "fig", number: e.f.id, _img: e.f.image, _sets: e.sets, quantity: n, _mod: !!e.mod,
+    _cat: PRICES() && e.f.used != null ? e.f.used * n : null, added_at: Math.max(...e.sets.map(x => x.i.added_at || 0)), updated_at: Math.max(...e.sets.map(x => x.i.updated_at || 0)),
+    info: { name: e.f.name, theme: e.sets[0].i.info?.theme, year: e.sets[0].i.info?.year, estimate: PRICES() && e.f.used != null ? e.f.used * n : null } }; };
+const hostOf = i => i.in ? data.items.find(x => x.id === i.in) : null;   // set où est rangée la figurine
+const setsLine = sets => sets.map(x => `${esc(x.i.number)}${x.n > 1 ? ` ×${x.n}` : ""}`).join(", ");
+let VIRT = [];   // cartes des figurines des sets affichées (leur fiche : par leur rang ici)
+const gviews = { tags: [] };   // étiquettes cochées dans « Filtres »
+
+function render() {
+  const wish = current !== ALL && kindOf(current) === "wishlist";
+  const cur = data.lists.find(l => l.id === current), crumbs = [];
+  for (let p = cur && data.lists.find(x => x.id === parentOf(cur)); p && crumbs.length < 20; p = data.lists.find(x => x.id === parentOf(p))) crumbs.unshift(p);
+  const root = crumbs[0]?.id || current;   // liste principale de la branche ouverte
+  /* listes : à la place du menu de gauche, une rangée sous le titre (listes principales ; sous-listes : comme la page privée) */
+  const top = kind => listTree(kind).filter(x => !x.depth).map(x => x.l);
+  const tab = (l, ico = "") => `<button data-id="${l.id}" class="${root === l.id ? "on" : ""}">${ico}${listLogo(l, "list-logo", "menu")}${listNm(l, l.name, "menu")}</button>`;   // (rangée des listes = le menu de gauche de l'appli)
+  const wl = top("wishlist"), cols = top("collection");
+  const colPage = data.page === "collection";   // chaque page ses listes : « Toute la collection » seulement sur /collection
+  $("#tabs").innerHTML = [...wl.map(l => tab(l, "⭐ ")), wl.length && colPage ? `<span class="sep"></span>` : "",
+    colPage ? `<button data-id="${ALL}" class="${current === ALL ? "on" : ""}">📚 Toute la collection</button>` : "", ...cols.map(l => tab(l))].join("");
+  $("#pubLinksHead").innerHTML = pubLinksHtml(data.page, data.owner)
+    + (colPage && current !== ALL ? `<button type="button" class="pub-link g-back-head" data-gback title="Retour à toute la collection">↩ Toute la collection</button>` : "");   // (dans une liste : le retour, dans l'en-tête)
+  $("#pubLinksHead [data-gback]")?.addEventListener("click", () => { current = ALL; pubDirect = null; render(); window.scrollTo({ top: 0 }); });
+  document.querySelectorAll("#tabs [data-id]").forEach(b => b.onclick = () => { current = b.dataset.id; pubDirect = null; render(); });
+  $("#title").innerHTML = current === ALL ? "Toute la collection" : (crumbs.length ? `<span class="crumbs">${crumbs.map(p => `<button type="button" class="link" data-go="${p.id}">${esc(p.name)}</button>`).join(" › ")} ›</span> ` : "") + listLogo(cur, "list-logo big", "title") + (cur ? listNm(cur, cur.name, "title") : "");
+  document.querySelectorAll("#title [data-go]").forEach(b => b.onclick = () => { current = b.dataset.go; pubDirect = null; render(); });
+
+  if (pubDirect && pubDirect !== current) pubDirect = null;
+  const items = shownOf(current);   // liste à sous-listes : tout ; « Non classées » : ce qui est rangé directement
+  const sum = list => { let sets = 0, figs = 0, pieces = 0, value = 0, allNew = 0, apx = false;
+    for (const i of list) { const q = i.quantity || 1; value += i.info?.estimate || 0;   // (totaux : sans « ~ », comme summary dans app.js)
+      if (i.kind === "set" || (i.kind === "fig" && i.as_set) || (isCustom(i) && (i.partial_set || i.catalog_set))) sets += q;   // = summary (app.js) : un MOC n'est pas un set
+      figs += figCount(i);
+      if (i.kind === "set" || (isCustom(i) && !isFigLike(i))) pieces += Math.round((i.info?.pieces || 0) * (i.portion ?? 100) / 100) * q;
+      allNew += isCustom(i) ? i.info?.estimate || 0 : i.kind === "fig" ? (i.info?.new || 0) * q : (i.info?.new_value || 0) * q; }   // = summary (app.js)
+    return { sets, figs, pieces, value, allNew, apx }; };
+  const s = sum(items), all = sum(itemsOf(ALL));
+  if (current !== ALL) {   // + figurines de cette liste rangées dans un set d'une AUTRE liste (= app.js)
+    const ids = new Set(pubDirect === current ? [current] : [current, ...descOf(current)]), host = id => data.items.find(x => x.id === id);
+    s.figs += data.items.filter(i => i.in && isFigLike(i) && ids.has(i.list_id) && !ids.has(host(i.in)?.list_id)).reduce((a, i) => a + (i.quantity || 1), 0); }
+  const mode = wish ? "" : gv.sets && gv.figs ? "all" : gv.sets ? "sets" : "figs";
+
+  /* tuiles : comme la page privée (Valeur seulement avec les prix) ; Sets / Figurines encadrées seulement quand elles sont seules affichées */
+  $("#stats").innerHTML = wish
+    ? `<div class="stat main-stat wish-stat"><div class="lbl">Sets souhaités</div><div class="val">${nf.format(items.reduce((a, i) => a + i.quantity, 0))}</div></div>
+       <div class="stat"><div class="lbl">Encore en vente</div><div class="val">${nf.format(items.filter(i => !retired(i)).length)}</div></div>
+       <div class="stat"><div class="lbl">Retirés</div><div class="val">${nf.format(items.filter(retired).length)}</div></div>`
+    : (PRICES() ? `<div class="stat main-stat stat-link" id="gValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">Valeur de la collection</div><div class="val">${moneyA(s.value, s.apx)}</div>
+        ${s.allNew ? `<div class="sub sub-ref">Si c'était neuf : ${money(s.allNew)}</div>` : ""}</div>` : "")
+      + `<button type="button" class="stat stat-btn view-tg ${gv.sets && !gv.figs ? "on" : ""}" id="gSets" title="Afficher / masquer les sets" aria-pressed="${gv.sets}"><div class="lbl">Sets</div><div class="val">${nf.format(s.sets)}</div></button>
+       <button type="button" class="stat stat-btn view-tg ${gv.figs && !gv.sets ? "on" : ""}" id="gFigs" title="Afficher / masquer les figurines" aria-pressed="${gv.figs}"><div class="lbl">Figurines</div><div class="val">${nf.format(s.figs)}</div></button>
+       <button type="button" class="stat stat-btn" id="gPieces" title="Voir toutes les pièces"><div class="lbl">Pièces</div><div class="val">${approxN(s.pieces)}</div></button>`;
+  $("#stats").hidden = wish;   // listes de souhaits et « À surveiller » : pas de statistiques
+  if (wish) $("#gstats").hidden = true; else drawGuestStats(items);
+  if ($("#gValue")) $("#gValue").onclick = () => { const g = $("#gstats"); g.open = true; g.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  if ($("#gPieces")) $("#gPieces").onclick = () => openGuestParts(current);
+  if ($("#gSets")) $("#gSets").onclick = () => gView(gv.sets && !gv.figs ? "all" : "sets");   // tuile déjà choisie : tout
+  if ($("#gFigs")) $("#gFigs").onclick = () => gView(gv.figs && !gv.sets ? "all" : "figs");
+
+  /* en-tête : 1re ligne = toute la collection, 2e ligne = la liste ouverte (avec ses sous-listes), collée sous l'en-tête en défilant */
+  {
+    const pills = (sm, on) => `<button type="button" class="tv ${on === "all" ? "on" : ""}" data-tv="all">Tout</button>
+      <button type="button" class="tv ${on === "sets" ? "on" : ""}" data-tv="sets"><b class="tv-n">${nf.format(sm.sets)}</b> Sets</button>
+      <button type="button" class="tv ${on === "figs" ? "on" : ""}" data-tv="figs"><b class="tv-n">${nf.format(sm.figs)}</b> Figurines</button>
+      <button type="button" class="tv" data-tparts><b class="tv-n">${approxN(sm.pieces)}</b> Pièces</button>`;
+    const inList = current !== ALL && kindOf(current) === "collection";
+    const clear = () => { $("#filter").value = ""; gviews.tags = []; };
+    const hasCol = data.items.some(i => kindOf(i.list_id) === "collection");
+    $("#gTop1").innerHTML = hasCol ? `<button type="button" class="tv-home ${current === ALL ? "on" : ""}" data-thome title="Toute la collection"><span class="nm">📚 Toute la collection</span>${PRICES() ? `<span class="ct">${moneyA(all.value, all.apx)}</span>` : ""}</button>`
+      + pills(all, current === ALL ? mode : "") : "";
+    $("#gTop2").innerHTML = inList ? `<button type="button" class="tv-home on" data-thome2 title="${esc(cur?.name || "")}"><span class="nm">${cur ? listLogo(cur, "list-logo", "bar") + listNm(cur, cur.name || "", "bar") : ""}</span>${PRICES() ? `<span class="ct">${moneyA(s.value, s.apx)}</span>` : ""}</button>` + pills(s, mode) : "";
+    document.querySelectorAll("#gTop1 [data-tv]").forEach(b => b.onclick = () => { clear(); current = ALL; gView(b.dataset.tv); });
+    document.querySelectorAll("#gTop2 [data-tv]").forEach(b => b.onclick = () => { clear(); gView(b.dataset.tv); });
+    $("#gTop1 [data-thome]")?.addEventListener("click", () => { clear(); current = ALL; pubDirect = null; render(); });
+    $("#gTop2 [data-thome2]")?.addEventListener("click", () => { clear(); render(); });
+    $("#gTop1 [data-tparts]")?.addEventListener("click", () => { clear(); openGuestParts(ALL); });
+    $("#gTop2 [data-tparts]")?.addEventListener("click", () => { clear(); render(); openGuestParts(current); });
+    /* sous-listes : pastilles (la liste ouverte si elle en a, sinon celles de sa liste parente) — PC : dans la 2e ligne ; téléphone : sous le titre */
+    const box = $("#subChips"), rootL = cur && (childLists(cur.id).length ? cur : data.lists.find(x => x.id === parentOf(cur)));
+    const kids = rootL ? childLists(rootL.id) : [];
+    box.hidden = !kids.length; box.innerHTML = "";
+    if (kids.length) {
+      const chip = (id, name, on, extra = "") => `<button type="button" class="sub-chip ${on ? "on" : ""}" ${extra} data-sub="${id}"><span class="nm">${/^📥/.test(name) ? "" : listLogo(data.lists.find(x => x.id === id), "list-logo", "bar")}${listNm(data.lists.find(x => x.id === id), name, "bar")}</span></button>`;
+      const html = `<span class="sub-parent">${chip(rootL.id, rootL.name, current === rootL.id && pubDirect !== rootL.id, 'title="Toute la liste, sous-listes comprises"')}</span><span class="sub-group">`
+        + kids.map(l => chip(l.id, l.name, current === l.id)).join("")
+        + (itemsOf(rootL.id).length ? chip(rootL.id, "📥 Non classées", current === rootL.id && pubDirect === rootL.id, 'data-direct title="Les fiches rangées directement dans la liste, dans aucune sous-liste"') : "") + "</span>";
+      const home = $("#gTop2 [data-thome2]");
+      if (home) { home.insertAdjacentHTML("beforebegin", `<span class="sub-chips in-bar" data-subbar>${html}</span>`); home.querySelector(".nm").remove(); home.classList.add("tv-price");   /* (valeur seule, sans billet) */ if (!PRICES()) home.hidden = true; }
+      if (home && !gPhone.matches) { box.hidden = true; } else box.innerHTML = html;
+      document.querySelectorAll("#subChips [data-sub], #gTop2 [data-sub]").forEach(b => b.onclick = () => { current = b.dataset.sub; pubDirect = b.hasAttribute("data-direct") ? b.dataset.sub : null; render(); });
+    }
+    /* barre collée : « ↩ Toute la collection » (dans une liste) + les listes principales dès que la rangée sous le titre sort de l'écran */
+    if (colPage && !wish && cols.length && !data.no_pub_nav) {   // (réglable : back office → Comportements → Pages publiques)
+      $("#gTop2").insertAdjacentHTML("afterbegin", `<span class="g-nav" data-gnav>${cols.map(l => tab(l).replace("<button ", '<button type="button" data-gl ')).join("")}</span>`);
+      document.querySelectorAll("#gTop2 [data-gnav] [data-id]").forEach(b => b.onclick = () => { current = b.dataset.id; pubDirect = null; render(); window.scrollTo({ top: 0 }); });
+    }
+    gTopShow();
+  }
+
+  /* barre de filtres : ↺, recherche, « ⚙️ Filtres » (étiquettes), tri — comme la page privée */
+  const f = $("#filter").value.trim().toLowerCase();
+  const tagsOn = wish ? [] : gviews.tags;
+  const tagOk = i => !tagsOn.length || tagsOn.includes(statusOf(i)) || handTags(i).some(k => tagsOn.includes(k));
+  {
+    const cnt = {}; for (const i of items) { const st = statusOf(i); cnt[st] = (cnt[st] || 0) + (i.quantity || 1); for (const k of handTags(i)) cnt[k] = (cnt[k] || 0) + (i.quantity || 1); }
+    $("#filtPop").innerHTML = STATUS_TAGS.map(([k, t]) => `<label class="moc-chk"><input type="checkbox" data-ftag="${k}" ${tagsOn.includes(k) ? "checked" : ""}> ${t}
+      <span class="muted small">${nf.format(cnt[k] || 0)}</span></label>`).join("") + (tagsOn.length ? `<button type="button" class="link" data-ftclear>Tout afficher</button>` : "");
+    $("#filtPop [data-ftclear]")?.addEventListener("click", () => { gviews.tags = []; render(); });
+    $("#filtMenu").hidden = wish;
+    const n = tagsOn.length; $("#filtN").textContent = n || ""; $("#filtN").hidden = !n; $("#filtMenu").classList.toggle("on", n > 0);
+    $("#filtReset").classList.toggle("on", n > 0 || !!f);
+    $("#filter").classList.toggle("on", !!f);   // recherche : surlignée tant que quelque chose y est écrit
+    $('#sort option[value="value"]').hidden = $('#sort option[value="value"]').disabled = !PRICES();
+    if (!PRICES() && $("#sort").value === "value") $("#sort").value = "modified";
+    { const o = $('#sort option[value="variation"]'); o.hidden = o.disabled = !data.trend || data.trend.on === false; if (o.hidden && $("#sort").value === "variation") $("#sort").value = "modified"; }   // tri « Variation » : seulement si les flèches sont montrées
+    syncSortMenu();   // (menu « ⇅ Tri » : comme la page privée)
+  }
+  const hit = (i, extra = []) => !f || [i.number, i.display_name, i.info?.name, i.info?.theme, i.portion_note, ...extra].join(" ").toLowerCase().includes(f);
+  const mergedIds = new Set();   // figurine d'origine d'un set identique à une fiche seule de même liste : une seule carte (= app.js)
+  for (const x of data.items) { x._withSetN = 0; x._toL = false; }
+  for (const i of data.items) if (!data.no_merge && i.in && i.orig && i.kind === "fig") {   // (no_merge : regroupement coupé dans le back office) — mêmes modifications : même figurine (msig)
+    const L = data.items.find(x => x.kind === "fig" && !x.in && figKey(x.number) === figKey(i.number) && kindOf(x.list_id) === "collection" && (!i.display_name || i.display_name === itemName(x)) && x.msig === i.msig);
+    if (L) { i._toL = true; L._withSetN += i.quantity || 1; if (items.includes(L)) mergedIds.add(i.id); }   // (quelle que soit la liste ; cachée si sa fiche seule est dans cette vue)
+  }
+  {   // la même figurine d'origine dans plusieurs sets, sans exemplaire seul : une carte (= app.js)
+    const lead = new Map(), vis = x => current === ALL ? kindOf(x.list_id) === "collection" : x.list_id === current;
+    for (const i of data.items) if (!data.no_merge && i.in && i.orig && i.kind === "fig" && !i._toL) {
+      const k = figKey(i.number) + "|" + (i.display_name || "") + "|" + (i.msig || ""), l = lead.get(k);
+      if (!l) { lead.set(k, i); continue; }
+      l._withSetN = (l._withSetN || 0) + (i.quantity || 1); if (vis(l)) mergedIds.add(i.id);
+    }
+    for (const i of data.items) if (!data.no_merge && i.in && !i.orig && i.kind === "fig" && !String(i.msig || "").startsWith("v:")) {   // ajoutée dans un set : avec la seule identique, sinon l'originale identique (= app.js)
+      const same = x => x !== i && x.kind === "fig" && figKey(x.number) === figKey(i.number) && kindOf(x.list_id) === "collection" && itemName(x) === itemName(i) && x.msig === i.msig;
+      const L = data.items.find(x => same(x) && !x.in), O = !L && (lead.get(figKey(i.number) + "|" + (i.display_name || "") + "|" + (i.msig || "")) || data.items.find(x => same(x) && x.in && x.orig));
+      const to = L || O; if (!to) continue;
+      to._withSetN = (to._withSetN || 0) + (i.quantity || 1); if (L) i._toL = true;
+      if (current === ALL ? kindOf(to.list_id) === "collection" : to.list_id === current) mergedIds.add(i.id);
+    }
+  }
+  let shown = items.filter(i => !mergedIds.has(i.id) && (f || !i.hide) && (f || wish || (isFigLike(i) ? gv.figs : gv.sets)) && tagOk(i) && hit(i));
+  /* figurines des sets : leurs cartes (vue « Tout » ou « Figurines », ou une recherche), sauf celles que j'ai aussi seules */
+  const inSets = wish ? new Map() : figsInSets(items);
+  const looseKeys = new Set(items.filter(i => i.kind === "fig").map(i => figKey(i.number)));
+  VIRT = (gv.figs || f) && !wish && (!tagsOn.length || tagsOn.includes("complet"))
+    ? [...inSets].filter(([k]) => !looseKeys.has(k)).map(virtOf).filter(v => hit(v, v._sets.map(x => x.i.number + " " + itemName(x.i)))) : [];
+  shown = shown.concat(VIRT);
+  if ((gv.figs || f) && !wish)   // figurines rangées dans un set (d'origine, ajoutées, MOC) : leurs vraies cartes, comme la page privée
+    shown = shown.concat(data.items.filter(i => i.in && (f || !i.hide) && !mergedIds.has(i.id) && isFigLike(i) && tagOk(i) && (current === ALL ? kindOf(i.list_id) === "collection" : i.list_id === current)
+      && hit(i, [hostOf(i)?.number, hostOf(i) && itemName(hostOf(i))])));
+  shown = shown.concat(shown.filter(i => !i._virt && !i._alt).flatMap(i => (i.alts || []).map((a, k) => ({ ...i, _of: i, _alt: { ...a, k } }))));   // apparences alternatives : leur carte
+  const sort = $("#sort").value, rev = gSortRev ? -1 : 1;   // (rev : « 🔃 Renverser le tri »)
+  const yr = i => parseInt(i.info?.year) || 0;
+  const cmp = {
+    modified: (a, b) => (b.updated_at || b.added_at || 0) - (a.updated_at || a.added_at || 0),
+    added: (a, b) => (b.added_at || 0) - (a.added_at || 0),
+    added_old: (a, b) => (a.added_at || 0) - (b.added_at || 0),
+    value: (a, b) => (b.info?.estimate ?? 0) - (a.info?.estimate ?? 0),
+    variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // hausses d'abord ; sans relevé : à la fin
+    ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Écart de prix » : le plus gros écart EN EUROS d'abord, hausse ou baisse
+      const eur = x => { const v = x.info?.estimate ?? 0; return Math.abs(v - v / (1 + x.chg / 100)); };   // (valeur actuelle − valeur d'avant, d'après la variation en %)
+      return eur(b) - eur(a); },
+    name: (a, b) => itemName(a).localeCompare(itemName(b), "fr"),
+    number: (a, b) => String(a.number).localeCompare(String(b.number), "fr", { numeric: true }),
+    year: (a, b) => yr(b) - yr(a),
+    qty: (a, b) => (b.quantity || 1) - (a.quantity || 1),
+    pieces: (a, b) => (b.info?.pieces || 0) * (b.quantity || 1) - (a.info?.pieces || 0) * (a.quantity || 1),
+    figs: (a, b) => (b._virt ? 0 : figCount(b)) - (a._virt ? 0 : figCount(a)),
+    theme: (a, b) => (!a.info?.theme - !b.info?.theme) || (a.info?.theme || "").localeCompare(b.info?.theme || "", "fr"),
+    insta: (a, b) => (b.igt || "").localeCompare(a.igt || ""),
+  }[sort] || ((a, b) => (b.added_at || 0) - (a.added_at || 0));
+  const wg = i => upcoming(i) ? 0 : soon(i) ? 1 : retired(i) ? 3 : 2;   // souhaits : à venir, bientôt retirés, en vente, retirés
+  const cmp2 = wish && ["added", "modified", "year"].includes(sort) ? (a, b) => wg(a) - wg(b) || yr(b) - yr(a) : cmp;
+  shown.sort((a, b) => rev * cmp2(a, b) || itemName(a).localeCompare(itemName(b), "fr"));
+  if (!items.length && !data.items.some(i => i.in && isFigLike(i) && i.list_id === current && !i.hide)) { $("#items").innerHTML = `<div class="empty"><div class="big">🧱</div>Cette liste est vide.</div>`; return; }   // (figurines rangées dans un set d'une autre liste : elles s'affichent)
+  /* recherche sans résultat à cause des filtres cochés : ce qu'elle trouve sans eux, montré à part (« Résultats sans filtres », comme la page privée) */
+  let noFilt = [];
+  if (!shown.length && f && tagsOn.length) {
+    VIRT = wish || tagsOn.includes("complet") ? [] : [...inSets].filter(([k]) => !looseKeys.has(k)).map(virtOf).filter(v => hit(v, v._sets.map(x => x.i.number + " " + itemName(x.i))));
+    noFilt = items.filter(i => !tagOk(i) && hit(i)).concat(wish ? [] : data.items.filter(i => i.in && (f || !i.hide) && isFigLike(i) && !tagOk(i) && (current === ALL ? kindOf(i.list_id) === "collection" : i.list_id === current)
+      && hit(i, [hostOf(i)?.number, hostOf(i) && itemName(hostOf(i))])), VIRT).sort((a, b) => cmp2(a, b) || itemName(a).localeCompare(itemName(b), "fr"));
+  }
+  if (!shown.length && !noFilt.length) { $("#items").innerHTML = `<div class="empty">Rien dans cette liste ne correspond au filtre.</div>`; return; }
+
+  const listName = id => data.lists.find(l => l.id === id)?.name || "";
+  const showList = current === ALL || (descOf(current).length > 0 && pubDirect !== current);   // vue de plusieurs listes : la liste de chaque fiche, comme la page privée
+  /* logo de la carte (comme la page privée) : la sous-liste directe de la liste ouverte qui contient la fiche ; « Toute la collection » : la liste de premier niveau */
+  const logoTop = data.lists.some(l => l.id === current) ? current : "";
+  const logoOf = lid => { if (lid === logoTop) return null; const own = data.lists.find(x => x.id === lid); let top = own; const seen = new Set();
+    let pick = own?.sub_logo === "self" ? own : null;   // (la plus haute réglée « celle-ci » l'emporte)
+    while (top && parentOf(top) !== logoTop && !seen.has(top.id)) { seen.add(top.id); top = data.lists.find(x => x.id === parentOf(top)); if (top?.sub_logo === "self") pick = top; }   // jusqu'au premier niveau affiché
+    return pick || own || top || null; };   // (liste principale « Logo des sous-listes : celle-ci » ; d'office : la liste de la fiche)
+  const numLogo = lid => { const l = showList && logoOf(lid); return l ? `<span class="num-list go-list" data-golist="${esc(l.id)}" role="link" title="Ouvrir la liste « ${esc(l.name)} »">${listLogo(l, "list-logo tiny")}</span>` : ""; };
+  const cardBody = (i, alt = false) => `<div class="body">
+        <div class="num">${isCustom(i) ? (i.number && i.number !== "custom" ? esc(i.number) : "&nbsp;") : esc(i.number)}</div>
+        <div class="name">${esc(itemName(i))}${alt ? (alt.name ? ` (${esc(alt.name)})` : "") : i.main_name ? ` (${esc(i.main_name)})` : ""}${qtyTag((i.quantity || 1) + (i._withSetN || 0))}</div>${alt ? `<div class="alt-note">Apparence alternative</div>` : ""}
+        ${tagLine(i) ? `<div class="meta tagline">${tagLine(i)}</div>` : ""}
+        ${i.kind === "fig" && inSets.has(figKey(i.number)) ? `<div class="meta in-sets-line">+ ${inSets.get(figKey(i.number)).sets.reduce((a, x) => a + x.n, 0)} dans : ${setsLine(inSets.get(figKey(i.number)).sets)}</div>` : ""}
+        ${showList ? `<div class="meta list-tag">${esc(listName(i.list_id))}</div>` : ""}
+        <div class="meta">${[i.info?.theme, i.info?.year, piecesTxt(i.info?.pieces)].map((t, k) => k === 2 && t && (i.quantity || 1) > 1 ? piecesTxt(i.info.pieces * i.quantity) : t).filter(Boolean).map(esc).join(" · ")}</div>
+        ${(i.quantity || 1) > 1 && i.info?.pieces ? `<div class="meta pcs-unit">${nf.format(i.info.pieces)} pièces l'unité</div>` : ""}
+        ${isWishId(i.list_id) && i.kind === "set" && isWatch(i) ? `<div class="meta">🔎 ${esc(wantLabel(i))}</div>` : ""}
+        ${isWishId(i.list_id) && !isCustom(i) ? `<div class="meta prices3">${prices(i)}</div>
+        ${upcoming(i) ? `<div class="meta release">📅 ${esc(releaseTxt(i))}</div>` : ""}
+        ${soon(i) && rDate(i.info?.retirement) ? `<div class="meta">⏳ Retrait prévu : ${esc(rDate(i.info.retirement).txt)}</div>` : ""}` : ""}
+        ${footOf(i, i.item_logo ? `<span class="num-list"><img class="list-logo tiny" src="${img(i.item_logo)}" alt=""></span>` : numLogo(i.list_id))}
+      </div>`;
+  const cardOf = i => {
+    if (i._alt) return `<article class="card fig-in-set alt-card" data-i="${data.items.indexOf(i._of)}" data-alt="${i._alt.k}" tabindex="0" role="button" aria-label="Voir le détail" title="Apparence alternative">
+      <div class="pic"><img src="${thumb(i._alt.photo)}" alt="" loading="lazy"><div class="badges"></div></div>${cardBody(i._of, { name: i._alt.name })}</article>`;
+    if (i._virt) return `<article class="card fig-in-set" data-v="${VIRT.indexOf(i)}" tabindex="0" role="button" aria-label="Voir le détail" title="Figurine de ${i._sets.length > 1 ? "plusieurs sets" : "set"}">
+      <div class="pic"><img src="${thumb(i._img)}" alt="" loading="lazy"><div class="badges"><span class="badge in-set">Dans ${i._sets.length > 1 ? i._sets.length + " sets" : "un set"}</span></div></div>
+      <div class="body"><div class="num">${esc(i.number)}</div><div class="name">${esc(i.info.name || i.number)}${qtyTag(i.quantity)}</div>
+        ${i._mod ? `<div class="meta tagline"><span class="tg tg-mod">Modifiée</span></div>` : ""}
+        ${showList ? `<div class="meta list-tag">${esc([...new Set(i._sets.map(x => listName(x.i.list_id)))].filter(Boolean).join(", "))}</div>` : ""}
+        <div class="meta">${[i.info.theme, i.info.year].filter(Boolean).map(esc).join(" · ")}</div>
+        ${PRICES() && i._cat != null ? `<div class="foot">${valueFoot(i._cat, i._cat, false, i.quantity || 1)}${numLogo(i._sets[0]?.i.list_id)}</div>` : numLogo(i._sets[0]?.i.list_id) ? `<div class="foot foot-logo">${numLogo(i._sets[0]?.i.list_id)}</div>` : ""}</div></article>`;
+    const w = isWishId(i.list_id);
+    return `<article class="card ${w ? "wishcard" : ""}" data-i="${data.items.indexOf(i)}" tabindex="0" role="button" aria-label="Voir le détail">
+      <div class="pic"><img src="${thumb(i.image || (i.kind === "set" ? setPhoto(i) : i.photo_url || i.info?.image))}" alt="" loading="lazy">
+        <div class="badges">${isCustom(i) ? (i.partial_set ? `<span class="badge partial-set">🧩 Set partiel</span>` : `<span class="badge moc">MOC</span>`) : w
+          ? (retired(i) ? `<span class="badge retired">Retiré</span>` : upcoming(i) ? `<span class="badge upcoming">Bientôt disponible</span>` : soon(i) ? `<span class="badge soon">Bientôt retiré</span>` : "")
+          : `${i.in && isFigLike(i) ? `<span class="badge in-set" title="Dans ${esc(hostOf(i) ? itemName(hostOf(i)) : "un set")}">Dans un set</span>` : ""}
+          ${i.condition === "neuf" && i.kind !== "fig" ? `<span class="badge neuf">Neuf</span>` : ""}
+          ${!i.with_minifigs && i.info?.minifig_count && !stOf(i).extra ? `<span class="badge nofig">Sans figurines</span>` : ""}
+          ${i.quantity > 1 && i.kind !== "fig" ? `<span class="badge qty">×${i.quantity}</span>` : ""}`}</div></div>
+      ${cardBody(i)}</article>`;
+  };
+  $("#items").innerHTML = (shown.length ? `<div class="grid">${shown.map(cardOf).join("")}</div>` : `<div class="empty">Rien ne correspond à la recherche avec les filtres cochés.</div>`)
+    + (noFilt.length ? `<div class="elsewhere"><h3 class="else-h">Résultats sans filtres</h3><div class="grid">${noFilt.map(cardOf).join("")}</div></div>` : "");
+}
+/* « Tout » / « Sets » / « Figurines » */
+function gView(k) { gv.sets = k !== "figs"; gv.figs = k !== "sets"; if (gv.figs && !gv.sets && PRICES()) $("#sort").value = "value"; else if (gv.sets && !gv.figs) $("#sort").value = "modified"; render(); }
+/* téléphone : en descendant, la barre du haut se réduit à la liste en cours ; en remontant, tout revient (html.sc-down, style.css) */
+(() => { let last = scrollY, acc = 0, hold = 0;
+  addEventListener("scroll", () => { const y = scrollY, d = y - last; last = y; const now = Date.now(); if (now < hold) return;
+    const h = document.documentElement, down = h.classList.contains("sc-down");
+    if (y < 160) { if (down) { h.classList.remove("sc-down"); hold = now + 350; } acc = 0; return; }
+    acc = (d > 0) === (acc > 0) ? acc + d : d;   // (déplacement cumulé dans le même sens)
+    if (!down && acc > 30) { h.classList.add("sc-down"); hold = now + 350; acc = 0; }
+    else if (down && acc < -150) {   /* (remonter un peu avant que tout revienne) */ h.classList.remove("sc-down"); hold = now + 350; acc = 0; } }, { passive: true }); })();
+/* couleur du thème d'une liste (list.color) : la sienne, sinon celle de la plus proche liste parente qui en a une ; null : le rouge de l'appli */
+const themeOf = (lid, lists) => { const seen = new Set(); let l = lists.find(x => x.id === lid);
+  while (l && !seen.has(l.id)) { seen.add(l.id); if (l.color) return l.color; l = lists.find(x => x.id === (l.parent_id || "")); } return null; };
+function applyTheme(c) {   // --red (et son fond pâle, son encre, la barre du téléphone) ; null : le thème de l'application, sinon le rouge
+  c = c || (typeof state !== "undefined" ? state.appColor : window._gData?.app_color) || null;
+  const r = document.documentElement.style;
+  if (!c) { for (const k of ["--red", "--red-ink", "--accent-bg"]) r.removeProperty(k); }
+  else { const n = parseInt(c.slice(1), 16), lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+    r.setProperty("--red", c); r.setProperty("--red-ink", lum > 0.62 ? "#111111" : "#ffffff");
+    r.setProperty("--accent-bg", `color-mix(in srgb, ${c} 14%, var(--bg, #ffffff))`); }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) { if (!m.dataset.base) m.dataset.base = m.content; m.content = c || m.dataset.base; }
+}
+new MutationObserver(() => applyTheme(themeOf(document.querySelector(".gdetail") && window._gLid || current, data.lists))).observe(document.body, { childList: true });   // fiche ouverte : sa couleur
+/* boutons du haut : toujours sur PC ; sur téléphone quand les tuiles sont sorties de l'écran (comme la page privée) */
+const gPhone = matchMedia("(max-width: 820px)");
+let gTilesSeen = true;
+document.addEventListener("click", e => {   // logo de liste d'une vignette : ouvre cette liste (= appli)
+  const g = e.target.closest?.("[data-golist]"); if (!g || !data.lists.some(l => l.id === g.dataset.golist)) return;
+  e.preventDefault(); e.stopPropagation();
+  current = g.dataset.golist; pubDirect = null; render(); window.scrollTo({ top: 0 });
+}, true);
+function gTopShow() {
+  window._gData = data;   // (thème de l'application : data.app_color)
+  if (!document.querySelector(".gdetail")) applyTheme(themeOf(current, data.lists));   // (couleur du thème de la liste ouverte)
+  const t1 = $("#gTop1"), t2 = $("#gTop2"), wish = current !== ALL && kindOf(current) === "wishlist";
+  t1.hidden = !t1.innerHTML || wish || (gPhone.matches && gTilesSeen);
+  const nav = t2.querySelector("[data-gnav]");
+  const seen = gTabsSeen !== false;   // (pas encore mesuré : la rangée du titre est à l'écran)
+  if (nav) { nav.classList.toggle("only-back", seen); nav.hidden = seen && !nav.querySelector(".g-back"); }   // listes sous le titre visibles : seulement le bouton retour
+  t2.hidden = t1.hidden || !t2.innerHTML || (!!nav && nav.hidden && t2.children.length === 1);
+}
+var gTabsSeen = true;   // la rangée des listes (sous le titre) est à l'écran
+new IntersectionObserver(es => es.forEach(e => { gTabsSeen = e.isIntersecting; gTopShow(); }), { rootMargin: "-60px 0px 0px 0px" }).observe(document.getElementById("tabs"));
+gPhone.addEventListener?.("change", () => render());
+new ResizeObserver(() => document.documentElement.style.setProperty("--hdr-h", document.querySelector(".topbar").getBoundingClientRect().height + "px")).observe(document.querySelector(".topbar"));   // (au pixel près)
+new ResizeObserver(() => document.documentElement.style.setProperty("--tv2-h", (document.getElementById("gTop2")?.offsetHeight || 0) + "px")).observe(document.getElementById("gTop2"));   // (barre des filtres collée dessous)
+document.addEventListener("input", e => { if (e.target.id === "filter") e.target.classList.toggle("on", !!e.target.value.trim()); });
+/* « Filtres » : une étiquette cochée / décochée, ↺, clic ailleurs */
+document.addEventListener("change", e => { if (!e.target.matches?.("[data-ftag]")) return;
+  const t = e.target.dataset.ftag, set = new Set(gviews.tags); e.target.checked ? set.add(t) : set.delete(t); gviews.tags = [...set]; render(); });
+/* menu « Tri » : la même fenêtre que « Filtres » (= syncSortMenu, app.js) — la liste invisible #sort garde le choix */
+var gSortRev = false;   // « 🔃 Renverser le tri » (le temps de la visite)
+var gTrendOn;   // « 📈 » : variations montrées ou cachées à la volée (d'office : le réglage du propriétaire)
+document.addEventListener("click", e => { if (!e.target.closest?.("#trendTog")) return; gTrendOn = !(gTrendOn ?? (data.trend?.on !== false)); render(); });
+function syncSortMenu() {
+  const so = $("#sort"), pop = $("#sortPop"); if (!so || !pop) return;
+  pop.innerHTML = [...so.options].filter(o => !o.hidden && !o.disabled).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
+  const c = $("#sortCur"); if (c) c.textContent = so.selectedOptions[0]?.textContent || "";
+  const rb = $("#sortRev"); if (rb) rb.setAttribute("aria-pressed", gSortRev);
+  const tb = $("#trendTog"); if (tb) { const on = gTrendOn ?? (data.trend?.on !== false); tb.hidden = !data.trend || !PRICES() || (current !== ALL && kindOf(current) === "wishlist"); tb.classList.toggle("on", on); tb.setAttribute("aria-pressed", on); }
+}
+document.addEventListener("click", e => { if (!e.target.closest?.("[data-sortrev]")) return; gSortRev = !gSortRev; $("#sortMenu").open = false; render(); });
+document.addEventListener("change", e => { if (!e.target.matches?.('#sortPop input[name="sortopt"]')) return;
+  const so = $("#sort"); so.value = e.target.value; if (so.value === "variation" || so.value === "ecart") gTrendOn = true;   /* (tri de variation : les flèches s'affichent) */ so.dispatchEvent(new Event("change", { bubbles: true })); });
+document.addEventListener("click", e => {
+  if (e.target.matches?.("#sortPop input")) setTimeout(() => { $("#sortMenu").open = false; });   // un tri choisi (même celui en cours) : le menu se ferme
+  for (const m of document.querySelectorAll("#filtMenu, #sortMenu")) if (m.open && !m.contains(e.target)) m.open = false;   // clic ailleurs (ou sur l'autre menu) : fermé
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") for (const m of document.querySelectorAll("#filtMenu[open], #sortMenu[open]")) m.open = false; });
+$("#filtReset").onclick = () => { $("#filter").value = ""; gviews.tags = []; render(); };
+/* vignettes de figurines : une photo prise en largeur (la figurine au milieu) est recadrée, pour que toutes aient la même taille */
+document.addEventListener("load", e => { const t = e.target; if (t.tagName === "IMG" && t.naturalWidth > t.naturalHeight * 1.15) t.classList.add("wide"); }, true);
+
+const money = v => v == null ? "—" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(v);
+const ZONE_FLAG = { France: "", UE: "🇪🇺", monde: "🇺🇳" };   // zone du prix relevé : Europe, monde (France : sans drapeau)
+const zf = z => ZONE_FLAG[z] ? ZONE_FLAG[z] + " " : "";
+const prices = i => [
+  i.info?.retail ? `Magasin <b>${money(i.info.retail)}</b>` : "",
+  retired(i) && i.info?.new_value ? `Neuf <b>${zf(i.info.zones?.new)}${money(i.info.new_value)}</b>` : "",
+  i.info?.used_value && !upcoming(i) ? `Occasion (estimation) <b>${zf(i.info.zones?.used)}${money(i.info.used_value)}</b>` : "",
+].filter(Boolean).join(" · ");
+/* objets d'une figurine (armes, outils…) : ses pièces sauf celles du corps */
+const objsHtml = o => !o ? `<div class="meta">Recherche des objets de la figurine…</div>` : !o.length ? "" : `<fieldset><legend>Objets (${o.reduce((a, x) => a + (x.qty || 1), 0)})</legend>
+  <div class="gd-lots">${o.map(x => `<div class="gd-lot">${x.image ? `<img src="${img(x.image)}" alt="${esc(x.name)}" loading="lazy" class="gd-zoom" title="Agrandir">` : `<span class="gd-noimg">🗡️</span>`}<span><b>${esc(x.name)}</b>${(x.qty || 1) > 1 ? ` <em>×${x.qty}</em>` : ""}<small>${esc(x.part || "")}${x.color ? " · " + esc(x.color) : ""}</small></span></div>`).join("")}</div></fieldset>`;
+/* fiche (touche une carte) : la même présentation que la fiche de la page privée, en lecture seule — titre en haut, photo à gauche
+   avec le numéro et les infos, puis les mêmes blocs (figurines en vignettes identiques, apparences, accessoires, objets, pièces) */
+/* BrickLink : onglet des annonces, filtré sur la zone où il y en a (France, sinon Europe, sinon monde) */
+const rbUrl = (n, fig) => /^fig-\d+$/.test(n) ? `https://rebrickable.com/minifigs/${encodeURIComponent(n)}/` : fig ? `https://rebrickable.com/search/?q=${encodeURIComponent(n)}`
+  : `https://rebrickable.com/sets/${encodeURIComponent(/-\d+$/.test(n) ? n : n + "-1")}/`;   // lien « Voir sur Rebrickable »
+const blSale = (type, no, zone) => `https://www.bricklink.com/v2/catalog/catalogitem.page?${type}=${encodeURIComponent(type === "M" ? String(no).replace(/^adp(?=\d)/i, "bdp") : no)}#T=S&O=${encodeURIComponent(JSON.stringify({ iconly: 0, ...(zone === "France" ? { loc: "FR", ss: "FR" } : zone === "UE" ? { ss: "FR" } : {}) }))}`;
+/* vignette d'une figurine : la même que dans la fiche privée (photo carrée, nombre dessous, nom, prix si l'option est cochée) */
+const figTile = (f, sub = "") => `<div class="fig figq" data-parade title="Voir en grand, une par une"><span class="fq-pic"><img src="${img(f.image)}" alt="" loading="lazy"><b class="fq-n">×${f.qty || 1}</b></span>
+  <span class="fq-txt"><span class="fn">${esc(f.name)}${f.mod ? ` <span class="mod-tag">(modifiée)</span>` : ""}</span>${[PRICES() && f.used != null ? money(f.used) : "", sub].filter(Boolean).length
+    ? `<span class="fv">${[PRICES() && f.used != null ? money(f.used) : "", sub].filter(Boolean).join(" · ")}</span>` : ""}</span></div>`;
+function gSheet(title, body) {   // la fenêtre : en-tête en haut (titre, ✕), contenu qui défile
+  const d = document.createElement("div");
+  d.className = "gdetail";
+  d.innerHTML = `<div class="gd-box gs-box" role="dialog" aria-modal="true"><div class="gs-head"><h2>${title}</h2><button class="gd-x" aria-label="Fermer">✕</button></div>
+    <div class="gs-body">${body}</div></div>`;
+  document.body.append(d);
+  const close = () => { d.remove(); document.removeEventListener("keydown", key); };
+  const key = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", key);
+  d.onclick = e => { if (e.target === d || e.target.closest(".gd-x")) close(); };
+  return d;
+}
+/* figurines en grand : chaque exemplaire, un par un (copies : [{ src, label, sub }]) */
+function openParade(title, copies) {
+  const d = document.createElement("div"); d.className = "parade" + (copies.length > 8 ? " many" : "");
+  d.innerHTML = `<button type="button" class="parade-x" aria-label="Fermer">✕</button><h2>${esc(title)}</h2><div class="parade-sub">${nf.format(copies.length)} figurine${copies.length > 1 ? "s" : ""}</div>
+    <div class="parade-grid">${copies.map((c, k) => `<figure style="animation-delay:${Math.min(k * 90, 1800)}ms"><img src="${c.src}" alt="">
+      <figcaption>${esc(c.label || "")}${c.sub ? `<small>${esc(c.sub)}</small>` : ""}</figcaption></figure>`).join("")}</div>`;
+  const close = () => { d.remove(); removeEventListener("keydown", key, true); }, key = e => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+  d.onclick = close; addEventListener("keydown", key, true);
+  document.body.append(d);
+}
+const zoomOne = src => { const z = document.createElement("div"); z.className = "gd-zoomed"; z.innerHTML = `<img src="${src}" alt="">`; z.onclick = () => z.remove(); document.body.append(z); };
+function openDetail(i, altK = null) {
+  window._gLid = i.list_id;   // (couleur du thème de sa liste, le temps de la fiche)
+  const inf = i.info || {}, n = i.number, q = encodeURIComponent, wishItem = kindOf(i.list_id) === "wishlist";
+  const links = [
+    i.kind === "set" && (i.lego_url || (!retired(i) && inf.availability)) ? ["LEGO.com" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
+      i.lego_url || `https://www.lego.com/fr-fr/search?q=${q(n.replace(/-1$/, ""))}`] : null,   // page produit connue, sinon la recherche (= extLinks, app.js)
+    isMoc(i) ? null : ["BrickLink", blSale(i.kind === "fig" ? "M" : "S", n, i.bl_zone)],   // les annonces (MOC : rien à acheter sur BrickLink)
+    isMoc(i) || !n ? null : ["Rebrickable", rbUrl(n, i.kind === "fig")],
+  ].filter(Boolean);
+  const figs = inf.minifigs || [];
+  /* comme la fiche privée : « originales » = ce que fournit le set ; les exemplaires en plus (ex. 8 snowtroopers au lieu d'1) et les figurines
+     rangées dans le set = « ajoutées » */
+  const mine = figs.filter(f => !f.added).map(f => ({ ...f, qty: f.base != null ? Math.min(f.qty || 1, f.base) : f.qty })).filter(f => f.qty > 0);
+  const own = mine.filter(f => !f.mod), modi = mine.filter(f => f.mod);   // figurine du set dont des pièces ont été changées : « modifiée », plus « originale »
+  const added = figs.filter(f => !f.added && f.base != null && (f.qty || 1) > f.base).map(f => ({ ...f, qty: f.qty - f.base, same: true })).concat(figs.filter(f => f.added));
+  const nOwn = own.reduce((a, f) => a + (f.qty || 1), 0), nAdd = added.reduce((a, f) => a + (f.qty || 1), 0), nMod = modi.reduce((a, f) => a + (f.qty || 1), 0);
+  const photo = img(i.image || (i.kind === "set" ? setPhoto(i) : i.photo_url || inf.image));
+  const num = i.kind === "custom" ? (i.number && i.number !== "custom" ? esc(i.number) : "") : esc(n);
+  const kindTxt = i.kind === "custom" ? (i.catalog_set ? "" : i.partial_set ? "Set partiel" : "MOC") : "";
+  const est = !wishItem && PRICES() && inf.estimate != null;
+  const tl = tagLine(i);
+  const d = gSheet(esc(itemName(i)), `
+    <div class="cfg-top">
+      <div class="cfg-pic"><img class="gd-img" src="${photo}" alt="" title="Agrandir"></div>
+      <div>
+        ${est ? `<div class="gs-price">${moneyA(inf.estimate, i.approx)}</div>` : ""}
+        <div class="gs-num">${[num, kindTxt].filter(Boolean).join(" · ")}</div>
+        <div class="cfg-meta">${[inf.theme, inf.year, piecesTxt(inf.pieces, i.quantity), retired(i) && !wishItem ? "Retiré" : ""].filter(Boolean).map(esc).join(" · ")}</div>
+        ${tl ? `<div class="card gs-tags"><div class="meta tagline">${tl}</div></div>` : ""}
+        ${(i.quantity || 1) > 1 ? `<div class="gs-qty">Quantité : <b>${nf.format(i.quantity)}</b></div>` : ""}
+        ${hostOf(i) ? `<div class="gs-qty">Rangée dans <button type="button" class="link" data-host>${esc(itemName(hostOf(i)))}</button></div>` : ""}
+      </div>
+    </div>
+    ${wishItem ? `<div class="gd-status">${retired(i) ? `<span class="badge retired">Retiré</span>` : upcoming(i) ? `<span class="badge upcoming">Bientôt disponible</span>` : soon(i) ? `<span class="badge soon">Bientôt retiré</span>` : ""}
+      ${upcoming(i) ? ` <span class="meta">${esc(releaseTxt(i))}</span>` : !retired(i) && rDate(inf.retirement) ? ` <span class="meta">Retrait prévu : ${esc(rDate(inf.retirement).txt)}</span>` : ""}
+      ${isWatch(i) ? ` <span class="meta">🔎 ${esc(wantLabel(i))}</span>` : ""}</div>
+      <div class="gd-prices">
+        ${inf.retail ? `<div><span>Prix magasin</span><b>${money(inf.retail)}</b></div>` : ""}
+        ${retired(i) && inf.new_value ? `<div><span>Neuf</span><b>${zf(inf.zones?.new)}${money(inf.new_value)}</b></div>` : ""}
+        ${inf.used_value && !upcoming(i) ? `<div><span>Occasion (estimation)</span><b>${zf(inf.zones?.used)}${money(inf.used_value)}</b></div>` : ""}
+      </div>` : ""}
+    ${(i.alts || []).length ? `<fieldset><legend>Apparences alternatives</legend><div class="gs-figs">${i.alts.map((a, k) => `<div class="fig figq"><span class="fq-pic"><img src="${img(a.photo)}" alt="" loading="lazy" data-galk="${k + 1}" title="Agrandir"></span>
+      <span class="fq-txt"><span class="fn">${esc(a.name || "Apparence " + (k + 1))}</span></span></div>`).join("")}</div></fieldset>` : ""}
+    ${figs.length ? `<fieldset><legend>Figurines</legend>
+      ${nOwn ? `<div class="fig-sub">${nf.format(nOwn)} ${wishItem ? "dans le set" : `originale${nOwn > 1 ? "s" : ""}`}</div><div class="gs-figs">${own.map(f => figTile(f, wishItem ? "" : `${f.qty || 1} dans le set`)).join("")}</div>` : ""}
+      ${nMod ? `<div class="fig-sub">${nf.format(nMod)} modifiée${nMod > 1 ? "s" : ""}</div><div class="gs-figs">${modi.map(f => figTile({ ...f, mod: false })).join("")}</div>` : ""}
+      ${nAdd ? `<div class="fig-sub">${nf.format(nAdd)} ajoutée${nAdd > 1 ? "s" : ""}</div><div class="gs-figs">${added.map(f => figTile(f, f.same ? "comme celle du set" : "")).join("")}</div>` : ""}
+    </fieldset>` : ""}
+    ${(i.accessories || []).length ? `<fieldset><legend>Accessoires (Mini-construction)</legend><div class="gs-figs">${i.accessories.map(a => `<div class="fig figq"><span class="fq-pic">${a.photo
+      ? `<img src="${img(a.photo)}" alt="" loading="lazy" class="gd-zoom" title="Agrandir">` : `<span class="gd-noimg">🗡️</span>`}</span><span class="fq-txt"><span class="fn">${esc(a.name)}</span></span></div>`).join("")}</div></fieldset>` : ""}
+    ${i.kind === "fig" && !wishItem ? `<div data-objs>${objsHtml(i.fig_objs)}</div>` : ""}
+    ${(i.moc_lots || []).length ? `<fieldset><legend>Pièces (${nf.format(i.moc_lots.reduce((a, x) => a + (x.qty || 1), 0))})</legend><div class="gd-lots">${i.moc_lots.map(x => `<div class="gd-lot">
+        ${x.image ? `<img src="${img(x.image)}" alt="${esc(x.name)}" loading="lazy" class="gd-zoom" title="Agrandir">` : `<span class="gd-noimg">🧱</span>`}<span><b>${esc(x.name)}</b>${(x.qty || 1) > 1 ? ` <em>×${x.qty}</em>` : ""}<small>${esc(x.part)}${x.color ? " · " + esc(x.color) : ""}</small></span></div>`).join("")}</div></fieldset>` : ""}
+    ${est ? `<div class="gs-est"><div class="gs-est-t">Estimation ${i.kind === "fig" ? "de ma figurine" : isCustom(i) ? "de mon MOC" : "de mon set"}</div><b>${moneyA(inf.estimate, i.approx)}</b>
+      ${inf.used_value ? `<div class="gs-est-l"><span>${i.kind === "set" ? "Set complet d'occasion" : "Occasion (catalogue)"}</span><b>${zf(inf.zones?.used)}${money(inf.used_value * (i.quantity || 1))}</b></div>` : ""}
+      ${inf.new_value ? `<div class="gs-est-l"><span>Neuf (catalogue)</span><b>${zf(inf.zones?.new)}${money(inf.new_value * (i.quantity || 1))}</b></div>` : ""}</div>` : ""}
+    ${links.length ? `<div class="ext-links ext-bottom">${links.map(([t, u]) => `<a class="btn small-btn" href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join("")}</div>` : ""}`);
+  /* apparences : en grand avec les autres sur le côté (l'actuelle encadrée) ; un appui l'affiche à la place */
+  const nm = itemName(i), full = a => a ? `${nm} (${a})` : nm;
+  const gal = (i.alts || []).length ? [{ src: photo, name: full(i.main_name) }, ...i.alts.map(a => ({ src: img(a.photo), name: full(a.name) }))] : null;
+  const zoomGal = cur => {
+    const z = document.createElement("div"); z.className = "gd-zoomed gd-zg";
+    z.innerHTML = `<figure class="zg-fig"><div class="zoom-row"><img class="zg-main" src="${gal[cur].src}" alt="">
+      <div class="zoom-side">${gal.map((x, k) => `<button type="button" class="zs-pic ${k === cur ? "on" : ""}" data-zs="${k}" title="${esc(x.name)}"><img src="${x.src}" alt=""></button>`).join("")}</div></div>
+      <figcaption>${esc(gal[cur].name)}</figcaption></figure>`;
+    z.onclick = e => { const b = e.target.closest("[data-zs]"); if (!b) return z.remove(); const k = +b.dataset.zs;
+      z.querySelector(".zg-main").src = gal[k].src; z.querySelector(".zg-fig figcaption").textContent = gal[k].name;
+      z.querySelectorAll(".zs-pic").forEach(x => x.classList.toggle("on", x === b)); };
+    document.body.append(z);
+  };
+  d.querySelector(".gd-img").onclick = () => gal ? zoomGal(0) : isFigLike(i) && (i.quantity || 1) > 1   // figurine en plusieurs exemplaires : chacun
+    ? openParade(itemName(i), Array.from({ length: i.quantity }, () => ({ src: photo, label: itemName(i) }))) : zoomOne(photo);
+  if (altK != null && gal) zoomGal(altK + 1);   // carte d'une apparence : directement elle, en grand
+  const wireZoom = root => root.querySelectorAll(".gd-zoom").forEach(im => im.onclick = e => { e.stopPropagation(); zoomOne(im.src); });
+  if (i.kind === "fig" && !i.fig_objs && d.querySelector("[data-objs]"))   // objets pas encore connus : demandés au serveur
+    fetch(base + "/figobjs?n=" + encodeURIComponent(i.number)).then(r => r.json()).then(r => {
+      i.fig_objs = r.objs || []; const box = d.querySelector("[data-objs]"); if (box) { box.innerHTML = objsHtml(i.fig_objs); wireZoom(box); }
+    }).catch(() => { const box = d.querySelector("[data-objs]"); if (box) box.innerHTML = ""; });
+  wireZoom(d);
+  d.querySelectorAll("[data-parade]").forEach(t => t.onclick = e => { e.stopPropagation();   // toutes les figurines du set, chaque exemplaire
+    openParade(itemName(i), figs.flatMap(f => Array.from({ length: Math.max(1, f.qty || 1) }, () => ({ src: img(f.image), label: f.name, sub: f.added ? "ajoutée" : "" })))); });
+  d.querySelector("[data-host]")?.addEventListener("click", () => { d.remove(); openDetail(hostOf(i)); });   // le set où elle est rangée
+  d.querySelectorAll("[data-galk]").forEach(im => im.onclick = e => { e.stopPropagation(); zoomGal(+im.dataset.galk); });
+}
+/* fiche d'une figurine d'un set (carte « Dans un set ») : la figurine, et les sets où elle est (un appui ouvre le set) */
+function openFigDetail(v) {
+  const d = gSheet(esc(v.info.name || v.number), `
+    <div class="cfg-top">
+      <div class="cfg-pic"><img class="gd-img" src="${img(v._img)}" alt="" title="Agrandir"></div>
+      <div>
+        ${PRICES() && v._cat != null ? `<div class="gs-price">${money(v._cat)}</div>` : ""}
+        <div class="gs-num">${esc(v.number)}</div>
+        <div class="cfg-meta">${[v.info.theme, v.info.year].filter(Boolean).map(esc).join(" · ")}</div>
+        ${v._mod ? `<div class="card gs-tags"><div class="meta tagline"><span class="tg tg-mod">Modifiée</span></div></div>` : ""}
+        ${v.quantity > 1 ? `<div class="gs-qty">Quantité : <b>${nf.format(v.quantity)}</b></div>` : ""}
+      </div>
+    </div>
+    <fieldset><legend>Dans ${v._sets.length > 1 ? "les sets" : "le set"}</legend><div class="gs-figs">${v._sets.map(x => `<button type="button" class="fig figq gs-set" data-set="${data.items.indexOf(x.i)}">
+      <span class="fq-pic"><img src="${thumb(x.i.image || setPhoto(x.i))}" alt="" loading="lazy"></span>
+      <span class="fq-txt"><span class="fn">${esc(itemName(x.i))}</span><span class="fv">${esc(x.i.number)}${x.n > 1 ? ` · ×${x.n}` : ""}</span></span></button>`).join("")}</div></fieldset>
+    ${/^[a-z]+\d+[a-z]?$/i.test(v.number) ? `<div class="ext-links ext-bottom"><a class="btn small-btn" href="${esc(blSale("M", v.number, ""))}" target="_blank" rel="noopener">BrickLink ↗</a></div>` : ""}`);
+  d.querySelector(".gd-img").onclick = () => v.quantity > 1   // plusieurs exemplaires : chacun, avec son set
+    ? openParade(v.info.name || v.number, v._sets.flatMap(x => Array.from({ length: x.n }, () => ({ src: img(v._img), label: v.info.name || v.number, sub: x.i.number })))) : zoomOne(img(v._img));
+  d.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { d.remove(); openDetail(data.items[+b.dataset.set]); });
+}
+/* lien vers le compte Instagram, à droite du nom de l'appli (seulement si un compte est relié) */
+function setIgHead(u) {
+  const a = document.getElementById("igHead"); if (!a) return;
+  a.hidden = !u;
+  if (u) { a.href = "https://www.instagram.com/" + encodeURIComponent(u) + "/"; a.querySelector(".ig-name").textContent = "@" + u; a.title = "@" + u + " sur Instagram"; }
+}
+document.addEventListener("click", e => { const c = e.target.closest(".card[data-i], .card[data-v]"); if (!c) return;
+  if (c.dataset.v != null) return openFigDetail(VIRT[+c.dataset.v]);   // figurine d'un set : sa fiche, avec ses sets
+  openDetail(data.items[+c.dataset.i], c.dataset.alt != null ? +c.dataset.alt : null);
+  if (e.target.closest("[data-mp]")) setTimeout(() => document.querySelector(".gdetail .gd-lots")?.previousElementSibling?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);   // « + » : directement à ses pièces
+});
+document.addEventListener("keydown", e => { if (e.key === "Enter") { const c = e.target.closest?.(".card[data-i], .card[data-v]"); if (c) c.click(); } });
+
+["filter", "sort"].forEach(id => $("#" + id).addEventListener(id === "filter" ? "input" : "change", render));
+fetch(base + "/data").then(r => r.ok ? r.json() : Promise.reject(r))
+  .then(d => { data = d; setIgHead(d.ig_user);   // /collection : la collection seule ; /wishlist : la liste de souhaits seule ; /a-surveiller : elle seule
+    data.page = d.page || (base.startsWith("/collection") ? "collection" : base.startsWith("/a-surveiller") ? "watch" : "wishlist");
+    const w = d.lists.find(l => l.kind === "wishlist"); if (w && data.page !== "collection") current = w.id;
+    if (data.page === "watch") {
+      document.title = "À surveiller — Briquothèque";
+      const gt = document.querySelector(".guest-tag"); if (gt) gt.textContent = "À surveiller · lecture seule";
+    } else if (data.page === "wishlist") document.title = (d.owner ? `Liste de souhaits de ${d.owner}` : "Liste de souhaits") + " — Briquothèque";
+    else document.title = (d.owner ? `Collection de ${d.owner}` : "Collection") + " — Briquothèque";
+    render(); })
+  .catch(() => { $("#items").innerHTML = `<div class="empty"><div class="big">🔒</div>Page momentanément indisponible.</div>`; $("#stats").innerHTML = ""; });
+
+/* ↑ retour en haut : toujours visible, partout (la page, ou la fenêtre ouverte au premier plan) */
+(() => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "to-top"; b.textContent = "↑"; b.title = "Retour en haut"; b.setAttribute("aria-label", "Retour en haut");
+  document.body.append(b);
+  const scrollable = el => el.scrollHeight > el.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(el).overflowY);
+  b.onclick = e => {
+    e.stopPropagation();
+    const top = [...document.querySelectorAll(".gdetail")].filter(m => !m.hidden && m.getClientRects().length).at(-1);
+    if (!top) return window.scrollTo({ top: 0, behavior: "smooth" });
+    [top, ...top.querySelectorAll("*")].filter(scrollable).forEach(el => el.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+})();
+</script>
+<script>
+new IntersectionObserver(es => es.forEach(e => { gTilesSeen = e.isIntersecting; gTopShow(); }), { rootMargin: "-70px 0px 0px 0px" }).observe(document.getElementById("stats"));   // téléphone : boutons du haut quand les tuiles sont sorties de l'écran
+</script>
+</body>
+</html>

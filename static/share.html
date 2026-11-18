@@ -1,0 +1,301 @@
+<!doctype html>
+<!-- © 2026 Clýde Hørd (ClydeHord sur GitHub) — auteur de Briquothèque · source : https://github.com/ClydeHord/briquotheque · licence : LICENCE (mention à conserver) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Fiche partagée — Briquothèque</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .guest-tag { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
+  .sh-main { max-width: 860px; margin: 0 auto; padding: 18px 16px 60px; }
+  .sh-card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .sh-img { display: block; width: 100%; max-height: 56vh; object-fit: contain; background: #fff; cursor: zoom-in; }
+  .sh-body { padding: 14px 18px 18px; }
+  .sh-num { color: var(--muted); font-weight: 700; font-size: 13px; }
+  .sh-body h1 { margin: 2px 0 4px; font-size: 22px; line-height: 1.2; }
+  .sh-meta { color: var(--muted); font-size: 14px; }
+  .card.sh-tl { all: unset; display: block; margin: 8px 0 0; }   /* étiquettes d'état : mêmes styles que sur les cartes de l'appli (.card .tagline .tg) */
+  .card.sh-tl .tagline .tg { font-size: 12px !important; padding: 1px 8px !important; }
+  .sh-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .sh-tags .badge { font-size: 12px; padding: 3px 9px; }
+  .sh-tags .badge.plain { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+  .sh-prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 12px 0; }
+  .sh-prices div { background: var(--bg); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; }
+  .sh-prices div.main { background: var(--accent-bg, var(--bg)); }
+  .sh-prices span { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .sh-prices b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .sh-h { font-size: 15px; margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; }
+  .sh-h small { color: var(--muted); font-weight: 600; }
+  .sh-sub { font-size: 13px; font-weight: 700; color: var(--muted); margin: 10px 0 6px; }
+  .sh-figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .sh-fig { margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; font-size: 12px; text-align: center; cursor: pointer; overflow: hidden; }
+  .sh-fig:hover { border-color: var(--muted); }
+  .sh-fig img, .sh-fig .noimg { display: block; width: 100%; aspect-ratio: 3/4; object-fit: contain; background: #fff; }
+  .sh-fig .noimg { display: grid; place-items: center; font-size: 28px; background: var(--bg); }
+  .sh-fig span { display: block; padding: 5px 4px 6px; line-height: 1.25; }
+  .sh-fig em { font-style: normal; color: var(--muted); font-weight: 700; }
+  div.sh-fig { cursor: default; }
+  .sh-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 99px; padding: 8px 14px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .sh-btn:hover { border-color: var(--red); color: var(--red); }
+  .sh-lots { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
+  .sh-lot { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 5px; font-size: 13px; min-width: 0; }
+  .sh-lot.gone { border-style: dashed; opacity: .6; }
+  .sh-lot img, .sh-lot .noimg { width: 44px; height: 44px; flex: none; object-fit: contain; background: #fff; border-radius: 6px; display: grid; place-items: center; cursor: zoom-in; }
+  .sh-lot .noimg { cursor: default; font-size: 20px; }
+  .sh-lot > span { min-width: 0; overflow-wrap: anywhere; } .sh-lot b { font-weight: 600; } .sh-lot em { font-style: normal; color: var(--muted); font-weight: 700; }
+  .sh-lot small { display: block; color: var(--muted); font-size: 11.5px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); vertical-align: -1px; margin-right: 3px; }
+  .sh-tools { display: flex; gap: 8px; margin: 0 0 10px; }
+  .sh-tools input { flex: 1; min-width: 0; }
+  .sh-back { margin-bottom: 12px; }
+  .sh-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .sh-links a { font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 99px; border: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+  .sh-note { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .zoomed { position: fixed; inset: 0; z-index: 100; background: rgba(10,12,16,.9); display: grid; place-items: center; padding: 12px; cursor: zoom-out; }
+  .zoomed img { max-width: 96vw; max-height: 92vh; object-fit: contain; background: #fff; border-radius: 12px; }
+  .zoomed button { position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--panel); color: var(--ink); font-size: 20px; cursor: pointer; }
+  @media (max-width: 600px) {
+    .sh-main { padding: 12px 12px 40px; }
+    .sh-body { padding: 12px 14px 16px; }
+    .sh-body h1 { font-size: 19px; }
+    .sh-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sh-lots { grid-template-columns: minmax(0, 1fr); }
+    .guest-tag { font-size: 11px; }
+  }
+  .to-top { bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important; }
+/* étiquette « Incomplet » : quelque chose a été retiré sans rien à la place */
+.tg.tg-inc, .card .tagline .tg.tg-inc { color: #8a6d00; border-color: rgba(176, 140, 0, .45); font-size: 10px; padding: 0 5px; line-height: 1.5; font-weight: 600; background: none; }
+@media (prefers-color-scheme: dark) { .tg.tg-inc, .card .tagline .tg.tg-inc { color: #e6c84f; border-color: rgba(230, 200, 79, .4); } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brick" aria-hidden="true"><i></i><i></i></span><span>Briquothèque</span></div>
+  <a class="ig-head" id="igHead" hidden target="_blank" rel="noopener" title="Le compte Instagram"><span class="ig-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="#fff" stroke="none"/></svg></span><span class="ig-name"></span></a><!-- compte Instagram (s'il est relié) -->
+  <span class="head-tags"><span class="guest-tag">Fiche partagée · lecture seule</span>
+  <a class="guest-tag gh-tag" href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener" title="Le projet Briquothèque (code source officiel)">Le projet sur GitHub</a></span>
+</header>
+<main class="sh-main" id="main"><div class="loading"><span class="spinner"></span>Chargement…</div></main>
+<script>
+/* BrickLink : onglet des annonces, filtré sur la zone où il y en a (France, sinon Europe, sinon monde) */
+const rbUrl = (n, fig) => /^fig-\d+$/.test(n) ? `https://rebrickable.com/minifigs/${encodeURIComponent(n)}/` : fig ? `https://rebrickable.com/search/?q=${encodeURIComponent(n)}`
+  : `https://rebrickable.com/sets/${encodeURIComponent(/-\d+$/.test(n) ? n : n + "-1")}/`;   // lien « Voir sur Rebrickable »
+const blSale = (type, no, zone) => `https://www.bricklink.com/v2/catalog/catalogitem.page?${type}=${encodeURIComponent(type === "M" ? String(no).replace(/^adp(?=\d)/i, "bdp") : no)}#T=S&O=${encodeURIComponent(JSON.stringify({ iconly: 0, ...(zone === "France" ? { loc: "FR", ss: "FR" } : zone === "UE" ? { ss: "FR" } : {}) }))}`;
+
+"use strict";
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const nf = new Intl.NumberFormat("fr-FR");
+const money = v => v == null ? "—" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(v);
+const ZONE_FLAG = { France: "", UE: "🇪🇺", monde: "🇺🇳" };   // zone du prix relevé : Europe, monde (France : sans drapeau)
+const zf = z => ZONE_FLAG[z] ? ZONE_FLAG[z] + " " : "";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const base = location.pathname.replace(/\/$/, "");
+const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 48'%3E%3Crect width='64' height='48' fill='%23eceef1'/%3E%3Crect x='14' y='18' width='36' height='18' rx='3' fill='%23c4c8cf'/%3E%3Crect x='20' y='12' width='8' height='7' rx='2' fill='%23c4c8cf'/%3E%3Crect x='36' y='12' width='8' height='7' rx='2' fill='%23c4c8cf'/%3E%3C/svg%3E";
+const up = u => /^\/api\/upload\/[0-9a-f]+$/.test(u || "");
+/* images BrickEconomy (site bloqué : servies depuis BrickLink / Rebrickable) : adresse changée une fois pour que le navigateur
+   oublie les anciennes photos gardées en mémoire — la même image partout */
+const beBust = u => /brickeconomy\.com\//.test(u) ? "&r=3" : "";   /* r=3 (16/11/2026) : copies refaites — des appareils gardaient une image que le serveur n'a plus */
+const img = (u, w) => !u ? PH : up(u) ? base + "/upload/" + u.split("/").pop() + (w ? "?w=" + w : "") : /^https:\/\//.test(u) ? base + "/img?u=" + encodeURIComponent(u) + beBust(u) : PH;
+const big = u => !u ? "" : up(u) ? base + "/upload/" + u.split("/").pop() : base + "/hd?u=" + encodeURIComponent(u);
+const figPhoto = u => u ? u.replace(/_thumb\.png$/, "_medium.jpg") : u;
+document.addEventListener("error", e => { const t = e.target; if (t.tagName !== "IMG") return;
+  if (t.dataset.fb && !t.dataset.fbd) { t.dataset.fbd = "1"; t.src = t.dataset.fb; return; }
+  if (t.src.includes("_medium.jpg")) { t.src = t.src.replace("_medium.jpg", "_thumb.png"); return; }
+  if (t.src !== PH) { t.src = PH; t.style.cursor = "default"; t.removeAttribute("data-z"); } }, true);
+
+/* zoom : la photo affichée tout de suite, puis la grande version dès qu'elle est prête */
+function zoom(src, hd) {
+  const z = document.createElement("div"); z.className = "zoomed";
+  z.innerHTML = `<img src="${esc(src)}" alt=""><button aria-label="Fermer">✕</button>`;
+  document.body.append(z);
+  const close = () => { z.remove(); document.removeEventListener("keydown", key); };
+  const key = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", key); z.onclick = close;
+  if (hd && hd !== src) { const h = new Image(), zi = $("img", z);
+    h.onload = () => { if (z.isConnected && h.naturalWidth > (zi.naturalWidth || 0) * 1.1) zi.src = hd; }; h.src = hd; }
+}
+document.addEventListener("click", e => { const t = e.target.closest("[data-z]"); if (!t || t.src === PH) return; e.preventDefault(); e.stopPropagation(); zoom(t.currentSrc || t.src, t.dataset.z); }, true);
+
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+function rDate(s) {
+  if (!s) return null; const t = s.toLowerCase(), y = +(t.match(/(20\d\d)/) || [])[1]; if (!y) return null;
+  const mi = MONTHS.findIndex(m => t.includes(m));
+  if (mi >= 0) return { d: new Date(y, mi + 1, 0), txt: MOIS[mi] + " " + y };
+  const qm = t.match(/q([1-4])/); if (qm) return { d: new Date(y, +qm[1] * 3, 0), txt: `${+qm[1] === 1 ? "1er" : qm[1] + "e"} trimestre ${y}` };
+  return { d: new Date(y, 11, 31), txt: String(y) };
+}
+
+let D = null;
+const mainPhoto = i => {
+  if (i.photo_url) return i.photo_url;
+  if (i.part_image) return i.part_image;
+  const figs = i.minifigs || [];
+  const useFig = i.kind === "set" && figs.length && (i.photo === "fig" || (i.photo !== "set" && i.minifig_count === 1 && (i.pieces || 0) <= 40));
+  return useFig ? figPhoto(figs[0].image) : i.kind === "fig" ? figPhoto(i.image) : i.image;
+};
+const colorDot = r => r.rgb ? `<i class="sw" style="background:#${esc(r.rgb)}${r.trans ? ";opacity:.6" : ""}"></i>` : "";
+const lotRow = (p, note = "", gone = false) => `<div class="sh-lot${gone ? " gone" : ""}">
+  ${p.image ? `<img src="${img(p.image)}" ${p.part_image && p.part_image !== p.image ? `data-fb="${esc(img(p.part_image))}"` : ""} data-z="${esc(big(p.image))}" alt="" loading="lazy">` : `<span class="noimg">🧱</span>`}
+  <span><b>${esc(p.name || p.part || p.part_num)}</b>${(p.qty || p.quantity || 1) > 1 ? ` <em>×${p.qty || p.quantity}</em>` : ""}
+  <small>${colorDot(p)}${esc([p.part || p.bricklink || p.part_num, p.color_fr || p.color_name || p.color].filter(Boolean).join(" · "))}${note ? " · " + esc(note) : ""}</small></span></div>`;
+
+function drawMain() {
+  const i = D, pic = mainPhoto(i);
+  const retired = (i.availability || "").toLowerCase() === "retired", upcoming = /pending|upcoming|coming soon/i.test(i.availability || "");
+  const rd = !retired && rDate(i.retirement), soon = !!rd && rd.d - Date.now() < 365 * 864e5;
+  const isMoc = i.kind === "custom", figs = i.minifigs || [], nf_ = figs.reduce((a, f) => a + (f.qty || 1), 0);
+  /* étiquettes d'état : les mêmes que sur la fiche privée (= tagLine, app.js) — Modifié, Pièces ajoutées, figurines remplacées / ajoutées, Amélioré, Set partiel, Sans figurines, MOC */
+  const tagLine = (() => {
+    if (i.kind === "custom" && !i.partial_set && !i.catalog_set) return `<span class="tg tg-moc">MOC</span>`;
+    const t = [], fig = i.kind === "fig", s = i.st || { mod: i.modified };
+    if (i.kind === "custom" && i.partial_set) t.push("Set partiel");
+    if (s.mod || s.fig_rep) t.push(fig ? "Modifiée" : "Modifié");   // (seulement Complet, Amélioré, Modifié, Set partiel, MOC — 17/11)
+    else if (s.inc) t.push(fig ? "Incomplète" : "Incomplet");
+    else if (s.add_parts || s.fig_add) t.push(fig ? "Améliorée" : "Amélioré");
+    const st0 = i.kind === "custom" && i.partial_set ? "partiel" : s.mod || s.fig_rep ? "modifie" : s.inc ? "incomplet" : s.add_parts || s.fig_add ? "ameliore" : "complet";   // (= itemStatus)
+    const st = (i.tags_off || []).includes(st0) ? "complet" : st0;
+    const W = { complet: "Complet", ameliore: fig ? "Améliorée" : "Amélioré", modifie: fig ? "Modifiée" : "Modifié", incomplet: fig ? "Incomplète" : "Incomplet", partiel: "Set partiel", moc: "MOC" };
+    const C = { ameliore: " tg-imp", modifie: " tg-mod", incomplet: " tg-inc", partiel: " tg-part", moc: " tg-moc" };
+    const hand = (i.tags || []).filter(k => k !== st && W[k]).map(k => `<span class="tg${C[k] || ""}">${esc(W[k])}</span>`).join("");   // ajoutées à la main
+    if ((i.tags_off || []).includes(st0)) t.splice(0, t.length, ...t.filter(x => !/^(Modifiée?|Améliorée?|Pièces ajoutées|\d+ figurines? remplacées?|\+ \d+ figurines? ajoutées?|Set partiel)$/.test(x)));   // retirée de la fiche
+    return t.map(x => `<span class="tg${/^Modifiée?$/.test(x) ? " tg-mod" : /^\+ \d+ figurines? ajoutées?$/.test(x) ? " tg-add" : /^\d+ figurines? remplacées?$/.test(x) ? " tg-rep" : x === "Set partiel" ? " tg-part" : /^Améliorée?$/.test(x) ? " tg-imp" : ""}">${esc(x)}</span>`).join("") + hand;
+  })();
+  const tags = [
+    (i.quantity_total || i.quantity) > 1 ? `<span class="badge qty">×${i.quantity_total || i.quantity}</span>` : "",   // (fiche unique : avec les exemplaires dans mes sets)
+    i.kind !== "custom" && i.condition === "neuf" ? `<span class="badge neuf">Neuf</span>` : "",   // (« Occasion » : plus d'étiquette, comme sur les cartes de l'appli)
+    i.kind === "set" && !isMoc && i.has_box ? `<span class="badge plain">📦 Avec boîte</span>` : "",
+    i.kind === "set" && !isMoc && i.no_plan ? `<span class="badge plain">Sans livret</span>` : "",
+    i.unbuilt ? `<span class="badge plain">En Attente 🚧</span>` : "",
+    i.missing ? `<span class="badge plain">${i.missing} figurine${i.missing > 1 ? "s" : ""} manquante${i.missing > 1 ? "s" : ""}</span>` : "",
+    i.portion < 100 ? `<span class="badge plain">Partiel</span>` : "",
+    retired ? `<span class="badge retired">Retiré</span>` : upcoming ? `<span class="badge upcoming">Bientôt disponible</span>` : soon ? `<span class="badge soon">Bientôt retiré</span>` : "",
+  ].filter(Boolean).join("");
+  const prices = [
+    i.value != null ? [`Valeur estimée${i.quantity > 1 ? ` (×${i.quantity})` : ""}`, (i.approx ? "~ " : "") + money(i.value), "main"] : null,
+    i.purchase_price != null ? ["Prix d'achat", money(i.purchase_price)] : null,
+    i.retail ? ["Prix magasin", money(i.retail)] : null,
+    i.kind === "set" && i.new_value && !isMoc ? ["Neuf", zf(i.zones?.new) + money(i.new_value)] : null,   // (drapeau : zone du prix relevé)
+    i.kind === "set" && i.used_value && !isMoc ? ["Occasion", zf(i.zones?.used) + money(i.used_value)] : null,
+    i.kind === "fig" && i.fig_value ? ["Neuve", zf(i.zones?.new) + money(i.fig_value)] : null,
+    i.kind === "fig" && i.fig_used != null ? ["Occasion", zf(i.zones?.used) + money(i.fig_used)] : null,
+  ].filter(Boolean);
+  const num = isMoc ? [i.number && i.number !== "custom" ? i.number : "", i.catalog_set ? "" : i.partial_set ? "Set partiel" : "MOC"].filter(Boolean).join(" · ") : i.number;
+  const q = encodeURIComponent, n = i.number || "";
+  const links = isMoc && !i.catalog_set ? [] : [   // LEGO.com : sa page produit si elle est connue, sinon la recherche tant que le set est vendu ou à venir (= extLinks, app.js)
+    i.kind === "set" && (i.lego_url || (!retired && i.availability)) ? ["LEGO.com" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
+      i.lego_url || `https://www.lego.com/fr-fr/search?q=${encodeURIComponent(String(n).replace(/-1$/, ""))}`] : null,
+    ["BrickLink", blSale(i.kind === "fig" ? "M" : "S", n, i.bl_zone)], n ? ["Rebrickable", rbUrl(n, i.kind === "fig")] : null].filter(Boolean);   /* les annonces, et Rebrickable (17/11) */
+  /* figurines comme sur la fiche privée : « originales » = ce que fournit le set ; exemplaires en plus et figurines rangées dans le set = « ajoutées » */
+  const figTile = ({ f, k, q }) => { const inner = `${f.image ? `<img src="${img(figPhoto(f.image))}" alt="" loading="lazy">` : `<span class="noimg">🟡</span>`}<span>${esc(f.name)}${q > 1 ? ` <em>×${q}</em>` : ""}</span>`;
+    return f.parts ? `<button type="button" class="sh-fig" data-fig="${k}" title="Voir la figurine et ses pièces">${inner}</button>` : `<div class="sh-fig">${inner}</div>`; };
+  const figMine = figs.map((f, k) => ({ f, k, q: f.added ? 0 : f.base != null ? Math.min(f.qty || 1, f.base) : f.qty || 1 })).filter(x => x.q > 0);
+  const isMod = f => (f.swaps || []).length > 0;   // figurine du set dont des pièces ont été changées : « modifiée », plus « originale »
+  const figOwn = figMine.filter(x => !isMod(x.f)), figMod = figMine.filter(x => isMod(x.f));
+  const figAdd = figs.map((f, k) => ({ f, k, q: f.added ? f.qty || 1 : f.base != null ? Math.max(0, (f.qty || 1) - f.base) : 0 })).filter(x => x.q > 0);
+  const nOwn = figOwn.reduce((a, x) => a + x.q, 0), nAdd = figAdd.reduce((a, x) => a + x.q, 0), nMod = figMod.reduce((a, x) => a + x.q, 0);
+  $("#main").innerHTML = `<article class="sh-card">
+    <img class="sh-img" src="${img(pic, 1200)}" data-z="${esc(big(pic))}" alt="">
+    <div class="sh-body">
+      <div class="sh-num">${esc(num)}</div>
+      <h1>${esc(i.name)}${i.main_name ? ` (${esc(i.main_name)})` : ""}</h1>
+      <div class="sh-meta">${[i.theme, i.subtheme, i.year, i.pieces ? nf.format(i.pieces) + " pièces" : "", nf_ ? nf_ + " figurine" + (nf_ > 1 ? "s" : "") : ""].filter(Boolean).map(esc).join(" · ")}</div>
+      ${tagLine ? `<div class="card sh-tl"><div class="meta tagline">${tagLine}</div></div>` : ""}
+      ${tags ? `<div class="sh-tags">${tags}</div>` : ""}
+      ${i.in_set ? `<p class="sh-note">Dans le set « ${esc(i.in_set.name || i.in_set.number)} » (${esc(i.in_set.number)})</p>` : ""}
+      ${(i.also_sets || []).length ? `<p class="sh-note">${nf.format(i.quantity_total)} exemplaires : ${nf.format(i.quantity || 1)} sans set, ${i.also_sets.map(s => `${s.qty > 1 ? `${nf.format(s.qty)} ` : ""}dans « ${esc(s.name)} » (${esc(s.number)})`).join(", ")}</p>` : ""}
+      ${i.portion < 100 && i.portion_note ? `<p class="sh-note">${esc(i.portion_note)}</p>` : ""}
+      ${!retired && !upcoming && rd ? `<p class="sh-note">Retrait prévu : ${esc(rd.txt)}</p>` : ""}
+      ${prices.length ? `<div class="sh-prices">${prices.map(([t, v, c]) => `<div class="${c || ""}"><span>${esc(t)}</span><b>${esc(v)}</b></div>`).join("")}</div>` : ""}
+      ${figs.length ? `<h2 class="sh-h">Figurines <small>(${nf_})</small></h2>
+        ${nOwn ? `${i.wish ? "" : `<div class="sh-sub">${nf.format(nOwn)} originale${nOwn > 1 ? "s" : ""}</div>`}<div class="sh-figs">${figOwn.map(figTile).join("")}</div>` : ""}
+        ${nMod ? `<div class="sh-sub">${nf.format(nMod)} modifiée${nMod > 1 ? "s" : ""}</div><div class="sh-figs">${figMod.map(figTile).join("")}</div>` : ""}
+        ${nAdd ? `<div class="sh-sub">${nf.format(nAdd)} ajoutée${nAdd > 1 ? "s" : ""}</div><div class="sh-figs">${figAdd.map(figTile).join("")}</div>` : ""}` : ""}
+      ${(i.alts || []).length ? `<h2 class="sh-h">Apparences alternatives</h2><div class="sh-figs">${i.alts.map((a, n) => `<div class="sh-fig"><img src="${img(a.photo, 300)}" data-z="${esc(big(a.photo))}" alt="" loading="lazy" style="cursor:zoom-in"><span>${esc(a.name || "")}</span></div>`).join("")}</div>` : ""}
+      ${(i.accessories || []).length ? `<h2 class="sh-h">Accessoires (Mini-construction)</h2><div class="sh-figs">${i.accessories.map(a => `<div class="sh-fig">${a.photo
+        ? `<img src="${img(a.photo, 300)}" data-z="${esc(big(a.photo))}" alt="" loading="lazy" style="cursor:zoom-in">` : `<span class="noimg">🗡️</span>`}<span>${esc(a.name)}</span></div>`).join("")}</div>` : ""}
+      ${(i.moc_lots || []).length ? `<h2 class="sh-h">Pièces <small>(${nf.format(i.moc_lots.reduce((a, x) => a + (x.qty || 1), 0))})</small></h2><div class="sh-lots">${i.moc_lots.map(x => lotRow(x)).join("")}</div>` : ""}
+      ${i.set_parts || i.fig_parts ? `<h2 class="sh-h">Pièces</h2><button type="button" class="sh-btn" data-parts>🧱 Voir les pièces ${i.kind === "fig" ? "de la figurine" : "du set"}</button>` : ""}
+      ${links.length ? `<div class="sh-links">${links.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t} ↗</a>`).join("")}</div>` : ""}
+    </div></article>`;
+  $$("[data-fig]").forEach(b => b.onclick = () => go("fig/" + b.dataset.fig));
+  $("[data-parts]")?.addEventListener("click", () => go(i.kind === "fig" ? "fig/self" : "parts"));
+}
+
+/* pièces d'une minifig, avec ce qui a été retiré, remplacé ou ajouté */
+function figRows(parts, swaps) {
+  const sw = swaps || [];
+  return parts.map((p, k) => { const s = sw.find(x => x.k === k), gone = s && !s.new;
+      return lotRow(s?.new ? { ...s.new, qty: p.qty } : p, gone ? (p.acc ? "accessoire retiré" : "retirée") : s ? `remplacée (au lieu de ${p.name || p.part})` : p.acc ? "accessoire" : "", gone); })
+    .concat(sw.filter(x => !x.orig && x.new).map(x => lotRow(x.new, "ajoutée"))).join("");
+}
+const back = `<button type="button" class="sh-btn sh-back" data-back>← Retour à la fiche</button>`;
+async function drawFig(k) {
+  const self = k === "self", f = self ? { name: D.name, image: D.image, qty: D.quantity, swaps: D.swaps, id: "self" } : D.minifigs[+k];
+  if (!f) return go("");
+  const pic = self ? mainPhoto(D) : figPhoto(f.image);
+  $("#main").innerHTML = `${back}<article class="sh-card"><img class="sh-img" src="${img(pic, 1200)}" data-z="${esc(big(pic))}" alt="" style="max-height:44vh">
+    <div class="sh-body"><div class="sh-num">${esc(self ? D.number : f.id.startsWith("moc-") ? "MOC" : f.id)}${self ? "" : ` · dans « ${esc(D.name)} »`}</div><h1>${esc(f.name)}${(f.qty || 1) > 1 ? ` <small class="muted">×${f.qty}</small>` : ""}</h1>
+    <h2 class="sh-h">Pièces</h2><div data-l><div class="loading"><span class="spinner"></span>Chargement des pièces…</div></div></div></article>`;
+  $("[data-back]").onclick = () => go("");
+  try {
+    const r = await fetch(`${base}/fig/${encodeURIComponent(self ? "self" : f.id)}/parts`); if (!r.ok) throw new Error();
+    const parts = await r.json();
+    $("[data-l]").innerHTML = parts.length ? `<div class="sh-lots">${figRows(parts, f.swaps)}</div>` : `<p class="sh-note">Liste des pièces indisponible pour cette figurine.</p>`;
+  } catch { $("[data-l]").innerHTML = `<p class="sh-note">Liste des pièces indisponible pour le moment.</p>`; }
+}
+async function drawParts() {
+  $("#main").innerHTML = `${back}<article class="sh-card"><div class="sh-body"><div class="sh-num">${esc(D.number)}</div><h1>Pièces de « ${esc(D.name)} »</h1>
+    <div data-l><div class="loading"><span class="spinner"></span>Chargement des pièces…</div></div></div></article>`;
+  $("[data-back]").onclick = () => go("");
+  let rows;
+  try { const r = await fetch(base + "/parts"); if (!r.ok) throw new Error(); rows = await r.json(); }
+  catch { $("[data-l]").innerHTML = `<p class="sh-note">Liste des pièces indisponible pour le moment.</p>`; return; }
+  const L = $("[data-l]");
+  L.innerHTML = `<p class="sh-note" style="margin:0 0 8px">${nf.format(rows.length)} références · ${nf.format(rows.reduce((a, r) => a + (r.quantity || 1), 0))} pièces (hors figurines)</p>
+    <div class="sh-tools"><input type="search" data-q placeholder="Filtrer : nom, référence, couleur…"></div><div class="sh-lots" data-g></div>`;
+  const draw = () => { const q = $("[data-q]", L).value.trim().toLowerCase();
+    const sel = rows.filter(r => !q || `${r.name} ${r.part_num} ${r.bricklink} ${r.color_fr} ${r.color_name}`.toLowerCase().includes(q));
+    $("[data-g]", L).innerHTML = sel.slice(0, 600).map(r => lotRow(r)).join("") || `<p class="sh-note">Aucune pièce ne correspond.</p>`; };
+  $("[data-q]", L).oninput = draw; draw();
+}
+/* navigation : #fig/<n>, #parts (le bouton « retour » du téléphone revient à la fiche) */
+const go = h => { if (location.hash.slice(1) !== h) location.hash = h; else route(); };
+function route() {
+  if (!D) return;
+  const h = decodeURIComponent(location.hash.slice(1));
+  window.scrollTo(0, 0);
+  if (h.startsWith("fig/")) return drawFig(h.slice(4));
+  if (h === "parts" && D.set_parts) return drawParts();
+  drawMain();
+}
+window.addEventListener("hashchange", route);
+/* lien vers le compte Instagram, à droite du nom de l'appli (seulement si un compte est relié) */
+function setIgHead(u) {
+  const a = document.getElementById("igHead"); if (!a) return;
+  a.hidden = !u;
+  if (u) { a.href = "https://www.instagram.com/" + encodeURIComponent(u) + "/"; a.querySelector(".ig-name").textContent = "@" + u; a.title = "@" + u + " sur Instagram"; }
+}
+fetch(base + "/data").then(r => r.ok ? r.json() : Promise.reject(r))
+  .then(d => { D = d; setIgHead(d.ig_user); document.title = `${d.name} — Briquothèque`; route(); })
+  .catch(() => { $("#main").innerHTML = `<div class="empty"><div class="big">🔒</div>Ce lien de partage n'est plus actif.</div>`; });
+
+/* ↑ retour en haut : toujours visible, partout (la page, ou la fenêtre ouverte au premier plan) */
+(() => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "to-top"; b.textContent = "↑"; b.title = "Retour en haut"; b.setAttribute("aria-label", "Retour en haut");
+  document.body.append(b);
+  const scrollable = el => el.scrollHeight > el.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(el).overflowY);
+  b.onclick = e => {
+    e.stopPropagation();
+    const top = [...document.querySelectorAll(".zoomed")].filter(m => !m.hidden && m.getClientRects().length).at(-1);
+    if (!top) return window.scrollTo({ top: 0, behavior: "smooth" });
+    [top, ...top.querySelectorAll("*")].filter(scrollable).forEach(el => el.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+})();
+</script>
+</body>
+</html>

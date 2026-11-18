@@ -1,0 +1,11 @@
+{
+  "name": "Briquothèque",
+  "short_name": "Briquothèque",
+  "description": "Ma collection LEGO",
+  "lang": "fr",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#d01012",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
