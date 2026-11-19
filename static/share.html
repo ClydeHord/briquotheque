@@ -70,6 +70,10 @@
 .tg.tg-inc, .card .tagline .tg.tg-inc { color: #8a6d00; border-color: rgba(176, 140, 0, .45); font-size: 10px; padding: 0 5px; line-height: 1.5; font-weight: 600; background: none; }
 @media (prefers-color-scheme: dark) { .tg.tg-inc, .card .tagline .tg.tg-inc { color: #e6c84f; border-color: rgba(230, 200, 79, .4); } }
 </style>
+<script>/* appli installée : une page publique n'y reste jamais — en revenant dans l'appli, retour à l'appli privée (navigateur ordinaire : rien) */
+(() => { const sa = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; if (!sa) return;
+  let hid = 0; document.addEventListener("visibilitychange", () => { if (document.hidden) hid = Date.now(); else if (hid && Date.now() - hid > 1500) location.replace("/"); });
+  addEventListener("pageshow", e => { if (e.persisted) location.replace("/"); }); })();</script>
 </head>
 <body>
 <header class="topbar">

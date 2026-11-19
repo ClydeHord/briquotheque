@@ -227,7 +227,7 @@ VIEW.tuiles = () => [head("Tuiles et totaux", "Vos propres chiffres, à côté d
 ];
 
 /* ------------------------------------------------------------------ Vues, tris et filtres */
-const SORTS = [["", "(ne pas changer le tri)"], ["modified", "Dernière modification"], ["added", "Ajout récent"], ["added_old", "Ajout le plus ancien"], ["value", "Valeur décroissante"], ["variation", "Évolution du prix"], ["ecart", "Écart de prix"], ["name", "Nom (A → Z)"], ["number", "Numéro"],
+const SORTS = [["", "(ne pas changer le tri)"], ["modified", "Dernière modification"], ["added", "Ajout récent"], ["added_old", "Ajout le plus ancien"], ["value", "Valeur décroissante"], ["variation", "Variation de prix (%)"], ["ecart", "Variation de prix (€)"], ["name", "Nom (A → Z)"], ["number", "Numéro"],
   ["year", "Année"], ["qty", "Nombre d'exemplaires"], ["pieces", "Nombre de pièces"], ["figs", "Nombre de figurines"], ["theme", "Thème"]];
 VIEW.vues = () => {
   let lists = []; try { lists = (BOF()?.lists() || []).filter(l => l.kind === "collection"); } catch {}

@@ -223,6 +223,10 @@
   .trend-tog.on { border-color: var(--red, #d01012); background: color-mix(in srgb, var(--red, #d01012) 12%, var(--panel)); }
   @media (max-width: 600px) { .toolbar > .trend-tog { padding: 0 9px; } }
 </style>
+<script>/* appli installée : une page publique n'y reste jamais — en revenant dans l'appli, retour à l'appli privée (navigateur ordinaire : rien) */
+(() => { const sa = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; if (!sa) return;
+  let hid = 0; document.addEventListener("visibilitychange", () => { if (document.hidden) hid = Date.now(); else if (hid && Date.now() - hid > 1500) location.replace("/"); });
+  addEventListener("pageshow", e => { if (e.persisted) location.replace("/"); }); })();</script>
 </head>
 <body>
 <header class="topbar">
@@ -256,8 +260,8 @@
       <option value="added">Ajout récent</option>
       <option value="added_old">Ajout le plus ancien</option>
       <option value="value">Valeur décroissante</option>
-      <option value="variation">Évolution du prix</option>
-        <option value="ecart">Écart de prix</option>
+      <option value="variation">Variation de prix (%)</option>
+        <option value="ecart">Variation de prix (€)</option>
       <option value="name">Nom (A → Z)</option>
       <option value="number">Numéro</option>
       <option value="year">Année</option>
@@ -734,23 +738,23 @@ function render() {
   }
   const hit = (i, extra = []) => !f || [i.number, i.display_name, i.info?.name, i.info?.theme, i.portion_note, ...extra].join(" ").toLowerCase().includes(f);
   const mergedIds = new Set();   // figurine d'origine d'un set identique à une fiche seule de même liste : une seule carte (= app.js)
-  for (const x of data.items) { x._withSetN = 0; x._toL = false; }
+  for (const x of data.items) { x._withSetN = 0; x._toL = false; x._grp = [x]; }   /* (_grp : les fiches regroupées sous cette carte) */
   for (const i of data.items) if (!data.no_merge && i.in && i.orig && i.kind === "fig") {   // (no_merge : regroupement coupé dans le back office) — mêmes modifications : même figurine (msig)
     const L = data.items.find(x => x.kind === "fig" && !x.in && figKey(x.number) === figKey(i.number) && kindOf(x.list_id) === "collection" && (!i.display_name || i.display_name === itemName(x)) && x.msig === i.msig);
-    if (L) { i._toL = true; L._withSetN += i.quantity || 1; if (items.includes(L)) mergedIds.add(i.id); }   // (quelle que soit la liste ; cachée si sa fiche seule est dans cette vue)
+    if (L) { i._toL = true; L._withSetN += i.quantity || 1; L._grp.push(i); if (items.includes(L)) mergedIds.add(i.id); }   // (quelle que soit la liste ; cachée si sa fiche seule est dans cette vue)
   }
   {   // la même figurine d'origine dans plusieurs sets, sans exemplaire seul : une carte (= app.js)
     const lead = new Map(), vis = x => current === ALL ? kindOf(x.list_id) === "collection" : x.list_id === current;
     for (const i of data.items) if (!data.no_merge && i.in && i.orig && i.kind === "fig" && !i._toL) {
       const k = figKey(i.number) + "|" + (i.display_name || "") + "|" + (i.msig || ""), l = lead.get(k);
       if (!l) { lead.set(k, i); continue; }
-      l._withSetN = (l._withSetN || 0) + (i.quantity || 1); if (vis(l)) mergedIds.add(i.id);
+      l._withSetN = (l._withSetN || 0) + (i.quantity || 1); l._grp.push(i); if (vis(l)) mergedIds.add(i.id);
     }
     for (const i of data.items) if (!data.no_merge && i.in && !i.orig && i.kind === "fig" && !String(i.msig || "").startsWith("v:")) {   // ajoutée dans un set : avec la seule identique, sinon l'originale identique (= app.js)
       const same = x => x !== i && x.kind === "fig" && figKey(x.number) === figKey(i.number) && kindOf(x.list_id) === "collection" && itemName(x) === itemName(i) && x.msig === i.msig;
       const L = data.items.find(x => same(x) && !x.in), O = !L && (lead.get(figKey(i.number) + "|" + (i.display_name || "") + "|" + (i.msig || "")) || data.items.find(x => same(x) && x.in && x.orig));
       const to = L || O; if (!to) continue;
-      to._withSetN = (to._withSetN || 0) + (i.quantity || 1); if (L) i._toL = true;
+      to._withSetN = (to._withSetN || 0) + (i.quantity || 1); to._grp.push(i); if (L) i._toL = true;
       if (current === ALL ? kindOf(to.list_id) === "collection" : to.list_id === current) mergedIds.add(i.id);
     }
   }
@@ -772,8 +776,8 @@ function render() {
     added: (a, b) => (b.added_at || 0) - (a.added_at || 0),
     added_old: (a, b) => (a.added_at || 0) - (b.added_at || 0),
     value: (a, b) => (b.info?.estimate ?? 0) - (a.info?.estimate ?? 0),
-    variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // hausses d'abord ; sans relevé : à la fin
-    ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Écart de prix » : le plus gros écart EN EUROS d'abord, hausse ou baisse
+    variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : Math.abs(b.chg) - Math.abs(a.chg) || b.chg - a.chg; },   // la plus grosse variation en %, hausse ou baisse ; sans relevé : à la fin
+    ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Variation de prix (€) » : le plus gros écart EN EUROS d'abord, hausse ou baisse
       const eur = x => { const v = x.info?.estimate ?? 0; return Math.abs(v - v / (1 + x.chg / 100)); };   // (valeur actuelle − valeur d'avant, d'après la variation en %)
       return eur(b) - eur(a); },
     name: (a, b) => itemName(a).localeCompare(itemName(b), "fr"),
@@ -991,8 +995,12 @@ function openDetail(i, altK = null) {
         <div class="gs-num">${[num, kindTxt].filter(Boolean).join(" · ")}</div>
         <div class="cfg-meta">${[inf.theme, inf.year, piecesTxt(inf.pieces, i.quantity), retired(i) && !wishItem ? "Retiré" : ""].filter(Boolean).map(esc).join(" · ")}</div>
         ${tl ? `<div class="card gs-tags"><div class="meta tagline">${tl}</div></div>` : ""}
-        ${(i.quantity || 1) > 1 ? `<div class="gs-qty">Quantité : <b>${nf.format(i.quantity)}</b></div>` : ""}
-        ${hostOf(i) ? `<div class="gs-qty">Rangée dans <button type="button" class="link" data-host>${esc(itemName(hostOf(i)))}</button></div>` : ""}
+        ${(() => {   /* figurine regroupée (même carte) : le total et la répartition, comme l'appli */
+          const g = (i._grp || []).length > 1 ? i._grp : [i], tot = g.reduce((a, x) => a + (x.quantity || 1), 0), sets = new Map(); let loose = 0;
+          for (const x of g) { const h = hostOf(x); if (h) sets.set(h, (sets.get(h) || 0) + (x.quantity || 1)); else loose += x.quantity || 1; }
+          return (tot > 1 ? `<div class="gs-qty">Quantité : <b>${nf.format(tot)}</b></div>` : "")
+            + (sets.size ? `<div class="gs-qty">${sets.size === 1 && !loose ? "Rangée dans " : "Dans mes sets : "}${[...sets].map(([h, n]) => `<button type="button" class="link" data-hostid="${esc(h.id)}">${esc(itemName(h))}</button>${n > 1 && (sets.size > 1 || loose) ? " ×" + nf.format(n) : ""}`).join(", ")}${loose ? ` · seule${loose > 1 ? "s" : ""} : ${nf.format(loose)}` : ""}</div>` : "");
+        })()}
       </div>
     </div>
     ${wishItem ? `<div class="gd-status">${retired(i) ? `<span class="badge retired">Retiré</span>` : upcoming(i) ? `<span class="badge upcoming">Bientôt disponible</span>` : soon(i) ? `<span class="badge soon">Bientôt retiré</span>` : ""}
@@ -1043,7 +1051,7 @@ function openDetail(i, altK = null) {
   wireZoom(d);
   d.querySelectorAll("[data-parade]").forEach(t => t.onclick = e => { e.stopPropagation();   // toutes les figurines du set, chaque exemplaire
     openParade(itemName(i), figs.flatMap(f => Array.from({ length: Math.max(1, f.qty || 1) }, () => ({ src: img(f.image), label: f.name, sub: f.added ? "ajoutée" : "" })))); });
-  d.querySelector("[data-host]")?.addEventListener("click", () => { d.remove(); openDetail(hostOf(i)); });   // le set où elle est rangée
+  d.querySelectorAll("[data-hostid]").forEach(b => b.addEventListener("click", () => { const h = data.items.find(x => x.id === b.dataset.hostid); if (h) { d.remove(); openDetail(h); } }));   // un set où elle est rangée
   d.querySelectorAll("[data-galk]").forEach(im => im.onclick = e => { e.stopPropagation(); zoomGal(+im.dataset.galk); });
 }
 /* fiche d'une figurine d'un set (carte « Dans un set ») : la figurine, et les sets où elle est (un appui ouvre le set) */

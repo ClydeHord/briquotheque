@@ -493,7 +493,41 @@ D.addEventListener("keydown", e => {   // raccourcis clavier (jamais pendant une
 
 /* ------------------------------------------------------------------ branchement sur bo.js */
 const step = (name, f) => { try { f(); } catch (e) { console.warn("BO max " + name, e); } };
-const pass = () => { step("étiquettes", tagsPass); step("liens", hrefPass); step("réglages", settingsPass); step("pages", pagesPass); step("comportements", behavPass); };
+/* éléments d'origine modifiés (back office → 🧩 Éléments d'origine, cfg.native) : tris, filtres, tuiles — renommés, masqués, réordonnés */
+let natSortSig = "";
+function nativePass() {
+  const N = obj(cfg().native);
+  const conf = k => { const c = obj(N[k]); return { hid: arr(c.hidden), lab: obj(c.labels), ord: arr(c.order) }; };
+  const reorder = (els, keyOf, ord) => { if (!els.length) return; const par = els[0].parentNode, idx = e => { const p = ord.indexOf(keyOf(e)); return p < 0 ? 1000 + +e.dataset.natI : p; };
+    const sorted = [...els].sort((a, b) => idx(a) - idx(b)); if (sorted.every((e, i) => e === els[i])) return;
+    const anchor = els[els.length - 1].nextSibling; for (const e of sorted) par.insertBefore(e, anchor); };
+  {   /* tris : les options de #sort (gardent leur valeur ; « Trier par » les relit) */
+    const sel = D.getElementById("sort");
+    if (sel) { const c = conf("sorts"), opts = [...sel.options];
+      opts.forEach((o, i) => { if (o.dataset.natI == null) { o.dataset.natI = i; o.dataset.natOrig = o.textContent; }
+        if (!o.value.startsWith("bo:")) { o.textContent = str(c.lab[o.value]).trim() || o.dataset.natOrig; if (c.hid.includes(o.value)) o.dataset.natHide = "1"; else delete o.dataset.natHide; } });
+      reorder(opts, o => o.value, c.ord);
+      const sig = JSON.stringify(N.sorts || null); if (sig !== natSortSig) { natSortSig = sig; try { syncSortMenu(); } catch {} } } }
+  {   /* filtres : les cases de « ⚙️ Filtres » (étiquettes, options des cartes) */
+    const pop = D.getElementById("filtPop");
+    if (pop) { const c = conf("filters"), labs = [...pop.querySelectorAll("label")].filter(l => l.querySelector("[data-ftag], [data-cardopt]"));
+      const keyOf = l => { const i = l.querySelector("[data-ftag], [data-cardopt]"); return i.dataset.ftag || i.dataset.cardopt; };
+      labs.forEach((l, i) => { l.dataset.natI = i; const k = keyOf(l), tn = [...l.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+        if (tn) { if (l.dataset.natOrig == null) l.dataset.natOrig = tn.textContent.trim(); tn.textContent = " " + (str(c.lab[k]).trim() || l.dataset.natOrig) + " "; }
+        l.hidden = c.hid.includes(k); l.style.display = c.hid.includes(k) ? "none" : ""; });
+      const tags = labs.filter(l => l.querySelector("[data-ftag]")), opts = labs.filter(l => l.querySelector("[data-cardopt]"));
+      reorder(tags, keyOf, c.ord); reorder(opts, keyOf, c.ord); } }
+  {   /* tuiles du haut : repérées par leur titre d'origine */
+    const st = D.getElementById("stats");
+    if (st) { const c = conf("tiles"), tiles = [...st.querySelectorAll(".stat")];
+      const keyOf = t => t.dataset.natOrig;
+      tiles.forEach((t, i) => { const l = t.querySelector(".lbl"); if (!l) return; if (t.dataset.natOrig == null || (t.dataset.natLbl !== l.textContent)) { t.dataset.natOrig = l.textContent.trim(); }
+        const k = t.dataset.natOrig; t.dataset.natI = i; const nm = str(c.lab[k]).trim(); if (nm) { l.textContent = nm; } t.dataset.natLbl = l.textContent;
+        t.style.display = c.hid.includes(k) ? "none" : ""; });
+      const byPar = new Map(); for (const t of tiles) { if (!byPar.has(t.parentNode)) byPar.set(t.parentNode, []); byPar.get(t.parentNode).push(t); }
+      for (const g of byPar.values()) reorder(g, keyOf, c.ord); } }
+}
+const pass = () => { step("étiquettes", tagsPass); step("liens", hrefPass); step("réglages", settingsPass); step("pages", pagesPass); step("comportements", behavPass); step("éléments d'origine", nativePass); };
 HOOKS.apply.push(() => { stamp++; pageSig = ""; step("style", buildCss); });
 HOOKS.refresh.push(pass);
 step("style", buildCss);

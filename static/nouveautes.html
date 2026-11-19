@@ -16,6 +16,10 @@
   .pub-link:hover { background: var(--red); color: #fff; }
   @media (max-width: 520px) { .pub-link { padding: 6px 11px; font-size: 13.5px; } }
 </style>
+<script>/* appli installée : une page publique n'y reste jamais — en revenant dans l'appli, retour à l'appli privée (navigateur ordinaire : rien) */
+(() => { const sa = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; if (!sa) return;
+  let hid = 0; document.addEventListener("visibilitychange", () => { if (document.hidden) hid = Date.now(); else if (hid && Date.now() - hid > 1500) location.replace("/"); });
+  addEventListener("pageshow", e => { if (e.persisted) location.replace("/"); }); })();</script>
 </head>
 <body>
 <header class="topbar">

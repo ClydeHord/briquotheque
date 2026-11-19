@@ -2349,7 +2349,7 @@ body:has(#modal:not([hidden]) #stepFind:not([hidden])) .to-top:not(.to-reload), 
 .crop-wrap.brushing { cursor: none; }   /* le cercle rouge (.brush-cur) remplace la croix */
 .brush-cur { position: fixed; z-index: 1000; border: 2px solid #e01b1b; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255,255,255,.8); transform: translate(-50%, -50%); pointer-events: none; }
 .brush-cur[hidden] { display: none; }
-.btn[data-brush].on { border-color: var(--red); color: var(--red); background: rgba(208, 16, 18, .08); }
+.btn[data-brush].on { border-color: var(--red); color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
 .brush-tools input[type=range] { flex: 1; min-width: 80px; }
 
 /* recadrage : boutons du bas sur une rangée alignée (le bouton de détourage n'y prend plus toute la largeur), retour à la ligne si étroit */
@@ -2362,7 +2362,7 @@ body:has(#modal:not([hidden]) #stepFind:not([hidden])) .to-top:not(.to-reload), 
   background: var(--card, transparent); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
 .sub-chip .ct { font-size: 12px; font-weight: 500; opacity: .7; white-space: nowrap; }
 .sub-chip:hover { border-color: var(--red); }
-.sub-chip.on { border-color: var(--red); background: rgba(208, 16, 18, .12); color: var(--red); }
+.sub-chip.on { border-color: var(--red); background: var(--accent-bg, color-mix(in srgb, var(--red) 12%, transparent)); color: var(--red); }
 .sub-chip[data-direct] { border-style: dashed; }
 .sub-chip.drop-on { outline: 2px dashed var(--red); }
 
@@ -2881,3 +2881,11 @@ input[type=color].le-color::-webkit-color-swatch-wrapper { padding: 0; } input[t
 .pub-share { margin-left: 6px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-size: 14px; line-height: 1.4; cursor: pointer; vertical-align: middle; }
 .pub-share:hover { border-color: var(--red); }
 .pub-share[hidden] { display: none; }
+/* (bas du menu : © non cliquable, mentions légales · GitHub) */
+.side-legal { color: var(--muted); }
+.side-legal a.link-like { color: var(--muted); text-decoration: none; }
+.side-legal a.link-like:hover { color: var(--ink); text-decoration: underline; }
+/* (« ‹ » liste parente) */
+.sub-chip.sub-back { font-size: 22px; line-height: 1; padding-inline: 12px; font-weight: 700; }
+html.sc-down .top-views2 .sub-parent:has(.sub-back) { display: inline-flex !important; }   /* (téléphone, en défilant : « ‹ » reste) */
+html.sc-down .top-views2 .sub-chip.sub-back { display: inline-flex !important; }

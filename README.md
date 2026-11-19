@@ -44,13 +44,14 @@ Tout ce que vous possédez, rangé comme vous le voulez : sets, figurines, MOC, 
   ce qui se voit : émoji, logo, nom. Sous-listes affichables dans le menu latéral (une à une, ou toutes avec ↳). Une liste qui a des sous-listes choisit
   le logo de ses sous-listes sur les vignettes (le leur, ou le sien). **Logo individuel** d’une fiche : il remplace celui de la liste sur sa vignette.
 - **Vues** Tout / Sets / Figurines / Pièces, avec leurs nombres ; la valeur affichée trie du plus cher au moins cher.
-- **Barre des filtres** collée en haut en défilant ; tris « Évolution du prix » (du + % au − %) et « Écart de prix » (le plus gros écart en euros,
+- **Barre des filtres** collée en haut en défilant ; tris « Variation de prix (%) » (la plus grosse hausse ou baisse en % d’abord) et « Variation de prix (€) » (le plus gros écart en euros,
   hausse comme baisse) ; **🔃** renverse le tri ; **📈** montre ou cache les variations ; « Définir par défaut » : le tri d’office de la collection (↺ y revient).
 - **Vignettes** : le prix en gros tout en bas, le prix à l’unité au-dessus (plusieurs exemplaires) ; plus de ligne « réel ».
 - **Filtre** par nom, numéro ou thème ; menu **⚙️ Filtres** (sélection multiple : complet, amélioré, modifié, set partiel, MOC) ; tris ; étiquettes « Set partiel »,
   « Modifié », « Amélioré » (un MOC : « MOC » seul) ; bouton **↺** pour tout remettre à zéro.
 - **Sélection multiple** pour déplacer ou supprimer plusieurs fiches ; glisser-déposer sur une liste ou une pastille.
 - **🚧 À construire** : les sets pas encore montés, avec leur valeur neuve.
+- **‹ Liste parente** : dans une sous-liste, un bouton devant les pastilles ramène à la liste du dessus. Le **logo individuel** d’un set passe à ses figurines rangées dedans (retirable figurine par figurine).
 
 ### ➕ Ajout
 Retrouver un set ou une figurine en quelques secondes, quelle que soit l'information dont on dispose. → [Détails](docs/FONCTIONS.md#ajout)
@@ -119,6 +120,7 @@ Ce que vous voulez, et ce qui sort. → [Détails : souhaits](docs/FONCTIONS.md#
   défilables, lien vers lego.com ; **figurines exclusives** avec leur set, ajoutables à la liste de souhaits et, une fois sorties,
   retrouvées sur BrickLink (ou « Pas d'annonces »). La page se relit à l'ouverture. Cases pour réafficher les sets masqués, ceux déjà
   dans la liste de souhaits ou surveillés.
+- **Nouveautés relevées toutes les heures** ; ouvrir la page Nouveautés relit lego.com tout de suite. Tris « **Variation de prix (%)** » (la plus grosse hausse ou baisse d’abord) et « **Variation de prix (€)** ».
 
 ### 🌐 Pages publiques et partage
 Montrer sa collection sans rien risquer. → [Détails](docs/FONCTIONS.md#pages-publiques-et-partage)
@@ -127,6 +129,7 @@ Montrer sa collection sans rien risquer. → [Détails](docs/FONCTIONS.md#pages-
 - **Fiches partagées** par lien ; votre nom (« Collection de … ») et votre compte Instagram (facultatif) en haut ; lien vers le projet.
 - En défilant, les **listes restent à portée** dans la barre du haut, avec un retour à toute la collection.
 - **Démo** publique remise à zéro toutes les 12 h, séparée de votre collection.
+- **📤** à côté du titre d’une liste qui a une page publique : partage son lien. **Visites** (une par personne et par jour) dans 📊 Statistiques.
 
 ### ✅ Tâches
 Ne rien oublier : une pièce à racheter, une couleur à vérifier… → [Détails](docs/FONCTIONS.md#tâches) · [statistiques](docs/FONCTIONS.md#statistiques)
@@ -155,6 +158,7 @@ L'atelier de l'application, à l'adresse `/backoffice` : **tout se modifie sans 
   (vérifié avant écriture, versions gardées, retour arrière automatique, page de secours).
 - **Sûr** : brouillon avec aperçu en direct puis « Publier », annulation, historique ; mot de passe à part créé à la première visite ;
   `?bo=off` affiche le site sans personnalisation. Pensé pour ordinateur.
+- **🧩 Éléments d’origine** : renommer, masquer, réordonner les tris, filtres et tuiles d’origine ; pourcentages des calculs d’origine modifiables.
 
 ### 📴 Sans internet
 L'application reste utilisable même si le serveur perd internet. → [Détails](docs/FONCTIONS.md#sans-internet)

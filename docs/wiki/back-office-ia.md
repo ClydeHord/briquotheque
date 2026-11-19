@@ -1,6 +1,6 @@
 # Briquothèque — Notice du back office (condensé pour IA)
 
-Généré le 18/11/2026 12:39.
+Généré le 19/11/2026 08:45.
 
 Consigne pour l'IA : ce texte est la notice complète du back office de Briquothèque (les coulisses : apparence, textes, fiches, étiquettes, pages, sauvegardes… sans code), une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur cette notice : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si la notice ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -537,6 +537,16 @@ Ouvrir : Vues, tris et filtres ↗
 - Un **tri** à vous s'ajoute au menu « ⇅ Tri » du site (marqué ★).
 
 - Un **filtre** à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).
+
+#### Éléments d'origine : modifier l'existant
+
+Ouvrir : origine ↗ Ce que l'application propose déjà, à votre main :
+
+- **Tris** (menu « Trier par »), **Filtres** (menu « ⚙️ Filtres ») et **tuiles du haut** : un nouveau nom (vide : celui d'origine), « masquer »,
+et ↑ ↓ pour l'ordre — brouillon, puis « Publier ». Les tuiles changent selon la page : ouvrez dans l'aperçu celle à régler, puis « ⟳ Relire les tuiles ».
+
+- **Calculs d'origine** : la formule de chacun expliquée (boîte, livret de plans, exemplaire modifié, seuils des flèches) et son pourcentage,
+modifiable — effet **immédiat**, sans « Publier » (ce sont les réglages du serveur, les mêmes que dans l'appli : Réglages → 🧮 Estimations).
 
 Vues enregistrées, tris et filtres
 

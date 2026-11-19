@@ -57,11 +57,10 @@
       <button class="btn ghost full" id="btnLogout">↩ Se déconnecter</button>
     </div>
     <div class="side-sep" id="pubSep"></div>
-    <nav id="pubNav"><!-- démo et code source (les pages publiques : 📤 à côté du titre de leur page) -->
+    <nav id="pubNav"><!-- la démo (les pages publiques : 📤 à côté du titre de leur page ; GitHub : en bas, à côté des mentions légales) -->
       <button type="button" class="nav-item pub-row" data-pub="/demo" title="Copier le lien"><span class="nm">🧪 Mode Démo</span></button>
-      <a class="nav-item pub-row gh-link" href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener" title="Le code source officiel (s'ouvre dans un nouvel onglet)"><span class="nm">🐙 GitHub</span></a><!-- source officielle (présent aussi dans la version publiée) -->
     </nav>
-    <p class="side-legal"><button type="button" class="link-like" data-legal>© 2026 Clýde Hørd · ⚖️ Mentions légales</button></p><!-- texte : LEGAL_HTML (app.js) -->
+    <p class="side-legal">© 2026 Clýde Hørd · <button type="button" class="link-like" data-legal>⚖️ Mentions légales</button> · <a class="link-like" href="https://github.com/ClydeHord/briquotheque" target="_blank" rel="noopener" title="Le code source officiel (s'ouvre dans un nouvel onglet)">🐙 GitHub</a></p><!-- texte : LEGAL_HTML (app.js) ; GitHub : la source officielle -->
   </aside>
 
   <main class="main">
@@ -108,8 +107,8 @@
         <option value="added">Ajout récent</option>
         <option value="added_old">Ajout le plus ancien</option>
         <option value="value">Valeur décroissante</option>
-        <option value="variation">Évolution du prix</option>
-        <option value="ecart">Écart de prix</option>
+        <option value="variation">Variation de prix (%)</option>
+        <option value="ecart">Variation de prix (€)</option>
         <option value="name">Nom (A → Z)</option>
         <option value="number">Numéro</option>
         <option value="year">Année</option>

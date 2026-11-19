@@ -193,6 +193,14 @@ def normalize(cfg):
         _dict_of(tg, "over", dict)
         if "add" in tg:
             tg["add"] = _rows(tg["add"], 300)
+    nv = out.get("native")   # éléments d'origine modifiés : {sorts|filters|tiles: {order, hidden, labels}}
+    if nv is not None:
+        for kk in list(nv):
+            if kk not in ("sorts", "filters", "tiles") or not isinstance(nv[kk], dict):
+                del nv[kk]
+                continue
+            _strs(nv[kk], "order", "hidden")
+            _dict_of(nv[kk], "labels", str)
     bh = out.get("behav")
     if bh is not None:
         if "keys" in bh:

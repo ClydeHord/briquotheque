@@ -41,7 +41,7 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
 - On peut **déposer** des fiches sur une pastille pour les y ranger.
 
 **Afficher et trier**
-- **Tris « Évolution du prix » et « Écart de prix »** et bouton **🔃 Renverser le tri** (ordre inverse du tri en cours, retenu liste par liste).
+- **Tris « Variation de prix (%) » et « Variation de prix (€) »** et bouton **🔃 Renverser le tri** (ordre inverse du tri en cours, retenu liste par liste).
 - **↑ ↓ ~ à côté des prix** : la variation depuis le dernier relevé, très discrète (cartes, fiche, totaux) ; réglable (seuils de hausse
   et de baisse en %, « ~ » si stable, pourcentage, taille) dans le back office ; bouton 📈 pour les montrer ou les cacher à la volée ; toujours dans une fiche 
 - **🔍 Comprendre les variations** (Statistiques) : pour la liste affichée, ce qui a fait monter ou baisser la valeur — ajouts, retraits,
@@ -72,9 +72,10 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
   (mode modification) : il remplace le logo de la liste sur sa vignette, page publique comprise. Bouton **↳** en haut du menu :
   toutes les sous-listes dans le menu, ou seulement celles cochées.
 - **Barre des filtres** : collée en haut en défilant ; recherche surlignée quand elle contient du texte ; **🔃** renverse le tri ; **📈** montre ou cache
-  les variations ; tris « Évolution du prix » (du + % au − %) et « Écart de prix » (le plus gros écart en euros, hausse comme baisse), qui allument 📈 ;
+  les variations ; tris « Variation de prix (%) » (la plus grosse hausse ou baisse en % d’abord) et « Variation de prix (€) » (le plus gros écart en euros, hausse comme baisse), qui allument 📈 ;
   « Définir par défaut » (menu ⇅ Tri) : le tri d’office de toutes les listes de la collection, ↺ y revient.
 - **Vignettes** : le prix en gros tout en bas, le prix à l’unité au-dessus (plusieurs exemplaires) ; plus de ligne « réel ».
+- **‹ Liste parente** devant les pastilles des sous-listes ; **logo individuel** d’un set hérité par ses figurines rangées dedans, retirable figurine par figurine.
 
 ## Ajout
 
@@ -277,6 +278,7 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
   (France, sinon Europe, sinon monde ; « Pas d'annonces » s'il n'y en a pas). Une figurine sans photo est signalée en attendant.
 
 ---
+- Relevé de lego.com **toutes les heures**, et dès l’ouverture de la page Nouveautés.
 
 ## Pages publiques et partage
 
@@ -291,6 +293,7 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
   collection (et connecté, vous ne pouvez pas l'ouvrir : utilisez une fenêtre privée).
 
 ---
+- **📤** à côté du titre (collection, souhaits, À surveiller, Nouveautés) : partage le lien de la page publique ; **visites** comptées une fois par personne et par jour, affichées dans 📊 Statistiques.
 
 ## Tâches
 
@@ -382,6 +385,7 @@ Adresse `/backoffice` (Réglages → 🛠 Back office). Notice complète : `/bac
   retour arrière automatique au démarrage, page de secours `/backoffice/secours`).
 - **Sécurité** : outils sensibles limités au réseau local (sauf réglage contraire), réglages toujours vérifiés par le serveur (types, adresses, tailles),
   aucune donnée privée servie aux visiteurs, `?bo=off` pour afficher le site sans personnalisation. Absent de la démonstration.
+- **🧩 Éléments d’origine** (groupe Avancé) : tris, filtres et tuiles d’origine renommés, masqués, réordonnés ; pourcentages des calculs d’origine modifiables.
 
 ## Sans internet
 

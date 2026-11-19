@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 18/11/2026 12:39.
+Généré le 19/11/2026 08:45.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -110,7 +110,7 @@ Le bas du menu
 
 - Touchez **Créer**.
 
-**Sous-listes** : seules les listes principales sont dans le menu. Une liste qui a des sous-listes les montre en pastilles (sur ordinateur dans la barre du haut, sur téléphone sous le titre, puis dans la barre qui apparaît en faisant défiler ; l'active est surlignée) : la liste elle-même (tout son contenu, sous-listes comprises), chaque sous-liste, et **Non classées** (ce qui est rangé directement dans la liste). On peut déposer des fiches sur une pastille. Les nombres sont dans les boutons Tout / Sets / Figurines / Pièces ; le bouton de la valeur (ce qui est affiché) trie du plus cher au moins cher. **Logo sur les cartes** : dans **Toute la collection**, chaque carte porte en bas à droite le logo de sa liste principale ; dans une liste qui a des sous-listes, celui de la sous-liste qui la contient (rien pour ce qui est rangé directement dans la liste). Réglable dans ⚙️ Filtres → « Sur les cartes ». La barre du haut d'une liste montre aussi son logo, avec son nom seulement si « Afficher le nom » est coché.
+**Sous-listes** : seules les listes principales sont dans le menu. Une liste qui a des sous-listes les montre en pastilles (sur ordinateur dans la barre du haut, sur téléphone sous le titre, puis dans la barre qui apparaît en faisant défiler ; l'active est surlignée) : la liste elle-même (tout son contenu, sous-listes comprises), chaque sous-liste, et **Non classées** (ce qui est rangé directement dans la liste). Dans une sous-liste, le bouton **‹** devant les pastilles ramène à la liste parente. On peut déposer des fiches sur une pastille. Les nombres sont dans les boutons Tout / Sets / Figurines / Pièces ; le bouton de la valeur (ce qui est affiché) trie du plus cher au moins cher. **Logo sur les cartes** : dans **Toute la collection**, chaque carte porte en bas à droite le logo de sa liste principale ; dans une liste qui a des sous-listes, celui de la sous-liste qui la contient (rien pour ce qui est rangé directement dans la liste). Réglable dans ⚙️ Filtres → « Sur les cartes ». La barre du haut d'une liste montre aussi son logo, avec son nom seulement si « Afficher le nom » est coché.
 
 Créer une liste
 
@@ -440,7 +440,7 @@ Les pièces d'un accessoire
 au-delà, ils passent dans **ajoutées** (ex. 8 pour 1 prévue : 1 originale + 7 ajoutées). Les figurines que vous rangez dans le set avec leur propre fiche
 (+ 🟡 Figurine) sont aussi des ajoutées.
 
-- **Logo individuel** (en modification, à côté de la coche ci-dessous) : un logo propre à la fiche ; sur sa vignette, il remplace celui de sa liste et de la liste parente (ex. le logo de DOOM sur le Slayer, sans créer de liste DOOM). 🖼️ Choisir… : importer, coller, ou retirer ; puis 💾 ;
+- **Logo individuel** (en modification, à côté de la coche ci-dessous) : un logo propre à la fiche ; sur sa vignette, il remplace celui de sa liste et de la liste parente (ex. le logo de DOOM sur le Slayer, sans créer de liste DOOM). 🖼️ Choisir… : importer, coller, ou retirer ; puis 💾. Les figurines rangées dans un set qui a un logo individuel l'ont aussi ; sur une figurine, 🖼️ Choisir… → **Retirer le logo du set** l'enlève pour elle seule (**Reprendre le logo du set** le remet) ;
 - **👁 Afficher dans la vue générale** (sur toutes les fiches, sous la quantité) : décochée, la fiche n'a plus de carte dans la grille ;
 elle reste comptée dans la valeur et le filtre texte la retrouve.
 
@@ -740,7 +740,7 @@ La fiche d'une pièce
 
 - Onglets **Sets** / **Figurines exclusives** (les figurines qu'on ne trouve que dans ces sets) ; **Tout / À venir / Sorties récentes** ; le thème.
 
-- Sur chaque set : **⭐ Ajouter à la liste de souhaits**, **👀** (à surveiller), **🚫 Ne plus afficher** (« Afficher les masqués » les fait revenir).
+- Sur chaque set : **⭐ Ajouter à la liste de souhaits**, **👀** (à surveiller), **🚫 Ne plus afficher** (« Afficher les masqués » les fait revenir). ; **Afficher celles sans image** : sans elle, les sets et figurines exclusives sans photo sont cachés
 
 - Cases **Afficher ceux déjà dans la liste de souhaits** et **Afficher les surveillés** : ces sets reviennent, marqués « ⭐ Dans la liste de souhaits » (bandeau sur la photo) ou, plus discrètement, par le bouton « 👀 Surveillé » (touchez pour ouvrir la fiche).
 
@@ -768,7 +768,7 @@ part de sets **déjà retirés** (touchez la tuile : lesquels sont encore en ven
 
 En bas des Statistiques : pour chaque page publique (collection, liste de souhaits, À surveiller),
 le nombre de visites, de visiteurs différents, d'aujourd'hui et des 7 derniers jours, et la dernière visite. Vos propres visites (connecté) ne
-comptent pas, et les adresses des visiteurs ne sont jamais gardées en clair.
+comptent pas, une même personne compte au plus une visite par jour (recharger ou revenir ne compte pas), et les adresses des visiteurs ne sont jamais gardées en clair.
 
 #### 📈 Valeur dans le temps
 
@@ -863,7 +863,7 @@ les boutons en carrés de même taille). Elle reste en haut de l'écran quand vo
 autant d'étiquettes qu'on veut (la fenêtre reste ouverte) ; dans « Tri » on choisit un seul tri (la fenêtre se referme, et sur ordinateur le tri
 en cours est rappelé sur le bouton). Un clic ailleurs ou la touche Échap referme le menu. C'est pareil sur les pages publiques.
 
-Parmi les tris : **Évolution du prix** range les fiches selon leur flèche ↑ ↓ ~ — les plus fortes hausses d'abord, celles sans relevé à la fin ; **Écart de prix** met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, **Définir par défaut** fait du tri en cours le tri d'office ; **↺** y revient (et remet l'ordre normal).
+Parmi les tris : **Variation de prix (%)** range les fiches selon leur flèche ↑ ↓ ~ — les plus grosses variations en % d'abord, hausses comme baisses (−52 % avant +10 %), celles sans relevé à la fin ; **Variation de prix (€)** met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, **Définir par défaut** fait du tri en cours le tri d'office ; **↺** y revient (et remet l'ordre normal).
 Le bouton **🔃 Renverser le tri**, à droite de « Tri » (sur téléphone aussi), donne l'ordre inverse du tri en cours : les plus
 fortes baisses d'abord, de Z à A, du moins cher au plus cher… L'ordre inversé est retenu, liste par liste, jusqu'à ce que vous touchiez de nouveau le bouton.
 
@@ -903,7 +903,7 @@ Aucun prix tant que l'option **Afficher les prix sur la collection publique** (R
 - **/wishlist** : votre liste de souhaits seule ; lien « Collection de … ». **/a-surveiller** : ce que vous surveillez.
 **/nouveautes** : les nouveautés LEGO, avec des liens vers votre collection et votre liste de souhaits.
 
-- Le menu (en bas) copie chaque lien d'un appui. Le compteur **👁** à côté du titre d'une liste indique les visites (les vôtres, connecté, ne comptent pas).
+- Le menu (en bas) copie chaque lien d'un appui. Le nombre de visites de chaque page publique est dans la page **📊 Statistiques** (section « 👁 Visites ») ; les vôtres, connecté, ne comptent pas.
 
 La page publique /collection
 

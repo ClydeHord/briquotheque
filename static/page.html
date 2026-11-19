@@ -8,6 +8,10 @@
 <title>Briquothèque</title>
 <link rel="icon" href="/icon.svg">
 <link rel="stylesheet" href="/style.css">
+<script>/* appli installée : une page publique n'y reste jamais — en revenant dans l'appli, retour à l'appli privée (navigateur ordinaire : rien) */
+(() => { const sa = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; if (!sa) return;
+  let hid = 0; document.addEventListener("visibilitychange", () => { if (document.hidden) hid = Date.now(); else if (hid && Date.now() - hid > 1500) location.replace("/"); });
+  addEventListener("pageshow", e => { if (e.persisted) location.replace("/"); }); })();</script>
 </head>
 <!-- Page créée dans le back office (rubrique « Pages ») et cochée « publique » : adresse /p/<adresse>.
      Le serveur glisse ici les réglages publics et la page à afficher (backoffice.inject) ; bo-max.js dessine ses blocs dans #boPage. -->

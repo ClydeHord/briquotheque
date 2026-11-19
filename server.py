@@ -1153,7 +1153,7 @@ def novelties_keeper():
             novelties_build()
         except Exception as e:
             print("Nouveautés :", e, flush=True)
-        time.sleep(12 * 3600)
+        time.sleep(3600)   # (toutes les heures : deux pages de lego.com ; les figurines d'un set ne sont cherchées qu'une fois)
 
 
 def bl_fig_info(fid):
@@ -5145,19 +5145,20 @@ VISITS_FILE = os.path.join(DATA, "visits.json")
 
 
 def record_visit(page, ip):
-    """Compte une visite de la page publique (/wishlist ou /collection) : vues, visiteurs distincts, dernière visite."""
+    """Compte une visite de la page publique (/wishlist ou /collection) : une par personne et par jour, visiteurs distincts, dernière visite."""
     day = time.strftime("%Y-%m-%d")
     h = hashlib.sha256(("bq-visite|" + ip).encode()).hexdigest()[:16]   # adresse jamais stockée en clair
     with lock:
         v = _load(VISITS_FILE, {})
         e = v.setdefault(page, {"views": 0, "visitors": [], "days": {}, "last": None})
-        e["views"] += 1
         if h not in e["visitors"]:
             e["visitors"] = (e["visitors"] + [h])[-5000:]
         d = e["days"].setdefault(day, {"views": 0, "ips": []})
+        if h in d["ips"]:   # au plus une visite par personne et par jour (recharger, revenir : ne compte pas)
+            return
+        d["ips"].append(h)
         d["views"] += 1
-        if h not in d["ips"]:
-            d["ips"].append(h)
+        e["views"] += 1
         e["days"] = dict(sorted(e["days"].items())[-90:])   # 90 derniers jours
         e["last"] = int(time.time())
         _save(VISITS_FILE, v)
@@ -6431,8 +6432,8 @@ class Handler(BaseHTTPRequestHandler):
             if COPIE:
                 data = data.replace(b"</head>", b"<script>window.BO_COPIE = true;</script></head>", 1)
             data = backoffice.inject(data, public=not auth.valid_session(self.token()), off="bo=off" in (urlparse(self.path).query or ""))
-        if perso and os.path.basename(path) == "index.html":   # (extensions locales)
-            data = perso.inject(data)
+        if perso and os.path.basename(path) in ("index.html", "admin.html"):   # (extensions locales)
+            data = perso.inject(data, os.path.basename(path))
         self.send_response(200)
         self.send_header("Content-Type", ctype or mimetypes.guess_type(path)[0] or "application/octet-stream")
         self.send_header("Content-Length", str(len(data)))
@@ -6966,7 +6967,7 @@ class Handler(BaseHTTPRequestHandler):
                               else max((it.get("own_at") or 0) if it.get("fig_touch") and it.get("fig_touch") == it.get("updated_at") else (it.get("updated_at") or 0), it.get("added_at") or 0), "photo": it.get("photo", ""),   # figurine d'origine : sa date à elle (comme la page privée)
                 "photo_url": (mods or {}).get("photo_url") or it.get("photo_url", ""), "modified": is_modified(view),   # pièces retirées ou remplacées (pas seulement ajoutées)
                 "accessories": it.get("accessories") or [], "catalog_set": bool(it.get("catalog_set")), "tags": list(it.get("tags") or []), "tags_off": list(it.get("tags_off") or []),
-                "main_name": it.get("main_name") or "", "as_set": bool(it.get("as_set")), **({"item_logo": it["item_logo"]} if it.get("item_logo") else {}),
+                "main_name": it.get("main_name") or "", "as_set": bool(it.get("as_set")), **(lambda lg: {"item_logo": lg} if lg else {})(it.get("item_logo") or ((host.get("item_logo") or "") if inset and not it.get("no_logo") else "")),   # (figurine d'un set : le logo du set, sauf retiré)
                 "st": {**guest_status(view, info, attached.get(it["id"], [])),   # étiquettes de la carte (Modifié, Amélioré…), comme la page privée ;
                        "add_parts": it.get("kind", "set") in ("set", "fig") and has_added_parts(it)},   # « pièces ajoutées » : selon sa fiche seule (= hasAddedParts)
                 **({"approx": bool(e.get("approx")), **({"chg": e["chg"]} if e.get("chg") is not None else {})} if pub_prices else {}),
@@ -7661,7 +7662,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 d = _load(NOV_FILE, {})
                 # page ouverte (fresh=1) : sorties relues sur lego.com tout de suite (au plus toutes les 15 min) ; sinon toutes les 12 h
                 started = False
-                if (not d or time.time() - d.get("t", 0) > (15 * 60 if (q.get("fresh") or [""])[0] == "1" else 12 * 3600)) and not DEMO and not _nov["busy"]:
+                if (not d or time.time() - d.get("t", 0) > (120 if (q.get("fresh") or [""])[0] == "1" else 3600)) and not DEMO and not _nov["busy"]:
                     threading.Thread(target=novelties_build, daemon=True).start()
                     started = True
                 db_ = load_db(); wl_ids = {l["id"] for l in db_["lists"] if l.get("kind") == "wishlist"}   # listes de souhaits (et sous-listes)
@@ -9799,6 +9800,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
             **({"indiv_copy": b["indiv_copy"]} if isinstance(b.get("indiv_copy"), dict) and b.get("indiv") and b.get("attached_to") else {}),   # copie d'une originale pas encore modifiée (indiv_rejoin)
             **({"hide_view": bool(b["hide_view"])} if b.get("hide_view") is not None and (b["hide_view"] or b.get("indiv")) else {}),   # « Afficher dans la vue générale » décochée
             **({"item_logo": str(b["item_logo"])} if re.fullmatch(r"/api/upload/[0-9a-f]{16,40}", str(b.get("item_logo") or "")) else {}),   # logo individuel (vignettes)
+            **({"no_logo": True} if b.get("no_logo") and b.get("attached_to") and childable(b) else {}),   # figurine enfant : sans le logo hérité de son set
             **({"fig_items": True} if b.get("fig_items") and b.get("kind", "set") == "set" else {}),   # set dont les figurines sont des fiches
             **({"has_box": True} if b.get("has_box") and (b.get("kind", "set") == "set" or (b.get("kind") == "custom" and b.get("partial_set"))) else {}),
             **({"no_plan": True} if b.get("no_plan") and (b.get("kind", "set") == "set" or (b.get("kind") == "custom" and b.get("partial_set"))) else {}),

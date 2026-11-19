@@ -377,7 +377,7 @@ VIEW.reglages = () => {
 };
 
 /* ------------------------------------------------------------------ Comportements */
-const SORTS0 = [["modified", "Dernière modification"], ["added", "Ajout récent"], ["added_old", "Ajout le plus ancien"], ["value", "Valeur décroissante"], ["variation", "Évolution du prix"], ["ecart", "Écart de prix"], ["name", "Nom (A → Z)"], ["number", "Numéro"], ["year", "Année"], ["qty", "Nombre d'exemplaires"],
+const SORTS0 = [["modified", "Dernière modification"], ["added", "Ajout récent"], ["added_old", "Ajout le plus ancien"], ["value", "Valeur décroissante"], ["variation", "Variation de prix (%)"], ["ecart", "Variation de prix (€)"], ["name", "Nom (A → Z)"], ["number", "Numéro"], ["year", "Année"], ["qty", "Nombre d'exemplaires"],
   ["pieces", "Nombre de pièces"], ["figs", "Nombre de figurines"], ["theme", "Thème"]];
 VIEW.comportements = () => {
   const b = cfg.behav || {}, st = String(b.start || ""), sk = st.slice(0, Math.max(0, st.indexOf(":"))), sv = st.slice(st.indexOf(":") + 1), lists = appLists();
@@ -499,6 +499,52 @@ draw = function () { draw3(); const h = $("#panel h2"); if (h && !h.querySelecto
 X0.ui = { page: id => { pgSel = id || ""; }, block: id => { blkOpen = id || ""; }, tag: k => { tagOpen = k || ""; }, showPage };
 window.BO_MAX = true;
 startAdmin();
+
+/* ------------------------------------------------------------------ 🧩 Éléments d'origine : modifier l'existant (tris, filtres, tuiles, calculs) */
+PANELS.push(["origine", "🧩", "Éléments d'origine", "Renommer, masquer, réordonner les tris, filtres et tuiles de l'appli ; régler les calculs d'origine."]);
+grp("Avancé")?.unshift("origine");
+try { buildNav(); } catch {}
+const obj = v => v && typeof v === "object" && !Array.isArray(v) ? v : {}, arr = v => Array.isArray(v) ? v : [];
+const FILT0 = [["complet", "Complet"], ["ameliore", "Amélioré"], ["modifie", "Modifié"], ["partiel", "Set partiel"], ["moc", "MOC"], ["cardLogo", "Logo de la liste (cartes)"], ["cardName", "Nom de la liste (cartes)"]];
+const tilesSeen = () => { try { const d = frame.contentDocument; return [...d.querySelectorAll("#stats .stat")].map(t => [t.dataset.natOrig || t.querySelector(".lbl")?.textContent.trim() || "", t.dataset.natOrig || t.querySelector(".lbl")?.textContent.trim() || ""]).filter(x => x[0]); } catch { return []; } };
+let calc0 = null;
+function natEditor(kind, base) {   // une ligne par élément : ↑ ↓, nom (vide = d'origine), masquer
+  const c = obj(getIn(["native", kind])), lab = obj(c.labels), hid = arr(c.hidden);
+  const seen = new Set(), list = [];
+  for (const k of arr(c.order)) { const b = base.find(x => x[0] === k); if (b && !seen.has(k)) { seen.add(k); list.push(b); } }
+  for (const b of base) if (!seen.has(b[0])) { seen.add(b[0]); list.push(b); }
+  for (const k of [...Object.keys(lab), ...hid]) if (!seen.has(k)) { seen.add(k); list.push([k, k]); }   /* (réglé, mais pas visible maintenant) */
+  const move = (k, d) => { const o = list.map(x => x[0]), i = o.indexOf(k), j = i + d; if (j < 0 || j >= o.length) return; [o[i], o[j]] = [o[j], o[i]]; setIn(["native", kind, "order"], o); };
+  return el("div", { class: "rowset" }, list.map(([k, nm], i) => line(
+    el("span", { class: "lab" }, el("input", { type: "text", value: lab[k] || "", placeholder: nm, title: "Nouveau nom (vide : « " + nm + " »)", style: "width:100%",
+      oninput: e => setIn(["native", kind, "labels", k], e.target.value.trim(), { key: "nat" + kind + k, redraw: false }) })),
+    chk("masquer", hid.includes(k), v => setIn(["native", kind, "hidden"], v ? [...new Set([...hid, k])] : hid.filter(x => x !== k))),
+    xbtn ? el("span", {}, btn("↑", () => move(k, -1), "small", "Monter"), btn("↓", () => move(k, 1), "small", "Descendre")) : null)));
+}
+VIEW.origine = () => {
+  const ta = tilesSeen();
+  if (!calc0) { calc0 = "…"; fetch("/api/settings", { credentials: "include" }).then(r => r.json()).then(j => { calc0 = j; draw(); }).catch(() => { calc0 = { err: true }; draw(); }); }
+  const app = async (u, body, msg) => { try { const r = await fetch(u, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Erreur " + r.status); toast(msg); } catch (e) { toast(e.message); } };
+  const pct = (val, on, max = 100, step = 1) => [el("input", { type: "number", class: "num", min: 0, max, step, value: val ?? "", onchange: e => on(+e.target.value) }), el("span", { class: "u" }, "%")];
+  const C = typeof calc0 === "object" ? calc0 : null;
+  return [head("🧩 Éléments d'origine", "Ce qui existe déjà dans l'appli : le renommer, le masquer, changer son ordre (brouillon puis « Publier »). Les calculs d'origine : leur formule et leurs pourcentages (effet immédiat)."),
+    P() ? null : needPreview(),
+    card("Tris — « Trier par »", natEditor("sorts", SORTS0), hint("Vide : le nom d'origine. Un tri masqué disparaît du menu « Trier par » (s'il était choisi, il reste actif jusqu'au prochain choix). Vos propres tris (★) se règlent dans « Vues, tris et filtres ».")),
+    card("Filtres — « ⚙️ Filtres »", natEditor("filters", FILT0), hint("Les étiquettes et les options des cartes du menu Filtres.")),
+    card("Tuiles du haut", ta.length || Object.keys(obj(getIn(["native", "tiles"]))).length ? natEditor("tiles", ta) : hint("Aucune tuile dans l'aperçu."),
+      hint("Les tuiles changent selon la page : ouvrez dans l'aperçu celle à régler (Toute la collection, une liste, une liste de souhaits, À construire…), puis ⟳ ci-dessous."),
+      el("div", { class: "btns" }, btn("⟳ Relire les tuiles de l'aperçu", () => draw(), "small"))),
+    card("Calculs d'origine", !C ? hint("Chargement…") : C.err ? note("Impossible de lire les réglages de l'appli (ouvrez l'appli connecté dans ce navigateur).", "warn") : [
+      fld("📦 Set d'occasion avec sa boîte", pct(C.box_bonus ?? 6, v => app("/api/settings/box", { pct: v }, "✔ Boîte : enregistré")), "Valeur = cote d'occasion + prix d'une <b>boîte vide</b> de ce set (BrickOwl, chaque mois) ; sans prix de boîte : cote × (1 + ce pourcentage)."),
+      fld("📘 Avec son livret de plans", pct(C.plan_cut ?? 5, v => app("/api/settings/plan", { pct: v }, "✔ Livret : enregistré"), 90), "Valeur = cote + prix des <b>plans seuls</b> de ce set (BrickOwl) ; sinon : cote × (1 + ce pourcentage)."),
+      fld("🔧 Exemplaire modifié", pct(C.mod_discount ?? 5, v => app("/api/settings/discount", { pct: v }, "✔ Décote : enregistré"), 90), "Seulement si une figurine d'<b>origine</b> est modifiée : valeur = cote × (1 − ce pourcentage). Pièces échangées, ajouts : leur écart de prix, pas de décote."),
+      fld("↑ ↓ Seuils des flèches de variation", [el("span", { class: "hint" }, "hausse ≥ "), ...pct(C.trend?.up ?? 3, v => { C.trend = { ...(C.trend || {}), up: v }; app("/api/settings/trend", { up: v, down: C.trend.down ?? 3 }, "✔ Seuil de hausse : enregistré"); }, 100, .5),
+        el("span", { class: "hint" }, " baisse ≥ "), ...pct(C.trend?.down ?? 3, v => { C.trend = { ...(C.trend || {}), down: v }; app("/api/settings/trend", { up: C.trend.up ?? 3, down: v }, "✔ Seuil de baisse : enregistré"); }, 100, .5)],
+        "Écart depuis le dernier relevé : au-delà, flèche ↑ ou ↓ ; en dessous, « ~ » (stable)."),
+      hint("Ces pourcentages s'appliquent tout de suite (sans « Publier ») : ce sont les réglages du serveur, les mêmes que dans l'appli (Réglages → 🧮 Estimations).")]),
+  ];
+};
+
 })();
 
 /* ------------------------------------------------------------------ clic droit dans l'aperçu : les outils de l'élément (bo.js ouvre le menu, le travail se fait ici) */

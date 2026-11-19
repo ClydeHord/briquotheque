@@ -990,8 +990,8 @@ PUB_SHARE.onclick = async () => {   /* partage du téléphone (ou de l'ordinateu
 };
 function drawVisits(pub) {
   const el = PUB_VISITS, v = pub && state.visits?.[pub];   // (hors du titre sur la page Nouveautés)
-  el.hidden = !pub; PUB_SHARE.hidden = !pub; PUB_SHARE.dataset.pub = pub || "";
-  if (!pub) return;
+  el.hidden = true; PUB_SHARE.hidden = !pub; PUB_SHARE.dataset.pub = pub || "";   /* (le nombre de visites : dans la page Statistiques) */
+  if (el.hidden) return;
   if (!v || !v.views) { el.textContent = "👁 0 visite"; el.title = "Aucune visite de la page publique pour le moment"; return; }
   el.innerHTML = `👁 <b>${nf.format(v.views)}</b>`; el.title = `${nf.format(v.views)} visite${v.views > 1 ? "s" : ""} · ${nf.format(v.visitors)} visiteur${v.visitors > 1 ? "s" : ""}`;
   el.title = `Aujourd'hui : ${v.today} · 7 derniers jours : ${v.week}` + (v.last ? ` · dernière visite : ${new Date(v.last * 1000).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : "")
@@ -1347,7 +1347,7 @@ function syncSortMenu() {
   const rev = sortRevOn();
   const defOk = !isWish(state.current) && state.current !== UNBUILT && !isPartsList(state.current);   // (« Définir par défaut » : listes de la collection)
   pop.innerHTML = (defOk ? `<label class="moc-chk sort-def"><input type="checkbox" data-sortdef ${so.value === state.sortDef ? "checked" : ""}> Définir par défaut</label>` : "")
-    + [...so.options].filter(o => !o.hidden && !o.disabled).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
+    + [...so.options].filter(o => !o.hidden && !o.disabled && !o.dataset.natHide).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
   const c = $("#sortCur"); if (c) c.textContent = so.selectedOptions[0]?.textContent || "";   // (ordinateur : le tri en cours est rappelé sur le bouton)
   const rb = $("#sortRev"); if (rb) { rb.setAttribute("aria-pressed", rev); rb.title = rev ? "Tri inversé : remettre l'ordre habituel" : "Renverser le tri (ordre inverse)"; }   // (aucun aspect « actif » : demande du 17/11)
 }
@@ -2205,6 +2205,7 @@ function render() {
     const saved = state.sortBy[state.current];
     $("#sort").value = isWish(state.current) ? "year" : (saved && (!parts || PART_SORTS.includes(saved)) ? saved : defaultSort(state.current));   // souhaits : toujours par année, du plus récent
     state.sortFor = state.current;
+    if (["variation", "ecart"].includes($("#sort").value) && !trendShown() && !boBehav("noTrend")) state.trendOn = true;   // (tri de variation revenu tout seul : 📈 allumé)
   }
   syncSortMenu();   // (menu « ⇅ Tri » : les tris de cette liste, celui en cours coché)
   trendSync();   // (bouton 📈 : allumé ou non ; taille des flèches)
@@ -2260,7 +2261,9 @@ function render() {
         return `<button type="button" class="sub-chip ${on ? "on" : ""}" ${extra} data-sub="${id}"><span class="nm">${/^📥/.test(name) ? "" : listLogo(state.lists.find(x => x.id === id), "list-logo", "bar")}${listNm(state.lists.find(x => x.id === id), name, "bar")}</span></button>`; };   /* (« Non classées » : sans logo) */   // (nombres et valeur : dans les boutons de la barre)
       const direct = itemsOf(root.id);
       const parent = chip(root.id, root.name, treeItems(root.id), state.current === root.id && state.subDirect !== root.id, 'title="Toute la liste, sous-listes comprises"');
-      const html = `<span class="sub-parent">${parent}</span><span class="sub-group">`   // la parente à part, les sous-listes dans le cadre rouge
+      const up = state.lists.find(x => x.id === parentOf(root));   // « ‹ » : revenir à la liste parente (s'il y en a une)
+      const back = up ? `<button type="button" class="sub-chip sub-back" data-sub="${up.id}" title="Revenir à « ${esc(up.name)} »" aria-label="Revenir à la liste parente">‹</button>` : "";
+      const html = `<span class="sub-parent">${back}${parent}</span><span class="sub-group">`   // la parente à part, les sous-listes dans le cadre rouge
         + kids.map(l => chip(l.id, l.name, treeItems(l.id), state.current === l.id, 'draggable="true" data-lord="1"')).join("")   /* (PC : glisser pour changer l'ordre) */
         + (direct.length ? chip(root.id, "📥 Non classées", direct, state.current === root.id && state.subDirect === root.id, 'data-direct title="Les fiches rangées directement dans la liste, dans aucune sous-liste"') : "") + "</span>";
       const bar = $("#topViews2"), home = $("[data-thome2]", bar);
@@ -2313,7 +2316,7 @@ function render() {
   if (!novMode) $("#novView").unframe?.();   // nouveautés vues : plus encadrées une fois la page quittée
   const enterNov = novMode && !state.inNov; state.inNov = novMode;   // on arrive sur la page (pas un simple réaffichage)
   if (novMode) {   // ✨ Nouveautés : la page garde ses filtres tant qu'on y reste
-    $("#listTitle").textContent = "✨ Nouveautés"; $("#listTitle").append(PUB_VISITS, PUB_SHARE); $("#listActions").hidden = true; renderSelBar();   /* (compteur et 📤 aussi ici) */
+    $("#listTitle").textContent = "✨ Nouveautés"; $("#listTitle").append(PUB_SHARE);   /* (pas de compteur de visites ici) */ $("#listActions").hidden = true; renderSelBar();   /* (compteur et 📤 aussi ici) */
     if (!$("#novView").childElementCount) openNovelties($("#novView"));
     else if (enterNov) $("#novView").refresh?.();   // retour sur la page : liste relue (un set retiré de mes listes y revient)
     return;
@@ -2421,8 +2424,8 @@ function render() {
     added: (a, b) => (b.added_at || 0) - (a.added_at || 0),
     added_old: (a, b) => (a.added_at || 0) - (b.added_at || 0),
     value: (a, b) => (b.total_value ?? 0) - (a.total_value ?? 0),   // le prix affiché en gros (état actuel)
-    variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // la flèche ↑ ↓ ~ : hausses d'abord ; sans relevé : toujours à la fin
-    ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Écart de prix » : le plus gros écart EN EUROS d'abord, hausse ou baisse
+    variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : Math.abs(b.chg) - Math.abs(a.chg) || b.chg - a.chg; },   // la plus grosse variation en %, hausse ou baisse (à égalité : la hausse) ; sans relevé : toujours à la fin
+    ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Variation de prix (€) » : le plus gros écart EN EUROS d'abord, hausse ou baisse
       const eur = x => { const v = x.total_value ?? 0; return Math.abs(v - v / (1 + x.chg / 100)); };   // (valeur actuelle − valeur d'avant, d'après la variation en %)
       return eur(b) - eur(a); },
     name: (a, b) => itemName(a).localeCompare(itemName(b), "fr"),
@@ -2505,7 +2508,7 @@ function render() {
         ${releaseText(i.info) ? `<div class="meta release">📅 ${esc(releaseText(i.info))}</div>` : ""}
         ${retiringSoon(i.info) && retireText(i.info) ? `<div class="meta">⏳ ${esc(retireText(i.info))}</div>` : ""}` : ""}
         <div class="foot">${i.no_estimate ? `<span class="value no-est">Sans estimation</span>` : catUsed(i) != null ? valueFoot(catUsed(i) + (i.box_add || 0), i.total_value, i.approx, i.quantity || 1, "", trendOf(i)) : i.quantity > 1 && i.total_value != null
-          ? `<span class="value">Prix ${moneyA(i.total_value, i.approx)}${trendOf(i)}<span class="qp-unit">Prix unitaire : ${moneyA(i.total_value / i.quantity, i.approx)}</span>${wishSrc(i)}</span>` : `<span class="value">${moneyA(i.total_value, i.approx)}${trendOf(i)}${wishSrc(i)}</span>`}${i.item_logo && views.cardLogo !== false ? `<span class="num-list" title="Logo de la fiche"><img class="list-logo tiny" src="${esc(i.item_logo)}" alt=""></span>` : numLogo(i.list_id)}
+          ? `<span class="value">Prix ${moneyA(i.total_value, i.approx)}${trendOf(i)}<span class="qp-unit">Prix unitaire : ${moneyA(i.total_value / i.quantity, i.approx)}</span>${wishSrc(i)}</span>` : `<span class="value">${moneyA(i.total_value, i.approx)}${trendOf(i)}${wishSrc(i)}</span>`}${itemLogoOf(i) && views.cardLogo !== false ? `<span class="num-list" title="Logo de la fiche"><img class="list-logo tiny" src="${esc(itemLogoOf(i))}" alt=""></span>` : numLogo(i.list_id)}
 </div>
       </div>`;   // infos d'une carte (aussi pour ses apparences alternatives)
   const cardOf = i => {
@@ -2639,14 +2642,13 @@ function scCur() {
   c.innerHTML = src && !$("#topViews .tv-home.on") ? src.innerHTML : ""; c.hidden = !c.innerHTML;
 }
 new MutationObserver(() => scCur()).observe(document.querySelector(".main"), { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
-/* téléphone : en descendant, la barre du haut se réduit à la liste en cours ; en remontant, tout revient (html.sc-down, style.css) */
+/* téléphone : en descendant, la barre du haut se réduit à la liste en cours ; elle ne revient entière qu'en haut de la page (html.sc-down, style.css) */
 (() => { let last = scrollY, acc = 0, hold = 0;
   addEventListener("scroll", () => { const y = scrollY, d = y - last; last = y; const now = Date.now(); if (now < hold) return;
     const h = document.documentElement, down = h.classList.contains("sc-down");
     if (y < 160) { if (down) { h.classList.remove("sc-down"); hold = now + 350; } acc = 0; return; }
     acc = (d > 0) === (acc > 0) ? acc + d : d;   // (déplacement cumulé dans le même sens)
-    if (!down && acc > 30) { h.classList.add("sc-down"); hold = now + 350; acc = 0; }
-    else if (down && acc < -150) {   /* (remonter un peu avant que tout revienne) */ h.classList.remove("sc-down"); hold = now + 350; acc = 0; } }, { passive: true }); })();
+    if (!down && acc > 30) { h.classList.add("sc-down"); hold = now + 350; acc = 0; } }, { passive: true }); })();   /* (en remontant : rien ne se redéplie avant le haut de la page) */
 function renderNav() {
   const nav = $("#listNav");
   const ordBtns = id => {
@@ -3841,6 +3843,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       <select data-theme aria-label="Thème"><option value="">Tous les thèmes</option></select>
       <button type="button" class="btn small-btn" data-exth>🎯 Thèmes suivis</button>
       <label class="todo-chk"><input type="checkbox" data-hidden> Afficher les masqués</label>
+      <label class="todo-chk"><input type="checkbox" data-noimg> Afficher celles sans image</label>
       <label class="todo-chk"><input type="checkbox" data-wished> Afficher ceux déjà dans la liste de souhaits</label>
       <label class="todo-chk"><input type="checkbox" data-watched> Afficher les surveillés</label></div>
     <div data-b><div class="loading"><span class="spinner"></span>Recherche des nouveautés…</div></div></div>`;
@@ -3854,6 +3857,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
     const q = [$("[data-hidden]", d).checked && "hidden=1", $("[data-wished]", d).checked && "wish=1", $("[data-watched]", d).checked && "watch=1", !fresh && "fresh=1"].filter(Boolean).join("&");   // ouverture : relecture lego.com
     try { data = await api("/api/novelties" + (q ? "?" + q : "")); } catch (e) { B.innerHTML = `<div class="loading">${esc(e.message)}</div>`; return; }
     if (!d.isConnected) return;
+    if (!data.building) try { window.PERSO?.novScan?.(); } catch {}   /* (extensions locales : relevé fini) */
     const themes = [...new Set(data.items.map(x => x.theme).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")), cur = $("[data-theme]", d).value;
     const nx = (data.excluded_themes || []).length;
     const nt = (data.themes || []).length;
@@ -3906,7 +3910,8 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
     return +m[2] * 13 + (m[1] ? MOIS_I.indexOf(m[1].toLowerCase()) + 1 : 0); };
   const draw = () => {
     const view = $("input[name=novv]:checked", d).value, st = $("input[name=novs]:checked", d).value, th = $("[data-theme]", d).value;
-    const list = data.items.filter(x => (!st || x.kind === st) && (!th || x.theme === th))
+    const noimg = $("[data-noimg]", d).checked;   /* (sans image : seulement si la case est cochée) */
+    const list = data.items.filter(x => (!st || x.kind === st) && (!th || x.theme === th) && (noimg || x.image || (x.images || [])[0]))
       .sort((a, b) => relKey(b) - relKey(a) || (a.pos ?? 1e9) - (b.pos ?? 1e9) || (parseInt(b.number) || 0) - (parseInt(a.number) || 0) || a.name.localeCompare(b.name, "fr"));   // du plus récent au plus ancien
     const wait = data.building && !data.items.length ? `<div class="loading"><span class="spinner"></span>Recherche des nouveautés sur lego.com… (quelques instants)</div>` : "";
     const acts = x => `<div class="nov-acts">${x.wished ? `<button type="button" class="btn small-btn nov-inwish" data-inwish="${esc(x.number)}" title="Ouvrir sa fiche">⭐ Dans la liste de souhaits</button>`
@@ -3922,7 +3927,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
           ${acts(x)}</div>`).join("")}</div>` : `<div class="loading">Aucune nouveauté pour ces filtres.</div>`);
     } else {
       const figs = []; const seen = new Set();
-      for (const x of list) for (const f of x.figs || []) if (f.exclusive && !seen.has(f.fig)) { seen.add(f.fig); figs.push({ f, x }); }
+      for (const x of list) for (const f of x.figs || []) if (f.exclusive && !seen.has(f.fig) && (noimg || f.image)) { seen.add(f.fig); figs.push({ f, x }); }
       B.innerHTML = wait || (figs.length ? `<p class="hint">${figs.length} figurine${figs.length > 1 ? "s" : ""} qu'on ne trouve que dans ces nouveautés${data.figs_done ? "" : " (analyse en cours, la liste va s’allonger)"}.</p><div class="nov-grid">${figs.map(({ f, x }) => `
         <div class="nov-card ${x.hidden ? "is-hidden" : ""} ${x.new ? "is-new" : ""}" data-fig="${esc(f.fig)}"><div class="nov-pic fig">${f.image ? `<img src="${img(f.image)}" alt="" loading="lazy">`
           : `<span class="nov-noimg">🟡<small>Photo pas encore disponible</small></span>`}</div>
@@ -3969,6 +3974,8 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
   $$("input[name=novv], input[name=novs]", d).forEach(r => r.onchange = draw);
   $("[data-theme]", d).onchange = draw;
   $("[data-hidden]", d).onchange = $("[data-wished]", d).onchange = $("[data-watched]", d).onchange = fetchIt;
+  { const c = $("[data-noimg]", d); try { c.checked = localStorage.getItem("bq-nov-noimg") === "1"; } catch {}   /* (« sans image » : retenu sur l'appareil) */
+    c.onchange = () => { try { localStorage.setItem("bq-nov-noimg", c.checked ? "1" : "0"); } catch {} draw(); }; }
   $("[data-exth]", d).onclick = () => {   // thèmes à exclure : cochés = masqués des nouveautés (gardé pour la prochaine fois)
     const all = data.themes || [], ex = new Set(data.excluded_themes || []);
     const m = document.createElement("div"); m.className = "modal top";
@@ -5750,8 +5757,8 @@ $("#btnSettings").onclick = async () => {
     catch (e) { toast(e.message); }
   };
   bxf.after(igf);
-  const wkf = DEMO ? null : window.PERSO?.settings?.() || null;   /* (extensions locales : leur section des Réglages) */
-  if (wkf) $("form", d).append(wkf);
+  const wkfs = DEMO ? [] : [].concat(window.PERSO?.settings?.() || []);   /* (extensions locales : leur(s) section(s) des Réglages) */
+  wkfs.forEach(f => $("form", d).append(f));
   const thf = document.createElement("fieldset");   // thème de l'application : la couleur générale ; réinitialiser tous les thèmes (appli + listes)
   thf.innerHTML = `<legend>🎨 Apparence</legend>
     <p class="set-sub" style="margin-top:0">Couleur de l'application</p>
@@ -5790,7 +5797,7 @@ $("#btnSettings").onclick = async () => {
     top.innerHTML = "✔ Chaque réglage s'enregistre <b>dès qu'il est changé</b>. Seules les clés (Rebrickable, BrickLink) demandent « Vérifier et enregistrer ». Les autres boutons lancent une action.";
     $("[data-setnav]", d).after(top);
   }
-  [[thf, "🎨 Apparence"], [wkf, wkf?.dataset.navlabel], [rf, "💶 Prix"], [bxf, "🧮 Estimations"], [dm, "🌐 Public"], [$("form > fieldset[data-sec=rb]", d), "🔑 Rebrickable"], [blf, "🧱 BrickLink"], [bn, "🔒 Sécurité"], [docf, "📚 Aide"], [bof, "🛠 Back office"]].forEach(([el, t], k) => {
+  [[thf, "🎨 Apparence"], ...wkfs.map(f => [f, f.dataset.navlabel]), [rf, "💶 Prix"], [bxf, "🧮 Estimations"], [dm, "🌐 Public"], [$("form > fieldset[data-sec=rb]", d), "🔑 Rebrickable"], [blf, "🧱 BrickLink"], [bn, "🔒 Sécurité"], [docf, "📚 Aide"], [bof, "🛠 Back office"]].forEach(([el, t], k) => {
     if (!el) return;
     el.dataset.secid = "s" + k;
     $("[data-setnav]", d).insertAdjacentHTML("beforeend", `<button type="button" class="tv" data-goto="s${k}">${t}</button>`);
@@ -6030,10 +6037,15 @@ function navNote() {
   window.bqHistSync?.();   // étapes de l'historique (« retour » du téléphone)
 }
 { const rc = readConfig; readConfig = function (...a) { const r = rc.apply(this, a);   /* coche « Afficher dans la vue générale » : envoyée avec la fiche */
-    if (r && typeof r === "object" && !$("#viewRow").hidden) { r.hide_view = !$("#cfgView").checked; r.item_logo = state.draft?.itemLogo || ""; } return r; }; }
+    if (r && typeof r === "object" && !$("#viewRow").hidden) { r.hide_view = !$("#cfgView").checked; r.item_logo = state.draft?.itemLogo || ""; r.no_logo = !!state.draft?.noLogo; } return r; }; }
 /* logo individuel d'une fiche (vignettes) : aperçu, choix (importer, coller), retrait — enregistré avec la fiche */
+/* logo affiché d'une fiche : le sien, sinon (figurine rangée dans un set) celui du set — sauf « retiré » sur la figurine */
+const itemLogoOf = i => i.item_logo || (!i.no_logo && i.attached_to && state.items.find(x => x.id === i.attached_to)?.item_logo) || "";
+const setLogoOf = () => { const p = state.draft?.item?.attached_to || (state.draft?.logoOf && state.draft.adjust?.it?.id); return (p && state.items.find(x => x.id === p)?.item_logo) || ""; };   // (fiche ouverte : logo de son set)
 function drawItemLogo() { const u = state.draft?.itemLogo, pv = $("#itemLogoPv"); if (!pv) return;
-  pv.innerHTML = u ? `<img class="list-logo" src="${esc(u)}" alt="">` : `<span class="muted small">aucun</span>`; }
+  const inh = !u && !state.draft?.noLogo && setLogoOf();
+  pv.innerHTML = u ? `<img class="list-logo" src="${esc(u)}" alt="">` : inh ? `<img class="list-logo" src="${esc(inh)}" alt=""> <span class="muted small">du set</span>`
+    : `<span class="muted small">aucun${state.draft?.noLogo && setLogoOf() ? " (celui du set retiré)" : ""}</span>`; }
 $("#btnItemLogo").onclick = e => {
   const dr = state.draft; if (!dr) return;
   const set = u => { dr.itemLogo = u; drawItemLogo(); try { updateEstimate(); } catch {} };
@@ -6048,7 +6060,9 @@ $("#btnItemLogo").onclick = e => {
     try { set((await api("/api/upload", { method: "POST", body: b, headers: { "Content-Type": "image/png" } })).url); toast("Logo individuel : enregistrez la fiche (💾)"); } catch (err) { toast(err.message); }
   };
   const pick = () => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/png,image/jpeg,image/webp"; i.onchange = () => send(i.files[0]); i.click(); };
-  actionMenu(e.currentTarget, [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(dr.itemLogo ? [["✖ Retirer le logo individuel", () => set("")]] : [])], "Logo individuel");
+  const inh = setLogoOf(), mark = v => { dr.noLogo = v; drawItemLogo(); toast("Enregistrez la fiche (💾)"); };   /* (figurine d'un set : son logo hérité, retirable) */
+  actionMenu(e.currentTarget, [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(dr.itemLogo ? [["✖ Retirer le logo individuel", () => set("")]] : []),
+    ...(inh && !dr.itemLogo && !dr.noLogo ? [["✖ Retirer le logo du set (pour cette figurine)", () => mark(true)]] : []), ...(inh && dr.noLogo ? [["↩ Reprendre le logo du set", () => mark(false)]] : [])], "Logo individuel");
 };
 /* fiche enregistrée : en LECTURE à l'ouverture (boutons de modification masqués, CSS #modal.ro) ; ✏️ → modification */
 const sheetRo = () => !!(state.draft && (state.draft.item || state.draft.adjust?.fid) && (!state.draft.view || state.draft.adjust?.fid) && !state.draft.editing && !state.draft.item?.dup_pending) && !boBehav("editFirst");   // (back office → Comportements : fiches ouvertes directement en modification)
@@ -7412,8 +7426,11 @@ function fillConfig() {
   if (inSetN()) { $("#cfgQty").min = inSetN(); $("#cfgQty").dataset.minmsg = "Plus aucune figurine seule : pour en retirer une, enlevez-la d'un set (− dans « Dans mes sets »)."; } else delete $("#cfgQty").dataset.minmsg;   // (0 seule possible)
   $("#cfgBox").checked = !!item?.has_box;
   $("#cfgUnbuilt").checked = !!item?.unbuilt;   // pas coché par défaut
-  $("#cfgView").checked = !viewHidden(item); $("#viewRow").hidden = !!state.draft?.adjust?.fid || !!state.draft?.view;
-  if (state.draft) { state.draft.itemLogo = item?.item_logo || ""; drawItemLogo(); }   // (logo individuel)   // (figurine d'un set sans fiche à elle, fiche vue : pas de coche)
+  const figOrig = state.draft?.adjust?.fid ? figChildOf(state.draft.adjust.it, state.draft.adjust.fid) : null;   // figurine d'origine ouverte depuis son set : sa fiche
+  $("#cfgView").checked = !viewHidden(item); $("#viewRow").hidden = figOrig ? false : !!state.draft?.adjust?.fid || !!state.draft?.view;
+  $("#cfgView").closest(".todo-chk").hidden = !!figOrig;   // (elle : seulement le logo, pas la coche)
+  if (state.draft) { const lo = item || figOrig; state.draft.logoOf = figOrig?.id || null; state.draft.itemLogo = lo?.item_logo || ""; state.draft.noLogo = !!lo?.no_logo;
+    state.draft.logo0 = JSON.stringify([state.draft.itemLogo, state.draft.noLogo]); drawItemLogo(); }   // (logo individuel)   // (figurine d'un set sans fiche à elle, fiche vue : pas de coche)
   $("#cfgPlan").checked = !item?.no_plan;   // plans : cochés par défaut (tous les plans sont là), décocher s'il manque
   const fmods = !item && state.draft.adjust?.fid ? state.draft.adjust.it?.fig_mods?.[state.draft.adjust.fid] || {} : null;   // figurine d'un de mes sets
   const src = item || fmods || {};
@@ -10491,6 +10508,8 @@ $("#stepConfig").onsubmit = async e => {
       const { it, fid } = state.draft.adjust, mfs = it.info?.minifigs || [];
       if (state.draft.figNamePend) { const p = state.draft.figNamePend;   // (son nom, en brouillon)
         await api(`/api/items/${p.host.id}/fig-name`, { method: "POST", body: { fig: p.fid, name: p.name } }); state.draft.figNamePend = null; }
+      if (state.draft.logoOf && JSON.stringify([state.draft.itemLogo || "", !!state.draft.noLogo]) !== state.draft.logo0)   // son logo (sur sa fiche d'origine)
+        await api("/api/items/" + state.draft.logoOf, { method: "PUT", body: { item_logo: state.draft.itemLogo || "", no_logo: !!state.draft.noLogo } });
       if ((state.draft.photoUrl || "") !== (state.draft.photoUrl0 || ""))
         await api(`/api/items/${it.id}/fig-photo`, { method: "POST", body: { fig: fid, photo_url: state.draft.photoUrl || "" } });
       if (state.draft.figExtra0 != null && JSON.stringify(figExtraNow()) !== state.draft.figExtra0)   // ses accessoires, ses apparences
@@ -10646,6 +10665,8 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) saveW
 const savedWhere = (() => { if (inBoPreview) return null; try { const w = JSON.parse(localStorage.getItem(WHERE) || sessionStorage.getItem(WHERE) || "null");   /* (aperçu du back office : toujours l'accueil) */
   return w && w.t && Date.now() - w.t < 3600e3 ? w : null; } catch { return null; } })();   // retour dans l'appli : là où j'étais — sauf après plus d'une heure hors de l'appli : l'accueil
 if (savedWhere?.list) state.current = savedWhere.list;   // vérifiée au chargement (liste supprimée → « Toute la collection »)
+if (savedWhere?.list && savedWhere.list !== ALL)   // rouverte ailleurs qu'à l'accueil : « retour » y ramène (au lieu de quitter l'appli)
+  render.pages = { last: null, stack: [{ key: ALL + "|", current: ALL, subDirect: null, y: 0 }] };
 async function restoreWhere() {
   if (!savedWhere) return;
   requestAnimationFrame(() => requestAnimationFrame(() => scrollTo(0, savedWhere.scroll || 0)));

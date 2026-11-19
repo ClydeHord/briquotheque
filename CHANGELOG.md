@@ -2,9 +2,23 @@
 
 Les nouveautés de Briquothèque, version par version (la plus récente en haut).
 
-## 17 et 18 novembre 2026
+## 17 au 19 novembre 2026
 
+- **Tris de variation renommés** : « Variation de prix (%) » (ex-« Évolution du prix ») met la plus grosse variation en % d’abord, hausse ou baisse (avant : les hausses d’abord) ; « Variation de prix (€) » (ex-« Écart de prix ») le plus gros écart en euros. La page publique trie de la même façon.
+- **Téléphone** : en remontant au milieu de la page, la barre du haut ne se redéplie plus (listes, pastilles) ; elle reste réduite à la liste en cours jusqu'en haut de la page.
+- **Couleur de la liste** : la pastille active des sous-listes (sur téléphone, sous le titre) et le pinceau actif suivent la couleur de la liste (avant : un fond rouge pâle fixe).
+- **Logo individuel d’un set** : ses figurines rangées dedans l’affichent aussi (vignettes, page publique). Sur une figurine (y compris une figurine d’origine ouverte depuis son set), « Logo individuel » permet de retirer ce logo hérité (ou de le reprendre), ou de lui donner le sien.
+- **Compteur de visites** des pages publiques : au plus une visite par personne et par jour (avant : chaque affichage comptait) ; les anciens chiffres ont été recalculés de la même façon.
+- **Appli rouverte** ailleurs qu’à l’accueil (ex. Nouveautés, après qu’Android a fermé l’appli en arrière-plan) : « retour » ramène à l’accueil au lieu de quitter l’appli.
+- **Sous-listes** : un bouton « ‹ » devant les pastilles ramène à la liste parente (aussi sur téléphone en faisant défiler).
+- **Nombre de visites** des pages publiques : plus à côté du titre des listes (seul le 📤 y reste) ; il est dans la page 📊 Statistiques.
 - **Nouveautés** (sets et figurines, appli et page publique) : à date de sortie égale (même mois, ou seulement l’année), l’ordre de lego.com départage — les plus récentes d’abord.
+- **Nouveautés relevées toutes les heures** (avant : 12 h) ; ouvrir la page Nouveautés relit lego.com tout de suite.
+- **Appli installée** : une page publique (collection, liste de souhaits, à surveiller, nouveautés, fiche partagée) ouverte dans la fenêtre de l’appli ne s’y garde jamais : en revenant dans l’appli, on retrouve l’appli privée. Dans un navigateur ordinaire, rien ne change.
+- **Nouveautés** : les sets et figurines exclusives sans image ne s’affichent plus, sauf avec la case « Afficher celles sans image » (retenue sur l’appareil).
+- **Page publique** : la fiche d’une figurine regroupée donne le même total que sa carte (ex. ×12) et la répartition « Dans mes sets : … ×3, … · seules : N », chaque set cliquable (avant : seulement le lot ouvert).
+- **Back office → 🧩 Éléments d’origine** (groupe Avancé) : modifier l’existant — tris (« Trier par »), filtres (« ⚙️ Filtres ») et tuiles du haut : renommer, masquer, réordonner (brouillon puis Publier) ; calculs d’origine (boîte, livret, exemplaire modifié, seuils des flèches) : formule expliquée et pourcentage modifiable (effet immédiat).
+- **Bas du menu latéral** : « © 2026 Clýde Hørd » n’est plus cliquable ; « ⚖️ Mentions légales · 🐙 GitHub » à côté.
 - **Partager une page publique** : un petit **📤** à côté du compteur de visites (👁) sur « Toute la collection », la liste de souhaits, « À surveiller » et les Nouveautés partage le lien de leur page publique (ou le copie) ; ces liens quittent le bas du menu latéral (restent la démo, avec sa case « dans le menu latéral » dans les Réglages, et le code source).
 - **Auteur** : mention « Clýde Hørd (ClydeHord sur GitHub), seul auteur et contributeur » dans le README et le fichier `AUTHORS.md`, à conserver dans toute copie.
 

@@ -327,7 +327,13 @@ un bloc de la fiche masqué. Plusieurs effets par règle.</p>"""),
 <p>[[go:vues]]</p>
 <ul><li>Une <b>vue</b> est une liste filtrée prête à ouvrir depuis le menu (« Précieux », « À construire cet hiver »…).</li>
 <li>Un <b>tri</b> à vous s'ajoute au menu « ⇅ Tri » du site (marqué ★).</li>
-<li>Un <b>filtre</b> à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).</li></ul>"""),
+<li>Un <b>filtre</b> à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).</li></ul>
+<h3 id="origine">Éléments d'origine : modifier l'existant</h3>
+<p>[[go:origine]] Ce que l'application propose déjà, à votre main :</p>
+<ul><li><b>Tris</b> (menu « Trier par »), <b>Filtres</b> (menu « ⚙️ Filtres ») et <b>tuiles du haut</b> : un nouveau nom (vide : celui d'origine), « masquer »,
+et ↑ ↓ pour l'ordre — brouillon, puis « Publier ». Les tuiles changent selon la page : ouvrez dans l'aperçu celle à régler, puis « ⟳ Relire les tuiles ».</li>
+<li><b>Calculs d'origine</b> : la formule de chacun expliquée (boîte, livret de plans, exemplaire modifié, seuils des flèches) et son pourcentage,
+modifiable — effet <b>immédiat</b>, sans « Publier » (ce sont les réglages du serveur, les mêmes que dans l'appli : Réglages → 🧮 Estimations).</li></ul>"""),
     ]},
     # ------------------------------------------------------------------ 13
     {"id": "donnees", "title": "Données : fiches, catalogue, tableur", "intro": """
