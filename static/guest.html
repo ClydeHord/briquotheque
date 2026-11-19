@@ -5,6 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='10' width='28' height='18' rx='3' fill='%23e3000b'/><rect x='7' y='5' width='7' height='7' rx='2' fill='%23e3000b'/><rect x='18' y='5' width='7' height='7' rx='2' fill='%23e3000b'/></svg>">
 <title>Collection LEGO — Briquothèque</title>
 <link rel="stylesheet" href="/style.css">
 <style>
@@ -121,6 +122,7 @@
   .gs-num { font-size: 13px; font-weight: 700; color: var(--muted); margin: 2px 0; }
   .gs-qty { font-size: 13.5px; margin-top: 8px; }
   .card.gs-tags { all: unset; display: block; margin-top: 6px; }
+  html[data-ui] .card.gs-tags { border: 0; box-shadow: none; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; transform: none; }   /* (les thèmes — Néon… — n'entourent pas ce bloc invisible) */
   .gs-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .gs-figs .fig.figq { grid-template-columns: 44px minmax(0, 1fr); align-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
     padding: 5px 6px 5px 5px; gap: 4px 9px; min-width: 0; cursor: default; font: inherit; color: inherit; text-align: left; }
@@ -222,6 +224,7 @@
   .toolbar > .trend-tog[hidden] { display: none; }
   .trend-tog.on { border-color: var(--red, #d01012); background: color-mix(in srgb, var(--red, #d01012) 12%, var(--panel)); }
   @media (max-width: 600px) { .toolbar > .trend-tog { padding: 0 9px; } }
+.card .tagline .tg.tg-ph { visibility: hidden; }   /* (place gardée) */
 </style>
 <script>/* appli installée : une page publique n'y reste jamais — en revenant dans l'appli, retour à l'appli privée (navigateur ordinaire : rien) */
 (() => { const sa = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; if (!sa) return;
@@ -256,13 +259,15 @@
     <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Renverser le tri (ordre inverse)" aria-label="Renverser le tri" aria-pressed="false">🔃</button>
     <button type="button" class="btn trend-tog" id="trendTog" hidden title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button>
     <select id="sort" hidden aria-hidden="true" tabindex="-1">
+      
       <option value="modified">Dernière modification</option>
       <option value="added">Ajout récent</option>
-      <option value="added_old">Ajout le plus ancien</option>
-      <option value="value">Valeur décroissante</option>
+      <option value="random">Aléatoire</option>
+      <option value="value">Valeur</option>
       <option value="variation">Variation de prix (%)</option>
-        <option value="ecart">Variation de prix (€)</option>
-      <option value="name">Nom (A → Z)</option>
+      <option value="ecart">Variation de prix (€)</option>
+      <option value="hausse">Augmentation / baisse (%)</option>
+      <option value="name">Nom</option>
       <option value="number">Numéro</option>
       <option value="year">Année</option>
       <option value="qty">Nombre d'exemplaires</option>
@@ -437,7 +442,7 @@ function openGuestParts(listId) {
     const pieces = parts.reduce((a, p) => a + p.total, 0), ncol = new Set(parts.flatMap(p => p.colors.map(c => c.color_id))).size;
     b.innerHTML = `<div class="gs-kpis"><div><span>Pièces</span><b>${nf.format(pieces)}</b></div><div><span>Différentes</span><b>${nf.format(parts.length)}</b></div><div><span>Couleurs</span><b>${nf.format(ncol)}</b></div></div>
       <div class="gp-tools"><input type="search" data-q placeholder="Filtrer : nom, référence…">
-        <select data-sort><option value="total">Quantité</option><option value="colors">Nombre de couleurs</option><option value="name">Nom (A → Z)</option></select></div>
+        <select data-sort><option value="total">Quantité</option><option value="colors">Nombre de couleurs</option><option value="name">Nom</option></select></div>
       <div class="gp-grid" data-g></div>`;
     b.querySelector("[data-q]").oninput = () => { limit = 120; draw(); };
     b.querySelector("[data-sort]").onchange = draw;
@@ -733,7 +738,7 @@ function render() {
     $("#filter").classList.toggle("on", !!f);   // recherche : surlignée tant que quelque chose y est écrit
     $('#sort option[value="value"]').hidden = $('#sort option[value="value"]').disabled = !PRICES();
     if (!PRICES() && $("#sort").value === "value") $("#sort").value = "modified";
-    { const o = $('#sort option[value="variation"]'); o.hidden = o.disabled = !data.trend || data.trend.on === false; if (o.hidden && $("#sort").value === "variation") $("#sort").value = "modified"; }   // tri « Variation » : seulement si les flèches sont montrées
+    for (const v of ["variation", "hausse"]) { const o = $(`#sort option[value="${v}"]`); o.hidden = o.disabled = !data.trend || data.trend.on === false; if (o.hidden && $("#sort").value === v) $("#sort").value = "modified"; }   // tri « Variation » : seulement si les flèches sont montrées
     syncSortMenu();   // (menu « ⇅ Tri » : comme la page privée)
   }
   const hit = (i, extra = []) => !f || [i.number, i.display_name, i.info?.name, i.info?.theme, i.portion_note, ...extra].join(" ").toLowerCase().includes(f);
@@ -777,6 +782,7 @@ function render() {
     added_old: (a, b) => (a.added_at || 0) - (b.added_at || 0),
     value: (a, b) => (b.info?.estimate ?? 0) - (a.info?.estimate ?? 0),
     variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : Math.abs(b.chg) - Math.abs(a.chg) || b.chg - a.chg; },   // la plus grosse variation en %, hausse ou baisse ; sans relevé : à la fin
+    hausse: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // « Augmentation / baisse (%) » : + puis ~ puis − (🔃 : − puis ~ puis +) ; sans relevé : à la fin
     ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Variation de prix (€) » : le plus gros écart EN EUROS d'abord, hausse ou baisse
       const eur = x => { const v = x.info?.estimate ?? 0; return Math.abs(v - v / (1 + x.chg / 100)); };   // (valeur actuelle − valeur d'avant, d'après la variation en %)
       return eur(b) - eur(a); },
@@ -787,6 +793,7 @@ function render() {
     pieces: (a, b) => (b.info?.pieces || 0) * (b.quantity || 1) - (a.info?.pieces || 0) * (a.quantity || 1),
     figs: (a, b) => (b._virt ? 0 : figCount(b)) - (a._virt ? 0 : figCount(a)),
     theme: (a, b) => (!a.info?.theme - !b.info?.theme) || (a.info?.theme || "").localeCompare(b.info?.theme || "", "fr"),
+    random: (a, b) => sortRand(a) - sortRand(b),   // « Aléatoire » : au hasard, stable le temps de la visite (rechoisi : rebattu)
     insta: (a, b) => (b.igt || "").localeCompare(a.igt || ""),
   }[sort] || ((a, b) => (b.added_at || 0) - (a.added_at || 0));
   const wg = i => upcoming(i) ? 0 : soon(i) ? 1 : retired(i) ? 3 : 2;   // souhaits : à venir, bientôt retirés, en vente, retirés
@@ -814,7 +821,7 @@ function render() {
   const cardBody = (i, alt = false) => `<div class="body">
         <div class="num">${isCustom(i) ? (i.number && i.number !== "custom" ? esc(i.number) : "&nbsp;") : esc(i.number)}</div>
         <div class="name">${esc(itemName(i))}${alt ? (alt.name ? ` (${esc(alt.name)})` : "") : i.main_name ? ` (${esc(i.main_name)})` : ""}${qtyTag((i.quantity || 1) + (i._withSetN || 0))}</div>${alt ? `<div class="alt-note">Apparence alternative</div>` : ""}
-        ${tagLine(i) ? `<div class="meta tagline">${tagLine(i)}</div>` : ""}
+        <div class="meta tagline">${tagLine(i) || '<span class="tg tg-moc tg-ph" aria-hidden="true">MOC</span>'}</div>
         ${i.kind === "fig" && inSets.has(figKey(i.number)) ? `<div class="meta in-sets-line">+ ${inSets.get(figKey(i.number)).sets.reduce((a, x) => a + x.n, 0)} dans : ${setsLine(inSets.get(figKey(i.number)).sets)}</div>` : ""}
         ${showList ? `<div class="meta list-tag">${esc(listName(i.list_id))}</div>` : ""}
         <div class="meta">${[i.info?.theme, i.info?.year, piecesTxt(i.info?.pieces)].map((t, k) => k === 2 && t && (i.quantity || 1) > 1 ? piecesTxt(i.info.pieces * i.quantity) : t).filter(Boolean).map(esc).join(" · ")}</div>
@@ -831,7 +838,7 @@ function render() {
     if (i._virt) return `<article class="card fig-in-set" data-v="${VIRT.indexOf(i)}" tabindex="0" role="button" aria-label="Voir le détail" title="Figurine de ${i._sets.length > 1 ? "plusieurs sets" : "set"}">
       <div class="pic"><img src="${thumb(i._img)}" alt="" loading="lazy"><div class="badges"><span class="badge in-set">Dans ${i._sets.length > 1 ? i._sets.length + " sets" : "un set"}</span></div></div>
       <div class="body"><div class="num">${esc(i.number)}</div><div class="name">${esc(i.info.name || i.number)}${qtyTag(i.quantity)}</div>
-        ${i._mod ? `<div class="meta tagline"><span class="tg tg-mod">Modifiée</span></div>` : ""}
+        <div class="meta tagline">${i._mod ? `<span class="tg tg-mod">Modifiée</span>` : '<span class="tg tg-moc tg-ph" aria-hidden="true">MOC</span>'}</div>
         ${showList ? `<div class="meta list-tag">${esc([...new Set(i._sets.map(x => listName(x.i.list_id)))].filter(Boolean).join(", "))}</div>` : ""}
         <div class="meta">${[i.info.theme, i.info.year].filter(Boolean).map(esc).join(" · ")}</div>
         ${PRICES() && i._cat != null ? `<div class="foot">${valueFoot(i._cat, i._cat, false, i.quantity || 1)}${numLogo(i._sets[0]?.i.list_id)}</div>` : numLogo(i._sets[0]?.i.list_id) ? `<div class="foot foot-logo">${numLogo(i._sets[0]?.i.list_id)}</div>` : ""}</div></article>`;
@@ -900,6 +907,9 @@ document.addEventListener("input", e => { if (e.target.id === "filter") e.target
 document.addEventListener("change", e => { if (!e.target.matches?.("[data-ftag]")) return;
   const t = e.target.dataset.ftag, set = new Set(gviews.tags); e.target.checked ? set.add(t) : set.delete(t); gviews.tags = [...set]; render(); });
 /* menu « Tri » : la même fenêtre que « Filtres » (= syncSortMenu, app.js) — la liste invisible #sort garde le choix */
+/* tri « Aléatoire » : une valeur au hasard par fiche, fixe pour un tirage (window.bqRandSeed, changé quand on choisit ce tri) */
+window.bqRandSeed = window.bqRandSeed || Math.random().toString(36).slice(2);
+function sortRand(x) { let h = 2166136261; for (const c of String(x.id || x.number || x.part_num || "") + "|" + (x._img || "") + "|" + window.bqRandSeed) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
 var gSortRev = false;   // « 🔃 Renverser le tri » (le temps de la visite)
 var gTrendOn;   // « 📈 » : variations montrées ou cachées à la volée (d'office : le réglage du propriétaire)
 document.addEventListener("click", e => { if (!e.target.closest?.("#trendTog")) return; gTrendOn = !(gTrendOn ?? (data.trend?.on !== false)); render(); });
@@ -910,9 +920,9 @@ function syncSortMenu() {
   const rb = $("#sortRev"); if (rb) rb.setAttribute("aria-pressed", gSortRev);
   const tb = $("#trendTog"); if (tb) { const on = gTrendOn ?? (data.trend?.on !== false); tb.hidden = !data.trend || !PRICES() || (current !== ALL && kindOf(current) === "wishlist"); tb.classList.toggle("on", on); tb.setAttribute("aria-pressed", on); }
 }
-document.addEventListener("click", e => { if (!e.target.closest?.("[data-sortrev]")) return; gSortRev = !gSortRev; $("#sortMenu").open = false; render(); });
+document.addEventListener("click", e => { if (!e.target.closest?.("[data-sortrev]")) return; if ($("#sort").value === "random") { window.bqRandSeed = Math.random().toString(36).slice(2); $("#sortMenu").open = false; return render(); }   /* (Aléatoire : 🔃 remélange) */ gSortRev = !gSortRev; $("#sortMenu").open = false; render(); });
 document.addEventListener("change", e => { if (!e.target.matches?.('#sortPop input[name="sortopt"]')) return;
-  const so = $("#sort"); so.value = e.target.value; if (so.value === "variation" || so.value === "ecart") gTrendOn = true;   /* (tri de variation : les flèches s'affichent) */ so.dispatchEvent(new Event("change", { bubbles: true })); });
+  const so = $("#sort"); so.value = e.target.value; if (so.value === "random") window.bqRandSeed = Math.random().toString(36).slice(2); if (["variation", "hausse", "ecart"].includes(so.value)) gTrendOn = true;   /* (tri de variation : les flèches s'affichent) */ so.dispatchEvent(new Event("change", { bubbles: true })); });
 document.addEventListener("click", e => {
   if (e.target.matches?.("#sortPop input")) setTimeout(() => { $("#sortMenu").open = false; });   // un tri choisi (même celui en cours) : le menu se ferme
   for (const m of document.querySelectorAll("#filtMenu, #sortMenu")) if (m.open && !m.contains(e.target)) m.open = false;   // clic ailleurs (ou sur l'autre menu) : fermé
@@ -1117,6 +1127,13 @@ fetch(base + "/data").then(r => r.ok ? r.json() : Promise.reject(r))
 </script>
 <script>
 new IntersectionObserver(es => es.forEach(e => { gTilesSeen = e.isIntersecting; gTopShow(); }), { rootMargin: "-70px 0px 0px 0px" }).observe(document.getElementById("stats"));   // téléphone : boutons du haut quand les tuiles sont sorties de l'écran
+
+/* barre des filtres collée en haut pendant le défilement : classe « is-stuck » (fond de verre seulement à ce moment-là — 20/11) */
+{ const tb = document.querySelector(".main > .toolbar, .g-main > .toolbar");
+  if (tb) { let q = false; const chk = () => { q = false; const top = parseFloat(getComputedStyle(tb).top) || 0, st = scrollY > 0 && tb.getBoundingClientRect().top <= top + 1;
+      if (tb.classList.contains("is-stuck") !== st) tb.classList.toggle("is-stuck", st); };
+    const later = () => { if (!q) { q = true; requestAnimationFrame(chk); } };
+    addEventListener("scroll", later, { passive: true }); addEventListener("resize", later); later(); } }
 </script>
 </body>
 </html>

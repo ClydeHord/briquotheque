@@ -11,7 +11,6 @@ Servis par l'application : /guide-utilisateur (contenu : guide_content.py), /bac
 installé, /guide-technique (privé). Le moteur du wiki est dans wiki.py. Plus aucun PDF : imprimer une page de wiki imprime le guide entier.
 Besoins : Python 3 (standard) ; Node 20 et Chromium seulement pour reprendre les captures.
 """
-import ast
 import html
 import json
 import os

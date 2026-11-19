@@ -110,7 +110,7 @@ function buildCss() {
   if (th.zoom && +th.zoom !== 100) out.push(`body{zoom:${Math.max(70, Math.min(160, +th.zoom)) / 100}}`);
   if (th.logo) {
     const im = /^data:image\//.test(th.logo);
-    out.push(`.brand .brick{display:none!important}.brand::before{content:${im ? '""' : JSON.stringify(String(th.logo).slice(0, 8))};${im ? `width:30px;height:30px;background:url("${cssVal(th.logo)}") center/contain no-repeat;flex:none` : "font-size:24px;line-height:1"}}`);
+    out.push(`.brand .brick{display:none!important}.brand::before{content:${im ? '""' : JSON.stringify(String(th.logo).slice(0, 40))};${im ? `width:30px;height:30px;background:url("${cssVal(th.logo)}") center/contain no-repeat;flex:none` : "font-size:24px;line-height:1"}}`);
   }
   for (const r of cfg.rules || []) {   // règles posées « à la souris » sur un élément
     if (!r.sel || r.off || (r.page && r.page !== PAGE) || !safeSel(r.sel)) continue;
@@ -222,7 +222,7 @@ function applyAdds() {
   all(".bo-add").forEach(n => { const a = want.get(n.dataset.boAdd); if (!a || n.dataset.boSig !== JSON.stringify(a)) n.remove(); });
   for (const a of want.values()) {
     const sig = JSON.stringify(a);
-    for (const t of all(wide(a.sel)).slice(0, 40)) {
+    for (const t of all(wide(a.sel)).slice(0, 5000)) {
       if (t.closest(".bo-add,.bo-ui")) continue;
       const pos = a.pos || "after";
       const have = pos === "before" ? t.previousElementSibling : pos === "after" ? t.nextElementSibling : pos === "start" ? t.firstElementChild : t.lastElementChild;
@@ -299,9 +299,27 @@ function goItem(id) {
   if (typeof setMenu === "function") setMenu(false);
   openEdit(id);
 }
+/* chaque entrée du menu (pas les listes : elles se renomment dans l'appli) : une clé stable, son texte d'origine ; renommée / masquée (cfg.menu.labels, cfg.menu.off) */
+const navKey = b => b.id ? "#" + b.id : b.dataset.novcal != null ? "cal" : b.dataset.id ? "id:" + b.dataset.id : b.dataset.pub ? "pub:" + b.dataset.pub
+  : (() => { const a = [...b.attributes].find(x => x.name.startsWith("data-") && !x.name.startsWith("data-bo")); return a ? a.name + (a.value ? "=" + a.value : "") : ""; })();
+const navEls = () => all("#sidebar .nav-item, #sidebar .side-bottom .btn, #sidebar [data-legal], #sidebar .new-inv").filter(b => !b.classList.contains("bo-link") && !b.dataset.inv && !b.closest("#invNav")
+  && !(b.dataset.id && typeof state !== "undefined" && (state.lists || []).some(l => l.id === b.dataset.id)) && !b.closest("#listNav .nav-item.sub"));
+function navEdit() {
+  const L = cfg.menu?.labels || {}, OFF = new Set(cfg.menu?.off || []);
+  for (const b of navEls()) {
+    const k = navKey(b); if (!k) continue;
+    const t = b.querySelector(".nm") || b;
+    if (t.dataset.boOrig == null || (t.dataset.boSet !== t.textContent && t.textContent !== t.dataset.boOrig)) t.dataset.boOrig = t.textContent;   // (l'appli a réécrit l'entrée : son nouveau texte d'origine)
+    const want = String(L[k] || "").trim() || t.dataset.boOrig;
+    if (t.textContent !== want) t.textContent = want;   // (seulement si ça change : pas de boucle)
+    if (t.dataset.boSet !== want) t.dataset.boSet = want;
+    const hide = OFF.has(k); if ((b.style.display === "none") !== hide) b.style.display = hide ? "none" : "";
+  }
+}
 function menu() {
   const sb = D.getElementById("sidebar");
   if (!sb) return;
+  try { navEdit(); } catch {}
   let n = 0;
   for (const c of sb.children) {
     if (c.classList.contains("bo-link")) continue;
@@ -312,6 +330,10 @@ function menu() {
   all(":scope > .bo-link", sb).forEach(a => { if (!want.has(a.dataset.boId)) a.remove(); });
   for (const it of want.values()) {
     let a = all(":scope > .bo-link", sb).find(x => x.dataset.boId === it.id);
+    if (it.kind === "sep") {   // trait de séparation ajouté (comme ceux d'origine)
+      if (!a) { a = D.createElement("div"); a.className = "side-sep bo-link bo-x"; a.dataset.boId = it.id; a.dataset.boKey = "bo-" + it.id; sb.append(a); }
+      continue;
+    }
     if (!a) {
       a = D.createElement("button"); a.type = "button"; a.className = "nav-item bo-link bo-x"; a.dataset.boId = it.id; a.dataset.boKey = "bo-" + it.id;
       a.innerHTML = `<span class="nm"></span>`;
@@ -354,7 +376,7 @@ function pickItem(done) {   // petite fenêtre : choisir une fiche à relier
   const inp = p.querySelector("input"), res = p.querySelector(".bo-res");
   const me = ownItem()?.id;
   const draw = () => { const q = inp.value.trim().toLowerCase();
-    const list = state.items.filter(i => i.kind !== "part" && i.id !== me && (!q || nameOf(i.id).toLowerCase().includes(q))).slice(0, 40);
+    const list = state.items.filter(i => i.kind !== "part" && i.id !== me && (!q || nameOf(i.id).toLowerCase().includes(q))).slice(0, 500);
     res.innerHTML = list.map(i => `<button type="button" data-id="${esc(i.id)}">${esc(nameOf(i.id))}</button>`).join("") || `<span class="bo-h">Aucune fiche trouvée.</span>`; };
   inp.oninput = draw; draw();
   p.onclick = e => { const b = e.target.closest("[data-id]"); if (b) { p.remove(); done(b.dataset.id); } else if (e.target === p || e.target.closest(".btn")) p.remove(); };
@@ -613,7 +635,7 @@ const NAMES = { button: "Bouton", a: "Lien", input: "Champ", select: "Liste dér
   legend: "Titre de bloc", fieldset: "Bloc", label: "Libellé", nav: "Menu", article: "Carte", form: "Formulaire", header: "Barre du haut", aside: "Menu latéral", p: "Texte", span: "Texte", li: "Ligne", td: "Cellule", th: "En-tête", table: "Tableau" };
 const ownText = el => [...el.childNodes].filter(n => n.nodeType === 3 && n.nodeValue.trim());
 function describe(el) {
-  const t = el.tagName.toLowerCase(), txt = (ownText(el)[0]?.nodeValue || el.getAttribute("aria-label") || el.getAttribute("placeholder") || el.getAttribute("title") || (el.innerText || "")).replace(/\s+/g, " ").trim();
+  const t = el.tagName.toLowerCase(), txt = (ownText(el)[0]?.nodeValue || el.getAttribute("aria-label") || el.getAttribute("placeholder") || el.getAttribute("title") || (el.tagName === "SELECT" ? (el.selectedOptions[0]?.textContent || "") : el.innerText || "")).replace(/\s+/g, " ").trim();
   const nm = el.classList.contains("btn") ? "Bouton" : el.classList.contains("card") ? "Carte" : el.classList.contains("badge") ? "Étiquette" : el.classList.contains("modal-box") ? "Fenêtre" : NAMES[t] || (ownText(el).length ? "Texte" : "Zone");
   return nm + (txt ? ` « ${txt.slice(0, 38)}${txt.length > 38 ? "…" : ""} »` : "");
 }
@@ -776,8 +798,29 @@ function pickMode(on) {
   if (!pk.on) { pk.el = null; for (const k of ["hl", "selBox", "tip"]) if (pk[k]) pk[k].style.display = "none"; }
 }
 
+/* 🗂️ Tous les éléments (back office) : l'inventaire de ce que l'appli affiche — y compris caché (menus fermés, fenêtres, éléments masqués) */
+let inv = [];
+const INV_Q = "button, a[href], summary, legend, h1, h2, h3, h4, label, option, th, select, .tv, .sub-chip, .ext, .chip, [role=button], .stat .lbl, input[placeholder], textarea[placeholder]";
+const invArea = e => e.closest("#sidebar") ? "Menu latéral" : e.closest(".topbar, header") ? "Barre du haut" : e.closest("#filtPop, #sortMenu, #filtMenu") ? "Menus Trier / Filtres"
+  : e.closest("#modal") ? "Fiche" : e.closest(".modal") ? "Fenêtres" : e.closest("#stats") ? "Tuiles du haut" : e.closest("footer") ? "Bas de page" : "Page";
+function inventory() {
+  inv = []; const out = [], seen = new Set();
+  for (const e of all(INV_Q)) {
+    if (e.closest(".bo-ui, .bo-x, script, style, template, .bo-ctx") || e.closest(".card[data-id], .card[data-altof], .figcard, .toast")) continue;   // (les cartes : mes fiches, pas l'appli)
+    let one = ""; try { one = selOne(e); } catch {} if (!one || seen.has(one)) continue;
+    const tn = ownText(e)[0], t = (tn ? srcText(tn) : e.getAttribute("placeholder") || e.getAttribute("title") || e.getAttribute("aria-label") || (e.tagName === "SELECT" ? "Liste : " + (e.selectedOptions[0]?.textContent || "") : e.textContent) || "").replace(/\s+/g, " ").trim();
+    if (!t && !e.querySelector("img, svg")) continue;
+    seen.add(one); inv.push(e);
+    out.push({ i: inv.length - 1, area: invArea(e), desc: describe(e), text: t.slice(0, 200), hidden: !e.getClientRects().length, one });
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ ce que le back office peut demander à son aperçu */
 W.BO = {
+  inventory,
+  invInfo(i) { const e = inv[i]; return e && e.isConnected ? pickInfo(e) : null; },
+  invPick(i) { const e = inv[i]; if (!e || !e.isConnected) return false; if (e.getClientRects().length) e.scrollIntoView({ block: "center" }); choose(e); return true; },
   apply, page: PAGE, tr,
   move: moveMode,   // aperçu : mode « déplacer à la souris »
   _: { HOOKS, cfg: () => cfg, esc, all, app, PAGE, PUBLIC, admin: () => ADMIN, itemType, ownItem, sheetType, xvals: () => xvals, fmtDate, nameOf, schedule, readInputs, openList, goItem },   // pour bo-plus.js et bo-max.js
@@ -792,6 +835,7 @@ W.BO = {
   flash(sel) { const els = all(sel); els.forEach(e => e.classList.add("bo-flash")); els[0]?.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => els.forEach(e => e.classList.remove("bo-flash")), 1400); return els.length; },
   count: sel => all(sel).length,
   sheetInfo,
+  navEntries() { return navEls().map(b => { const t = b.querySelector(".nm") || b; return { key: navKey(b), text: (t.dataset.boOrig ?? t.textContent).trim() }; }).filter(x => x.key); },
   menuInfo() { const sb = D.getElementById("sidebar"); if (!sb) return null; menu();
     return [...sb.children].map(c => ({ key: c.dataset.boKey, custom: c.classList.contains("bo-link"), sep: c.classList.contains("side-sep"), empty: !c.classList.contains("side-sep") && !(c.innerText || "").trim(),
       text: (c.innerText || "").replace(/\s+/g, " ").trim().slice(0, 50) })); },

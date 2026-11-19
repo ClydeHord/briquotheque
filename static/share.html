@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='10' width='28' height='18' rx='3' fill='%23e3000b'/><rect x='7' y='5' width='7' height='7' rx='2' fill='%23e3000b'/><rect x='18' y='5' width='7' height='7' rx='2' fill='%23e3000b'/></svg>">
 <title>Fiche partagée — Briquothèque</title>
 <link rel="stylesheet" href="/style.css">
 <style>
@@ -17,7 +18,8 @@
   .sh-num { color: var(--muted); font-weight: 700; font-size: 13px; }
   .sh-body h1 { margin: 2px 0 4px; font-size: 22px; line-height: 1.2; }
   .sh-meta { color: var(--muted); font-size: 14px; }
-  .card.sh-tl { all: unset; display: block; margin: 8px 0 0; }   /* étiquettes d'état : mêmes styles que sur les cartes de l'appli (.card .tagline .tg) */
+  .card.sh-tl { all: unset; display: block; margin: 8px 0 0; }
+  html[data-ui] .card.sh-tl { border: 0; box-shadow: none; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; transform: none; }   /* (les thèmes — Néon… — n'entourent pas ce bloc invisible) */   /* étiquettes d'état : mêmes styles que sur les cartes de l'appli (.card .tagline .tg) */
   .card.sh-tl .tagline .tg { font-size: 12px !important; padding: 1px 8px !important; }
   .sh-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
   .sh-tags .badge { font-size: 12px; padding: 3px 9px; }

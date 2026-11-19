@@ -1,6 +1,6 @@
 # Briquothèque — Notice du back office (condensé pour IA)
 
-Généré le 19/11/2026 08:45.
+Généré le 19/11/2026 22:21.
 
 Consigne pour l'IA : ce texte est la notice complète du back office de Briquothèque (les coulisses : apparence, textes, fiches, étiquettes, pages, sauvegardes… sans code), une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur cette notice : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si la notice ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -330,7 +330,7 @@ Les cartes des listes
 
 #### Menu
 
-Ouvrir : Menu ↗ L'ordre des entrées (glisser ⠿), les entrées masquées, et vos **raccourcis** : vers une adresse, une liste, une fiche, une vue.
+Ouvrir : Menu ↗ L'ordre des entrées (glisser ⠿), les entrées masquées, **chaque entrée renommée ou masquée une à une** (« Chaque entrée du menu » : Nouveautés, Calendrier des sorties, Réglages…), des **traits de séparation** en plus (« + Ajouter un trait de séparation »), et vos **raccourcis** : vers une adresse, une liste, une fiche, une vue.
 Les pages que vous créez et vos vues enregistrées y apparaissent aussi, et s'ordonnent ici.
 
 Le menu latéral
@@ -537,6 +537,19 @@ Ouvrir : Vues, tris et filtres ↗
 - Un **tri** à vous s'ajoute au menu « ⇅ Tri » du site (marqué ★).
 
 - Un **filtre** à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).
+
+#### Tous les éléments : rien n'est verrouillé
+
+Ouvrir : tout ↗ L'inventaire de **tout** ce que la page affichée dans l'aperçu contient : boutons, liens, entrées du menu, titres, étiquettes,
+onglets, options des listes déroulantes, champs — y compris ce qu'on ne peut pas atteindre en cliquant (menus « Trier par » et « ⚙️ Filtres »
+fermés, fenêtres, éléments déjà masqués). Une recherche et un tri par zone (barre du haut, menu latéral, fiche, fenêtres…) ; sur chaque ligne :
+
+- **✏️ Modifier** : l'éditeur complet de l'élément, comme au clic (texte, style, lien, action, icône, position) ;
+
+- **🙈 Masquer** / **👁 Afficher** d'un appui.
+
+Ouvrez dans l'aperçu une fiche, les Réglages ou une autre page, puis « ⟳ Relire l'aperçu » pour en lister les éléments. Les noms, icônes,
+colonnes, blocs et entrées n'ont plus de limite pratique (seule reste la taille d'un envoi : 16 Mo).
 
 #### Éléments d'origine : modifier l'existant
 

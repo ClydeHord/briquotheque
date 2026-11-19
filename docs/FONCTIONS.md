@@ -41,7 +41,7 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
 - On peut **déposer** des fiches sur une pastille pour les y ranger.
 
 **Afficher et trier**
-- **Tris « Variation de prix (%) » et « Variation de prix (€) »** et bouton **🔃 Renverser le tri** (ordre inverse du tri en cours, retenu liste par liste).
+- **Tris « Variation de prix (%) », « Augmentation / baisse (%) » et « Variation de prix (€) »** et bouton **🔃 Renverser le tri** (ordre inverse du tri en cours, retenu liste par liste).
 - **↑ ↓ ~ à côté des prix** : la variation depuis le dernier relevé, très discrète (cartes, fiche, totaux) ; réglable (seuils de hausse
   et de baisse en %, « ~ » si stable, pourcentage, taille) dans le back office ; bouton 📈 pour les montrer ou les cacher à la volée ; toujours dans une fiche 
 - **🔍 Comprendre les variations** (Statistiques) : pour la liste affichée, ce qui a fait monter ou baisser la valeur — ajouts, retraits,
@@ -227,6 +227,7 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
 - **📈 Évolution** : l'historique de la valeur.
 
 ---
+- **Prix du marché sous l’estimation** d’une fiche (set, figurine) : en magasin (LEGO, si encore en vente), neuf, d’occasion et, pour un set, d’occasion sans figurines ; variation à côté du prix en haut quand 📈 est allumé.
 
 ## Inventaires
 

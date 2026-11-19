@@ -932,7 +932,7 @@ def bl_set_figs(number):
         return []
     key = "blsf:" + str(number)
     c = _parts_cache().get(key) or {}
-    if time.time() - c.get("t", 0) < (30 if c.get("figs") else 1) * 86400:
+    if time.time() - c.get("t", 0) < (36500 if c.get("figs") else 1) * 86400:   # (connues : gardées pour toujours ; pas encore : réessai le lendemain)
         return c.get("figs") or []
     figs = []
     try:
@@ -1081,6 +1081,8 @@ def novelties_build():
             x["seen"] = (prev.get(x["number"]) or {}).get("seen") or now   # première apparition sur lego.com (départage les sets d'une même année)
             m = re.search(rf"(?:\b\d{{1,2}}\s+)?({MOIS})\s+(\d{{4}})", x.get("when") or "", re.I)
             x["release"] = f"{m.group(1).lower()} {m.group(2)}" if m else (prev.get(x["number"]) or {}).get("release") or ""   # vue « à venir » avant : son mois reste
+            d2 = re.search(rf"\b(\d{{1,2}})\s+({MOIS})\s+(\d{{4}})", x.get("when") or "", re.I)   # (date exacte « 1 janvier 2027 » : retenue — une fois sorti, il reste à son jour)
+            x["day"] = f"{d2.group(1)} {d2.group(2).lower()} {d2.group(3)}" if d2 else (prev.get(x["number"]) or {}).get("day") or ""
         items = {k: x for k, x in items.items() if x.get("pieces")}   # pas les « goodies » (sacs, trousses, vêtements…) : rien à construire
         _save(NOV_FILE, {"t": int(time.time()), "items": list(items.values()), "figs_done": False})
         nums, pc = {x["number"] for x in items.values()}, _parts_cache()
@@ -1118,7 +1120,7 @@ def novelties_build():
                     x["theme"] = th.get("fr") or th["name"]
         for x in items.values():   # minifigs de chaque set (Rebrickable ; un set pas encore connu : aucune)
             c = pc.get("nvs:" + x["number"])
-            fresh = 86400 if c and any(not f.get("image") for f in c.get("figs") or []) else 7 * 86400   # une figurine sans photo : relue chaque jour
+            fresh = 6 * 3600 if c and any(not f.get("image") for f in c.get("figs") or []) else 7 * 86400   # une figurine sans photo : relue toutes les 6 h
             if c and time.time() - c.get("t", 0) < fresh:
                 x["figs"] = c["figs"]
                 continue
@@ -1128,6 +1130,22 @@ def novelties_build():
             except Exception:
                 x["figs"] = []
             _parts_cache_put("nvs:" + x["number"], {"figs": x["figs"], "t": time.time()})
+        for x in items.values():   # figurine encore sans photo chez Rebrickable : en attendant, l'image de son torse imprimé (photo provisoire)
+            x["figs"] = [dict(f) for f in x.get("figs") or []]   # (copie : la photo provisoire n'entre pas dans le cache « nvs: », relu toutes les 6 h)
+            for f in x["figs"]:
+                if f.get("image"):
+                    continue
+                t = pc.get("nvt:" + f["fig"])
+                if not (t and time.time() - t.get("t", 0) < 3 * 86400):
+                    try:
+                        ps = sources.rb(f"lego/minifigs/{urllib.parse.quote(f['fig'])}/parts/?page_size=100").get("results", [])
+                        tor = next((q["part"] for q in ps if re.search(r"torso", (q.get("part") or {}).get("name") or "", re.I) and (q.get("part") or {}).get("part_img_url")), None)
+                        t = {"img": (tor or {}).get("part_img_url") or "", "t": time.time()}
+                    except Exception:
+                        t = {"img": "", "t": time.time() - 3 * 86400 + 6 * 3600}   # (Rebrickable indisponible : réessai dans 6 h)
+                    _parts_cache_put("nvt:" + f["fig"], t)
+                if t.get("img"):
+                    f["image"], f["image_tmp"] = t["img"], True
         for x in items.values():   # exclusive : dans aucun set hors des nouveautés
             for f in x.get("figs") or []:
                 c = pc.get("nvf:" + f["fig"])
@@ -1575,7 +1593,7 @@ def part_detail(part_num):
     """Fiche Rebrickable d'une pièce (gardée 30 jours)."""
     key = "pd:" + part_num
     c = _parts_cache().get(key)
-    if c is None or time.time() - c.get("_t", 0) > 30 * 86400:
+    if c is None or time.time() - c.get("_t", 0) > 36500 * 86400:   # (une pièce ne change pas : gardée pour toujours)
         d = sources.rb(f"lego/parts/{urllib.parse.quote(part_num)}/")
         c = {"part_num": d.get("part_num"), "name": d.get("name"), "print_of": d.get("print_of"),
              "molds": d.get("molds") or [], "alternates": d.get("alternates") or [], "_t": time.time()}
@@ -1592,7 +1610,7 @@ def part_sets(part, part_num="", color_id=None):
         pn = found.get("part_num") or part
     key = f"ps:{pn}|{color_id if color_id is not None else ''}"
     c = _parts_cache().get(key)
-    if c and time.time() - c.get("_t", 0) < 7 * 86400:
+    if c and time.time() - c.get("_t", 0) < 180 * 86400:   # (relue tous les 6 mois : nouveaux sets)
         return c
     d = sources.rb(f"lego/parts/{urllib.parse.quote(pn)}/")
     ext = d.get("external_ids") or {}
@@ -1752,7 +1770,7 @@ CAT_FR = {
 def part_categories():
     """Catégories Rebrickable (Briques, Plaques, Tuiles…), gardées 30 jours."""
     c = _parts_cache().get("pcats")
-    if not c or time.time() - c.get("_t", 0) > 30 * 86400:
+    if not c or time.time() - c.get("_t", 0) > 365 * 86400:
         try:
             d = sources.rb("lego/part_categories/?page_size=200")
             c = {"cats": {str(x["id"]): x["name"] for x in d.get("results", [])}, "_t": time.time()}
@@ -2090,6 +2108,15 @@ def clean_todos(b):
             out.append({"cat": " ".join(str(t.get("cat") or "").split())[:30] or "Autres", "note": str(t.get("note") or "").strip()[:500],
                         **({"fig": fig, "fig_name": " ".join(str(t.get("fig_name") or "").split())[:80]} if re.fullmatch(r"[\w.-]{1,40}", fig) else {})})   # figurine du set
     return out
+
+
+UI_THEMES = ("moderne", "classique", "verre", "brique", "minimal", "neon", "bd", "pastel", "technique", "nuit")   # thèmes de l'application (style.css : html[data-ui=…])
+
+
+def ui_theme():
+    """Thème de l'application (Réglages → Apparence) : « moderne » d'office."""
+    t = _load(sources.SETTINGS_FILE, {}).get("ui_theme")
+    return t if t in UI_THEMES else "moderne"
 
 
 def _settings_update(**kw):
@@ -2439,7 +2466,7 @@ def part_figs(part_num, color_id, budget=20):
     Listes de minifigs des sets et pièces des minifigs gardées en cache (elles ne changent pas)."""
     key = f"pf:{part_num}|{color_id}"
     c = _parts_cache().get(key)
-    if c and time.time() - c.get("_t", 0) < 7 * 86400:
+    if c and time.time() - c.get("_t", 0) < 180 * 86400:   # (relue tous les 6 mois : nouvelles figurines)
         return c
     sets = part_sets(part_num, part_num, color_id).get("sets") or []
     t0, figs, seen, partial = time.time(), [], set(), False
@@ -2553,7 +2580,7 @@ def shape_search(name):
         return []
     key = "ns:" + base.lower()
     c = _parts_cache().get(key)
-    if c is None or time.time() - c.get("_t", 0) > 30 * 86400:
+    if c is None or time.time() - c.get("_t", 0) > 180 * 86400:
         d = sources.rb("lego/parts/?page_size=50&search=" + urllib.parse.quote(base))
         found = [p["part_num"] for p in d.get("results", [])
                  if p["name"].lower().startswith(base.lower()) and not PRINT_RE.search(p["part_num"] + " " + p["name"])]
@@ -2640,7 +2667,7 @@ def part_colors(part_num, set_num=""):
         _parts_cache_put("colors", colors)
     key = "pc:" + part_num
     pcs = c.get(key)
-    if pcs is None or time.time() - c.get(key + ":t", 0) > 30 * 86400:
+    if pcs is None or time.time() - c.get(key + ":t", 0) > 180 * 86400:
         pcs = sources.part_colors(part_num)
         _parts_cache_put(key, pcs)
         _parts_cache_put(key + ":t", time.time())
@@ -3164,7 +3191,7 @@ def novelties_public():
     """Nouveautés pour la page publique /nouveautes : tout, sans rien de privé (ni ma collection, ni mes masqués, ni mes thèmes)."""
     d = _load(NOV_FILE, {})
     noimg = lambda u: not u or "/assets/?" in u
-    keep = ("number", "name", "pieces", "price", "release", "kind", "when", "pos", "seen", "images", "url")
+    keep = ("number", "name", "pieces", "price", "release", "kind", "when", "day", "pos", "seen", "images", "url")
     items = [{**{k: x.get(k) for k in keep}, "theme": theme_norm(x.get("theme")), "image": (x.get("images") or [RB_IMG.format(x["number"])])[0] if noimg(x.get("image")) else x.get("image"),
               "figs": [{"fig": f.get("fig"), "name": f.get("name"), "image": f.get("image")} for f in x.get("figs") or [] if f.get("exclusive")]}
              for x in d.get("items") or [] if x.get("pieces")]
@@ -3286,7 +3313,7 @@ def estimate_wish(item, info):
 def moc_color_maps():
     """Couleurs : n° BrickLink et n° Rebrickable → nom BrickOwl (pour chercher le prix). Gardé 30 jours."""
     c = _parts_cache().get("moc_colors")
-    if not c or "blrb" not in c or time.time() - c.get("_t", 0) > 30 * 86400:
+    if not c or "blrb" not in c or time.time() - c.get("_t", 0) > 365 * 86400:
         d = sources.rb("lego/colors/?page_size=500")
         bl, rbm, blrb = {}, {}, {}
         for col in d.get("results", []):
@@ -3633,12 +3660,13 @@ def rb_fig_candidates(fid):
     return out[:30]
 
 
-def rb_fig_parts(fig_num):
-    """Pièces d'une minifig Rebrickable (gardées 30 jours) ; couleur en nom BrickOwl pour les prix."""
+def rb_fig_parts(fig_num, refresh=False):
+    """Pièces d'une minifig Rebrickable ; couleur en nom BrickOwl pour les prix. Gardées pour toujours
+    (une figurine ne change pas) — l'ouverture d'une fiche n'attend jamais Rebrickable."""
     key = "mf2:" + fig_num
     c = _parts_cache().get(key)
-    if c and time.time() - c.get("_t", 0) < 30 * 86400:
-        return c["parts"]
+    if c and isinstance(c.get("parts"), list) and not refresh:
+        return c["parts"]   # (une figurine ne change pas : gardée pour toujours)
     d = sources.rb(f"lego/minifigs/{urllib.parse.quote(fig_num)}/parts/?page_size=100")
     bo = moc_color_maps()["rb"]
     parts = []
@@ -3652,6 +3680,132 @@ def rb_fig_parts(fig_num):
                       "image": (f"https://cdn.rebrickable.com/media/parts/elements/{el}.jpg" if el else None) or pt.get("part_img_url") or ""})
     _parts_cache_put(key, {"parts": parts, "_t": time.time()})
     return parts
+
+
+_bg_run = set()   # relectures en fond en cours (une seule à la fois par clé)
+
+
+def _bg_once(key, fn):
+    """Relecture en fond (une seule à la fois pour une même clé) : la réponse d'avant est rendue sans attendre."""
+    if DEMO or key in _bg_run:
+        return
+    _bg_run.add(key)
+
+    def go():
+        try:
+            fn()
+        except Exception:
+            pass
+        finally:
+            _bg_run.discard(key)
+    threading.Thread(target=go, daemon=True).start()
+
+
+def rb_fig_match(fid, refresh=False):
+    """Minifigs Rebrickable candidates d'une figurine (rb_fig_candidates), GARDÉES pour toujours :
+    rendues tout de suite. Une liste vide (Rebrickable injoignable ?) n'est pas gardée."""
+    key = "rbm:" + fid
+    c = _parts_cache().get(key)
+    if c and isinstance(c.get("l"), list) and not refresh:
+        return c["l"]   # (gardées pour toujours)
+    lst = rb_fig_candidates(fid)
+    if lst:
+        _parts_cache_put(key, {"l": lst, "_t": time.time()})
+    return lst
+
+
+def fig_rb_cached(n, known=None):
+    """Référence Rebrickable d'une figurine, SANS réseau : choisie sur la fiche, déjà une « fig-… », ou correspondance sûre gardée."""
+    if known:
+        return known
+    if RB_FIG.fullmatch(n):
+        return n
+    c = _parts_cache()
+    fc = c.get("fc:" + n)
+    if isinstance(fc, dict) and fc.get("rb"):
+        return fc["rb"]
+    lst = (c.get("rbm:" + n) or {}).get("l") or []
+    return lst[0]["fig_num"] if lst and lst[0].get("sure") else None
+
+
+def offline_figs():
+    """Figurines de la collection et des listes : seules (avec leur version choisie) et celles de chaque set → {numéro: réf. choisie ou None}."""
+    db, cache, out = load_db(), _load(CACHE_FILE, {}), {}
+    for it in db["items"]:
+        if it.get("kind") == "fig" and it.get("number") and it["number"] != "custom":
+            out[it["number"]] = it.get("rb_fig") or out.get(it["number"])
+        for f in (cache.get(cache_key(it)) or {}).get("minifigs") or []:
+            if isinstance(f, dict) and f.get("id"):
+                out.setdefault(f["id"], None)
+    return out
+
+
+def _cmf_items():
+    """Minifigs à collectionner seules (celles qui ont des accessoires) — catalogue lu UNE fois (cmf_set_of le relit à chaque appel)."""
+    cache = _load(CACHE_FILE, {})
+    return [it for it in load_db()["items"] if it.get("kind") == "fig" and (it.get("cmf_set") or (cache.get("fig:" + (it.get("number") or "")) or {}).get("theme") in CMF_THEMES)]
+
+
+def offline_warm():
+    """Prépare tout ce qu'une fiche demande, pour qu'elle s'ouvre sans attendre et hors connexion : correspondance et pièces de
+    chaque figurine, inventaire de chaque set. Seulement ce qui manque ; freiné (Rebrickable : une requête à la fois)."""
+    if DEMO or COPIE or not sources.rebrickable_key():
+        return
+    done = 0
+    for n, known in sorted(offline_figs().items()):
+        try:
+            rb = fig_rb_cached(n, known)
+            if not rb and "rbm:" + n not in _parts_cache():
+                lst = rb_fig_match(n)
+                rb = lst[0]["fig_num"] if lst and lst[0].get("sure") else None
+            if rb and "mf2:" + rb not in _parts_cache():
+                rb_fig_parts(rb); done += 1
+        except (sources.RebrickableBusy, PermissionError):
+            return
+        except Exception:
+            continue
+    for it in [i for i in load_db()["items"] if i.get("kind", "set") in ("set", "custom")] + _cmf_items():
+        try:
+            sn = cmf_set_of(it) if it.get("kind") == "fig" else norm_set(it.get("number") or "")
+            if sn and "inv:" + sn not in _parts_cache():
+                inventory_rows(sn); done += 1
+        except (sources.RebrickableBusy, PermissionError):
+            return
+        except Exception:
+            continue
+    if done:
+        print(f"Hors ligne : {done} liste(s) de pièces préparée(s)", flush=True)
+
+
+def offline_loop():
+    time.sleep(150)   # (après le démarrage)
+    while True:
+        try:
+            offline_warm()
+        except Exception as e:
+            print("Hors ligne :", e, flush=True)
+        time.sleep(6 * 3600)
+
+
+def offline_pack():
+    """Toutes les listes de pièces des figurines de la collection, depuis le cache (aucun appel réseau) :
+    {fig: {numéro: réf. Rebrickable}, parts: {réf.: pièces}, acc: {fiche: accessoires d'une minifig à collectionner}}."""
+    c, fig, parts, acc = _parts_cache(), {}, {}, {}
+    for n, known in offline_figs().items():
+        rb = fig_rb_cached(n, known)
+        ps = (c.get("mf2:" + rb) or {}).get("parts") if rb else None
+        if isinstance(ps, list):
+            fig[n], parts[rb] = rb, ps
+    for it in _cmf_items():
+        try:
+            sn = cmf_set_of(it)
+            if sn and "inv:" + sn in c:
+                a = cmf_accessories(it)
+                if a:
+                    acc[it["id"]] = a
+        except Exception:
+            continue
+    return {"fig": fig, "parts": parts, "acc": acc, "t": int(time.time())}
 
 
 FIG_BODY = re.compile(r"(Minifig\s+)?(Head|Hips|Legs?|Torso|Arms?|Hands?|Animal Body|Hair|Helmet|Hat|Hood|Headwear|Cap)\b", re.I)   # le corps (et la coiffe)
@@ -3679,7 +3833,7 @@ def fig_rb_known(it):
     if RB_FIG.fullmatch(n):
         return n
     c = _parts_cache().get("fc:" + n)
-    return c.get("rb") or "" if c and time.time() - c.get("_t", 0) < 30 * 86400 else None
+    return c.get("rb") or "" if c and time.time() - c.get("_t", 0) < 36500 * 86400 else None
 
 
 def guest_fig_objs(it):
@@ -4864,7 +5018,7 @@ def bl_set_assemblies(set_no):
     import html as _html
     key = "ba:" + set_no
     c = _parts_cache().get(key)
-    if c and time.time() - c.get("t", 0) < 30 * 86400:
+    if c and time.time() - c.get("t", 0) < 36500 * 86400:   # (un set ne change pas)
         return c["list"]
     out = []
     for g in sources.bl_get(f"/items/SET/{urllib.parse.quote(set_no)}/subsets", {"break_minifigs": "false"}) or []:
@@ -6425,6 +6579,8 @@ class Handler(BaseHTTPRequestHandler):
             data = f.read()
         if edit:   # (page complétée avant l'envoi : titre d'une fiche partagée)
             data = edit(data)
+        if path.endswith(".html") and b"<html" in data[:400] and b"data-ui=" not in data[:400]:   # thème de l'application (Réglages) : sur chaque page
+            data = data.replace(b"<html", f'<html data-ui="{ui_theme()}"'.encode(), 1)
         if DEMO and os.path.basename(path) == "index.html":   # démonstration : bandeau et réglages réduits
             ra = int(os.environ.get("BQ_DEMO_RESET_AT") or 0)   # heure de la prochaine remise à zéro (compte à rebours)
             data = data.replace(b"</head>", f"<script>window.BQ_DEMO = true; window.BQ_DEMO_RESET = {ra};</script></head>".encode(), 1)
@@ -6597,7 +6753,7 @@ class Handler(BaseHTTPRequestHandler):
             return True
         if p.startswith(("/backoffice", "/api/bo/", "/admin")):   # back office : sa propre porte (mot de passe à part, voir bo_guard)
             return self.bo_guard(p)
-        public = p in ("/login", "/api/login", "/api/ping", "/style.css", "/flags.woff2", "/manifest.json", "/icon.svg", "/bo.js", "/bo-max.js") or (perso is not None and p in perso.PUBLIC) or p in ("/wishlist", "/collection", "/nouveautes", "/a-surveiller") \
+        public = p in ("/login", "/api/login", "/api/ping", "/style.css", "/flags.woff2", "/manifest.json", "/icon.svg", "/bo.js", "/bo-max.js") or (perso is not None and p in perso.PUBLIC) or p in ("/wishlist", "/collection", "/nouveautes", "/a-surveiller", "/calendrier") \
             or p.startswith(("/wishlist/", "/collection/", "/s/", "/nouveautes/", "/a-surveiller/", "/bo-img/", "/p/"))
         if auth.valid_session(self.token()):
             return False
@@ -7034,6 +7190,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.guest(m.group(1) or "", q, "watch")
         if p.startswith("/a-surveiller/"):
             return self.error("Page introuvable", 404)
+        if p == "/calendrier":   # page publique : les nouveautés, ouvertes sur le calendrier des sorties
+            return self.send_file(os.path.join(STATIC, "nouveautes.html"))
         m = re.fullmatch(r"/nouveautes(/|/data|/img)?", p)
         if m:   # nouveautés lego.com, publiques : lecture seule, tout (rien de ma collection, de mes masqués ni de mes thèmes)
             sub = m.group(1) or ""
@@ -7553,9 +7711,9 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
             if m:   # sets du catalogue qui contiennent cette figurine (sa fiche, sinon BrickLink)
                 return self.send_json({"sets": fig_sets_of(m.group(1))})
             m = re.fullmatch(r"/api/fig/([\w.-]+)/rbmatch", p)
-            if m:   # minifigs Rebrickable candidates
+            if m:   # minifigs Rebrickable candidates (gardées : rendues tout de suite)
                 try:
-                    return self.send_json(rb_fig_candidates(m.group(1)))
+                    return self.send_json(rb_fig_match(m.group(1)))
                 except PermissionError:
                     return self.error("Il faut une clé API Rebrickable (Réglages)")
                 except Exception as e:
@@ -7570,6 +7728,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     return self.send_json([])
                 return self.send_json(with_avail([{"number": x["set_num"], "name": x.get("name"), "year": x.get("year"), "pieces": x.get("num_parts"),
                                                    "image": x.get("set_img_url"), "type": "rbset"} for x in r.get("results", [])]))
+            if p == "/api/offline-pack":   # 📴 toutes les pièces des figurines de la collection, d'un coup (gardé sur l'appareil par sw.js)
+                return self.send_json({} if DEMO else offline_pack())
             m = re.fullmatch(r"/api/rbfig/([\w.-]+)/parts", p)
             if m:
                 try:
@@ -7890,6 +8050,39 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     seen |= {x["number"] for x in novelties_mine()}
                     _save(NOV_SEEN, sorted(seen))
                 return self.send_json({"ok": True})
+            if p == "/api/novelties/reimg":   # {"number", "fig"?} : chercher tout de suite la photo d'une nouveauté (set ou figurine exclusive)
+                b = self.json_body()
+                num, fig = str(b.get("number") or ""), str(b.get("fig") or "")
+                if not re.fullmatch(r"\d{3,7}-\d+", num) or (fig and not re.fullmatch(r"fig-\d{3,9}", fig)):
+                    return self.error("Numéro non valable")
+                found, tmp = "", False
+                try:
+                    if fig:
+                        found = sources.rb(f"lego/minifigs/{urllib.parse.quote(fig)}/").get("set_img_url") or ""
+                        if not found:   # (pas encore de photo : son torse imprimé, en attendant)
+                            ps = sources.rb(f"lego/minifigs/{urllib.parse.quote(fig)}/parts/?page_size=100").get("results", [])
+                            tor = next((q["part"] for q in ps if re.search(r"torso", (q.get("part") or {}).get("name") or "", re.I) and (q.get("part") or {}).get("part_img_url")), None)
+                            found, tmp = (tor or {}).get("part_img_url") or "", True
+                    else:
+                        found = sources.rb(f"lego/sets/{urllib.parse.quote(num)}/").get("set_img_url") or ""
+                except Exception as e:
+                    return self.error("Recherche impossible pour l'instant (Rebrickable indisponible)", 503)
+                if found:
+                    with lock:
+                        d = _load(NOV_FILE, {})
+                        for x in d.get("items") or []:
+                            if x.get("number") != num:
+                                continue
+                            if fig:
+                                for f in x.get("figs") or []:
+                                    if f.get("fig") == fig and (not f.get("image") or f.get("image_tmp")):
+                                        f["image"] = found
+                                        if tmp: f["image_tmp"] = True
+                                        else: f.pop("image_tmp", None)
+                            elif not x.get("image") or "/assets/?" in str(x.get("image")):
+                                x["image"] = found
+                        _save(NOV_FILE, d)
+                return self.send_json({"ok": True, "image": found, "tmp": tmp})
             if p == "/api/novelties/hide":   # {"number", "hide": true|false} : ne plus afficher (ou de nouveau) ce set dans les nouveautés
                 b = self.json_body()
                 num = str(b.get("number") or "")
@@ -8819,6 +9012,12 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     _save(sources.SETTINGS_FILE, st)
                     os.chmod(sources.SETTINGS_FILE, 0o600)
                 return self.send_json({"ok": True, "side_pub_hide": hide})
+            if p == "/api/settings/ui":   # {theme} : thème de l'application
+                t = str(self.json_body().get("theme") or "")
+                if t not in UI_THEMES:
+                    return self.error("Thème inconnu")
+                _settings_update(ui_theme=t)
+                return self.send_json({"ok": True, "theme": t})
             if p == "/api/settings/help":   # {on} : bouton d'aide « ? » affiché (oui par défaut)
                 _settings_update(help_on=bool(self.json_body().get("on")))
                 return self.send_json({"ok": True})
@@ -9942,8 +10141,85 @@ def img_fallbacks(u):
             return [f"https://img.bricklink.com/ItemImage/MN/0/{bl}.png"]
         p = re.fullmatch(r"([a-z]+)(\d{1,3})([a-z]?)", n)
         pad = f"{p.group(1)}{int(p.group(2)):04d}{p.group(3)}" if p else n
-        return [f"https://img.bricklink.com/ItemImage/MN/0/{x}.png" for x in dict.fromkeys((pad, n))]
+        return [f"https://img.bricklink.com/ItemImage/MN/0/{x}.png" for x in dict.fromkeys((pad, n))] + fig_rb_img(n)
     return []
+
+
+# ---- figurines : la photo Rebrickable de la même figurine, quand BrickEconomy (bloqué) et BrickLink (fermé) ne la donnent pas
+FIG_IMG_FILE = os.path.join(ROOT, "data", "cache_fig_img.json")   # {numéro: {"u": photo Rebrickable ou "" (rien de sûr), "t": heure}}
+_fig_img = {"busy": False, "mt": None, "d": {}}
+
+
+def fig_img_map():
+    """Correspondances numéro de figurine → photo Rebrickable (relues seulement quand le fichier change)."""
+    try:
+        mt = os.path.getmtime(FIG_IMG_FILE)
+    except OSError:
+        return {}
+    if mt != _fig_img["mt"]:
+        _fig_img["d"], _fig_img["mt"] = _load(FIG_IMG_FILE, {}), mt
+    return _fig_img["d"]
+
+
+def fig_rb_img(n):
+    u = (fig_img_map().get(n) or {}).get("u")
+    return [u] if u and IMG_OK.match(u) else []
+
+
+def be_fig_no(u):
+    m = re.search(r"brickeconomy\.com/resources/images/minifigs/([\w-]+?)_(?:large|medium|small|thumb)\.\w+", u or "")
+    return m.group(1) if m else None
+
+
+def fig_img_job():
+    """Pour chaque figurine de la collection dont aucune image n'est sur le serveur : la photo Rebrickable de la même figurine
+    (correspondance sûre seulement), enregistrée en local pour toujours. Freinée (Rebrickable : une requête à la fois)."""
+    if DEMO or COPIE or _fig_img["busy"]:
+        return
+    _fig_img["busy"] = True
+    try:
+        mp, now, got = dict(fig_img_map()), time.time(), 0
+        todo = []
+        for u in sorted(pinned_image_urls()):
+            n = be_fig_no(u)
+            e = mp.get(n) if n else None
+            if n and n not in todo and not has_local(u) and (not e or (not e.get("u") and now - e.get("t", 0) > 30 * 86400)):
+                todo.append(n)
+        for n in todo:
+            img = None
+            try:
+                c = _parts_cache().get("fc:" + n) or {}
+                rbn = n if RB_FIG.fullmatch(n) else c.get("rb")
+                if rbn:   # référence Rebrickable déjà connue : sa photo
+                    img = (sources.rb(f"lego/minifigs/{urllib.parse.quote(rbn)}/") or {}).get("set_img_url") or ""
+                else:   # sinon : celle de ses sets qui correspond sans ambiguïté
+                    sure = [m for m in rb_fig_match(n) if m.get("sure")]
+                    img = (sure[0].get("image") or "") if len(sure) == 1 else ""
+            except sources.RebrickableBusy:
+                break   # (Rebrickable demande une pause : la suite au prochain passage)
+            except Exception:
+                continue   # (erreur passagère : réessayé au prochain passage)
+            mp[n] = {"u": img if img and IMG_OK.match(img) else "", "t": time.time()}
+            _save(FIG_IMG_FILE, mp)
+            if mp[n]["u"]:
+                try:
+                    cache_image(mp[n]["u"]); got += 1
+                except Exception:
+                    pass
+        if got:
+            print(f"Images de figurines : {got} photo(s) Rebrickable enregistrée(s) sur le serveur", flush=True)
+    finally:
+        _fig_img["busy"] = False
+
+
+def fig_img_loop():
+    time.sleep(90)   # (après le démarrage)
+    while True:
+        try:
+            fig_img_job()
+        except Exception as e:
+            print("Images de figurines :", e, flush=True)
+        time.sleep(6 * 3600)
 IMG_LIMIT = 500 * 1024 * 1024    # au-delà : on fait de la place…
 IMG_TARGET = 400 * 1024 * 1024   # … jusqu'à redescendre ici, en supprimant d'abord les images inutilisées les plus anciennes
 _img_new, _img_lock = [0], threading.Lock()
@@ -10104,7 +10380,7 @@ def hd_scan():
     """Cherche la version HD des images de mes sets et minifigs (toutes listes) ; une image n'est adoptée que si elle est nettement plus grande."""
     db, cache, m = load_db(), _load(CACHE_FILE, {}), dict(hd_map())
     now, n = time.time(), [0]
-    fresh = lambda u: u in m and ("u" in m[u] or now - m[u].get("no", 0) < 7 * 86400)
+    fresh = lambda u: u in m and ("u" in m[u] or now - m[u].get("no", 0) < 90 * 86400)
     todo = lambda u: isinstance(u, str) and IMG_OK.match(u) and not fresh(u)
 
     def base(u, dflt):   # taille de l'image d'origine (au moins celle réellement affichée)
@@ -10289,8 +10565,18 @@ def pinned_image_urls():
     return urls
 
 
+IMG_DISK_MIN = 1024 * 1048576    # les images téléchargées RESTENT sur le serveur : ménage seulement sous 1 Go libre sur le disque…
+IMG_DISK_OK = 1536 * 1048576     # … jusqu'à 1,5 Go libre — et jamais une image de la collection, des listes ou des nouveautés
+
+
 def images_cleanup():
-    """Au-delà de 500 Mo : supprime les images non rattachées, les moins récemment utilisées d'abord, jusqu'à 400 Mo."""
+    """Disque presque plein (moins de 1 Go libre) : supprime les images NON rattachées (ni collection, ni listes, ni nouveautés),
+    les moins récemment utilisées d'abord, jusqu'à 1,5 Go libre. Sinon : rien n'est supprimé."""
+    try:
+        if shutil.disk_usage(IMG_DIR).free >= IMG_DISK_MIN:
+            return
+    except OSError:
+        return
     with _img_lock:   # verrou à part : la collection reste utilisable pendant le ménage
         files = []
         for name in os.listdir(IMG_DIR):
@@ -10304,12 +10590,11 @@ def images_cleanup():
             files.append((st.st_mtime, st.st_size, name))
         total = sum(sz for _, sz, _ in files) + sum(
             os.path.getsize(os.path.join(IMG_DIR, n)) for n in os.listdir(IMG_DIR) if n.endswith(".type"))
-        if total <= IMG_LIMIT:
-            return
+        need = IMG_DISK_OK - shutil.disk_usage(IMG_DIR).free   # (ce qu'il faut libérer)
         keep = {hashlib.sha1(u.encode()).hexdigest() for u in pinned_image_urls()}
         freed = 0
         for mt, sz, name in sorted(files):   # les plus anciennes d'abord
-            if total - freed <= IMG_TARGET:
+            if freed >= need:
                 break
             if name in keep:
                 continue
@@ -10700,7 +10985,14 @@ if __name__ == "__main__":
                     pass
     if not DEMO and not COPIE:
         threading.Thread(target=_releasing, daemon=True).start()
-    srv = ThreadingHTTPServer((HOST, PORT), Handler)
+        threading.Thread(target=fig_img_loop, daemon=True).start()
+        threading.Thread(target=offline_loop, daemon=True).start()   # pièces de toutes les figurines et de tous les sets, prêtes d'avance   # figurines sans image : la photo Rebrickable, gardée en local
+    class QuietServer(ThreadingHTTPServer):   # (connexion fermée par le navigateur en cours de réponse : normal, pas une erreur)
+        def handle_error(self, request, client_address):
+            if isinstance(sys.exc_info()[1], (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)):
+                return
+            super().handle_error(request, client_address)
+    srv = QuietServer((HOST, PORT), Handler)
     if not DEMO:
         backoffice_outils.boot_ok()   # démarrage réussi : le code modifié depuis le back office est validé
     print(f"Briquothèque disponible sur http://{'localhost' if HOST in ('127.0.0.1', '0.0.0.0') else HOST}:{PORT}")

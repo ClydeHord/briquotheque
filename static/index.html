@@ -103,13 +103,16 @@
       <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Renverser le tri (ordre inverse)" aria-label="Renverser le tri" aria-pressed="false">🔃</button>
       <button type="button" class="btn trend-tog" id="trendTog" title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button><!-- 🔃 ordre inverse du tri en cours ; 📈 variations montrées ou cachées -->
       <select id="sort" hidden aria-hidden="true" tabindex="-1">
+        
         <option value="modified">Dernière modification</option>
         <option value="added">Ajout récent</option>
-        <option value="added_old">Ajout le plus ancien</option>
-        <option value="value">Valeur décroissante</option>
+        <option value="random">Aléatoire</option>
+        <option value="value">Valeur</option>
         <option value="variation">Variation de prix (%)</option>
         <option value="ecart">Variation de prix (€)</option>
-        <option value="name">Nom (A → Z)</option>
+        <option value="hausse">Augmentation / baisse (%)</option>
+        <option value="added_old" data-internal>Ajout le plus ancien</option>
+        <option value="name">Nom</option>
         <option value="number">Numéro</option>
         <option value="year">Année</option>
         <option value="qty">Nombre d'exemplaires</option>
@@ -130,6 +133,7 @@
       <button class="icon-btn" id="modalBack" hidden aria-label="Retour">←</button>
       <h2 id="modalTitle">Ajouter : rechercher un set, une figurine…</h2>
       <button class="icon-btn" id="modalRename" hidden title="Renommer" aria-label="Renommer">✏️</button>
+      <button class="icon-btn" id="modalTarifs" hidden title="Tarifs" aria-label="Tarifs">💶</button>
       <button class="icon-btn" id="modalShare" hidden title="Partager la fiche" aria-label="Partager la fiche">🔗</button>
       <button class="icon-btn todo-btn" id="modalTodo" hidden title="À faire" aria-label="À faire">📝</button>
       <button class="icon-btn" id="modalEdit" hidden title="Modifier la fiche" aria-label="Modifier la fiche">🔧</button>
@@ -321,6 +325,7 @@
         <div class="muted small" id="estDetail"></div>
         <label class="todo-chk est-chk" id="partsEstRow" hidden><input type="checkbox" id="cfgPartsEst" checked> 🧱 Estimer par les pièces</label>
       </div>
+      <div class="mkt-prices" id="mktPrices" hidden></div><!-- prix du marché : en magasin, neuf, occasion, sans figurines -->
       <div class="est-box add-prices" id="addPrices" hidden></div><!-- élément que je n'ai pas : les tarifs constatés à la place de l'estimation -->
       <div class="cfg-prices" id="cfgPrices" hidden></div><!-- les prix : bouton « 💶 Tarifs » en haut -->
       <div class="in-sets big" id="cfgInSets" hidden></div>

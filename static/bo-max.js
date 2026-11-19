@@ -103,7 +103,7 @@ function buildCss() {
     if (d.length) out.push(`${sel(":where(span,a,b,i,em,strong,small,label,code):not([hidden])")}{display:inline-block}`);   // (un texte « en ligne » ne se décale pas sinon)
     if (url && (mode === "bg" || mode === "bgc")) d.push(`background-image:${cssUrl(url)}`, `background-size:${mode === "bg" ? "cover" : "contain"}`, "background-position:center", "background-repeat:no-repeat");
     if (d.length) out.push(`${sel("")}{${imp(d)}}`);
-    const icon = str(ic.t).slice(0, 12), side = url && ["before", "after", "only"].includes(mode) ? mode : !url && icon ? (["after", "only"].includes(ic.pos) ? ic.pos : "before") : "";
+    const icon = str(ic.t).slice(0, 40), side = url && ["before", "after", "only"].includes(mode) ? mode : !url && icon ? (["after", "only"].includes(ic.pos) ? ic.pos : "before") : "";
     if (!side) continue;
     const pe = side === "after" ? "::after" : "::before", only = side === "only", w = num(im.w, 4, 2000, 20), h = num(im.h, 4, 2000, w);
     out.push(`${sel(pe)}{${url ? `content:"";display:inline-block;width:${w}px;height:${h}px;background:${cssUrl(url)} center/contain no-repeat;vertical-align:middle;flex:none`
@@ -160,9 +160,9 @@ function tagsOf(it) {
 }
 const tagStyle = t => [color(t.color) && `color:${t.color}`, color(t.bg) && `background:${t.bg}`, color(t.border) && `border-color:${t.border}`].filter(Boolean).join(";");
 function tagHtml(t, it, sheet) {
-  let label = str(t.label).slice(0, 80);
+  let label = str(t.label).slice(0, 1000);
   try { if (P() && P().fill && /\{/.test(label)) label = P().fill(label, it); } catch {}
-  return `<span class="${(t.kind === "badge" && !sheet ? "badge " : "tg ")}bo-ctag bo-x" data-bo-ctag="${esc(t.id)}" style="${tagStyle(t)}">${esc((t.icon ? str(t.icon).slice(0, 8) + " " : "") + label)}</span>`;
+  return `<span class="${(t.kind === "badge" && !sheet ? "badge " : "tg ")}bo-ctag bo-x" data-bo-ctag="${esc(t.id)}" style="${tagStyle(t)}">${esc((t.icon ? str(t.icon).slice(0, 40) + " " : "") + label)}</span>`;
 }
 function put(host, sel, html, make) {   // garde un petit conteneur à jour (créé au besoin, retiré s'il est vide)
   let box = host.querySelector(sel);
@@ -180,7 +180,7 @@ function tagsPass() {
       if (str(o.text).trim() || str(o.icon).trim()) {   // renommée (« {n} » reprend le nombre du texte d'origine) et / ou précédée d'une icône
         const src = t0 !== undefined ? t0 : el.textContent;
         if (t0 === undefined) el.dataset.boT0 = src;
-        const t = (str(o.icon).trim() ? str(o.icon).trim().slice(0, 8) + " " : "") + (str(o.text).trim() ? str(o.text).slice(0, 80).replace(/\{n\}/g, (src.match(/\d+/) || [""])[0]) : src.trim());
+        const t = (str(o.icon).trim() ? str(o.icon).trim().slice(0, 40) + " " : "") + (str(o.text).trim() ? str(o.text).slice(0, 1000).replace(/\{n\}/g, (src.match(/\d+/) || [""])[0]) : src.trim());
         if (el.textContent !== t) el.textContent = t;
       } else if (t0 !== undefined) { if (el.textContent !== t0) el.textContent = t0; delete el.dataset.boT0; }
       let off = false;   // « afficher seulement si… » (site connecté : la condition se lit sur la fiche de la carte, ou sur la fiche ouverte)
@@ -218,7 +218,7 @@ function hrefPass() {
     if (a.dataset.boTarget0 !== undefined) { if (a.dataset.boTarget0) a.target = a.dataset.boTarget0; else a.removeAttribute("target"); }
     delete a.dataset.boHref0; delete a.dataset.boTarget0;
   }
-  for (const r of rs) for (const a of all(wideList(r.sel).join(",")).slice(0, 200)) {
+  for (const r of rs) for (const a of all(wideList(r.sel).join(",")).slice(0, 5000)) {
     if (a.tagName !== "A" || a.closest(".bo-ui")) continue;
     if (a.dataset.boHref0 === undefined) { a.dataset.boHref0 = a.getAttribute("href") || ""; a.dataset.boTarget0 = a.getAttribute("target") || ""; }
     const u = typeof r.href === "string" && r.href.trim() ? safeUrl(r.href) : a.dataset.boHref0;
@@ -302,7 +302,7 @@ function settingsPass() {
   }
   const titles = obj(s.titles);
   for (const el of all(".settings-page [data-bo-set]")) {
-    const lg = el.tagName === "FIELDSET" ? el.querySelector(":scope > legend") : el, t = str(titles[el.dataset.boSet]).trim().slice(0, 80), src = lg && lg.dataset.boLab;
+    const lg = el.tagName === "FIELDSET" ? el.querySelector(":scope > legend") : el, t = str(titles[el.dataset.boSet]).trim().slice(0, 1000), src = lg && lg.dataset.boLab;
     if (!lg || src === undefined) continue;
     const want = t || src;
     if (lg.textContent.trim() !== want) lg.textContent = want;
@@ -318,7 +318,7 @@ const OKATTR = new Set("href,src,alt,title,width,height,colspan,rowspan,style,cl
 const DROP = /^(script|style|iframe|object|embed|link|meta|base|form|input|button|textarea|select|option|svg|math|template|noscript|frame|frameset|applet|title|head)$/;
 function sanitize(html) {   // HTML libre d'une page : seulement des balises et des attributs sans danger, des adresses vérifiées, aucun script
   let doc;
-  try { doc = new DOMParser().parseFromString("<body>" + str(html).slice(0, 300000), "text/html"); } catch { return ""; }
+  try { doc = new DOMParser().parseFromString("<body>" + str(html).slice(0, 8000000), "text/html"); } catch { return ""; }
   const walk = n => {
     for (const c of [...n.children]) {
       const t = c.tagName.toLowerCase();
@@ -340,7 +340,7 @@ function sanitize(html) {   // HTML libre d'une page : seulement des balises et 
 function rich(text) {   // texte simple : **gras**, *italique*, [texte](adresse), lignes « - » en liste, ligne vide = nouveau paragraphe
   const inl = s => esc(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
     .replace(/\[([^\]]{1,200})\]\(([^)\s]{1,2000})\)/g, (m, t, u) => { const x = safeUrl(u.replace(/&amp;/g, "&")); return x ? `<a href="${esc(x)}"${/^https?:/i.test(x) ? ' target="_blank" rel="noopener noreferrer"' : ""}>${t}</a>` : t; });
-  return str(text).slice(0, 20000).split(/\n\s*\n/).map(par => {
+  return str(text).slice(0, 1000000).split(/\n\s*\n/).map(par => {
     const lines = par.split("\n").filter(l => l.trim());
     if (!lines.length) return "";
     return lines.every(l => /^\s*[-•]\s+/.test(l)) ? `<ul>${lines.map(l => `<li>${inl(l.replace(/^\s*[-•]\s+/, ""))}</li>`).join("")}</ul>` : `<p>${lines.map(inl).join("<br>")}</p>`;
@@ -382,7 +382,7 @@ function blockHtml(b) {
     if (ag !== "count") { const vs = its.map(i => { const r = p.calc(str(b.expr), i); return r.ok && typeof r.value === "number" && isFinite(r.value) ? r.value : null; }).filter(x => x != null);
       v = !vs.length ? null : ag === "sum" ? vs.reduce((a, c) => a + c, 0) : ag === "avg" ? vs.reduce((a, c) => a + c, 0) / vs.length : ag === "min" ? Math.min(...vs) : ag === "max" ? Math.max(...vs) : vs.length; }
     return `<div class="bo-pb stat bo-ptile" style="${st}"><div class="lbl">${esc(str(b.text) || "Total")}</div><div class="val">${esc(v == null ? "—" : p.show(v, fmt) || "—")}</div></div>`; }
-  if (k === "tableau") { const its = pick(b), vars = p.vars(), cols = arr(b.cols).map(str).filter(Boolean).slice(0, 12);
+  if (k === "tableau") { const its = pick(b), vars = p.vars(), cols = arr(b.cols).map(str).filter(Boolean).slice(0, 100);
     const use = cols.length ? cols : ["numero", "nom", "valeur"];
     const head = use.map(c => `<th>${esc(vars.find(v => v.id === c)?.label || c)}</th>`).join("");
     const rows = its.map(i => `<tr data-bo-open="${esc(i.id)}">${use.map(c => { const r = p.calc(/[{(]/.test(c) ? c : "{" + c + "}", i); return `<td>${esc(r.ok ? p.show(r.value, vars.find(v => v.id === c)?.fmt || "") : "")}</td>`; }).join("")}</tr>`).join("");
@@ -390,8 +390,8 @@ function blockHtml(b) {
   return "";
 }
 function pageHtml(pg) {
-  const head = pg.head === false ? "" : `<div class="bo-pb-head"><h1>${esc((str(pg.icon).trim() ? str(pg.icon).trim().slice(0, 8) + " " : "") + (str(pg.title) || "Page"))}</h1></div>`;
-  return head + arr(pg.blocks).filter(b => b && typeof b === "object" && !b.off).slice(0, 400).map(b => { try { return blockHtml(b); } catch (e) { console.warn("BO bloc", e); return ""; } }).join("");
+  const head = pg.head === false ? "" : `<div class="bo-pb-head"><h1>${esc((str(pg.icon).trim() ? str(pg.icon).trim().slice(0, 40) + " " : "") + (str(pg.title) || "Page"))}</h1></div>`;
+  return head + arr(pg.blocks).filter(b => b && typeof b === "object" && !b.off).slice(0, 10000).map(b => { try { return blockHtml(b); } catch (e) { console.warn("BO bloc", e); return ""; } }).join("");
 }
 function drawPage(pg) {
   const host = D.getElementById("boPage"); if (!host || !pg) return;
@@ -436,7 +436,7 @@ function pagesPass() {
       let a = all(":scope > .bo-plink", sb).find(x => x.dataset.boPage === pg.id);
       if (!a) { a = D.createElement("button"); a.type = "button"; a.className = "nav-item bo-plink bo-x"; a.dataset.boPage = pg.id; a.dataset.boKey = "bo-page-" + pg.id; a.innerHTML = `<span class="nm"></span>`;
         a.onclick = () => openPage(a.dataset.boPage); (D.getElementById("shareNav") || D.getElementById("wishNav") || sb.lastElementChild)?.after(a); }
-      const t = (str(pg.icon).trim() ? str(pg.icon).trim().slice(0, 8) : "📄") + " " + (str(pg.title) || "Page");
+      const t = (str(pg.icon).trim() ? str(pg.icon).trim().slice(0, 40) : "📄") + " " + (str(pg.title) || "Page");
       if (a.firstChild.textContent !== t) a.firstChild.textContent = t;
       if (a.classList.contains("on") !== (openId === pg.id)) a.classList.toggle("on", openId === pg.id);
     }
@@ -453,7 +453,7 @@ let started = false, sortFor = null, mergeOff = null;
 let trendSig = null;   // (dernier réglage des flèches vu par l'aperçu)
 function behavPass() {
   const b = obj(cfg().behav);
-  const t = str(b.title).trim().slice(0, 120);
+  const t = str(b.title).trim().slice(0, 1000);
   if (t && PAGE === "app" && D.title !== t) D.title = t;
   if (PUBLIC || !app() || !arr(state.lists).length) return;
   if (!started) {   // une seule fois, quand les données sont là (jamais dans l'aperçu du back office, ni si l'adresse demande déjà quelque chose)
@@ -505,16 +505,17 @@ function nativePass() {
     const sel = D.getElementById("sort");
     if (sel) { const c = conf("sorts"), opts = [...sel.options];
       opts.forEach((o, i) => { if (o.dataset.natI == null) { o.dataset.natI = i; o.dataset.natOrig = o.textContent; }
-        if (!o.value.startsWith("bo:")) { o.textContent = str(c.lab[o.value]).trim() || o.dataset.natOrig; if (c.hid.includes(o.value)) o.dataset.natHide = "1"; else delete o.dataset.natHide; } });
+        if (!o.value.startsWith("bo:")) { const t = str(c.lab[o.value]).trim() || o.dataset.natOrig; if (o.textContent !== t) o.textContent = t;   /* (seulement si ça change : sinon, boucle) */
+          if (c.hid.includes(o.value)) { if (o.dataset.natHide !== "1") o.dataset.natHide = "1"; } else if (o.dataset.natHide != null) delete o.dataset.natHide; } });
       reorder(opts, o => o.value, c.ord);
       const sig = JSON.stringify(N.sorts || null); if (sig !== natSortSig) { natSortSig = sig; try { syncSortMenu(); } catch {} } } }
   {   /* filtres : les cases de « ⚙️ Filtres » (étiquettes, options des cartes) */
     const pop = D.getElementById("filtPop");
     if (pop) { const c = conf("filters"), labs = [...pop.querySelectorAll("label")].filter(l => l.querySelector("[data-ftag], [data-cardopt]"));
       const keyOf = l => { const i = l.querySelector("[data-ftag], [data-cardopt]"); return i.dataset.ftag || i.dataset.cardopt; };
-      labs.forEach((l, i) => { l.dataset.natI = i; const k = keyOf(l), tn = [...l.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-        if (tn) { if (l.dataset.natOrig == null) l.dataset.natOrig = tn.textContent.trim(); tn.textContent = " " + (str(c.lab[k]).trim() || l.dataset.natOrig) + " "; }
-        l.hidden = c.hid.includes(k); l.style.display = c.hid.includes(k) ? "none" : ""; });
+      labs.forEach((l, i) => { if (l.dataset.natI !== String(i)) l.dataset.natI = i; const k = keyOf(l), tn = [...l.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+        if (tn) { if (l.dataset.natOrig == null) l.dataset.natOrig = tn.textContent.trim(); const t = " " + (str(c.lab[k]).trim() || l.dataset.natOrig) + " "; if (tn.textContent !== t) tn.textContent = t; }
+        const h = c.hid.includes(k); if (l.hidden !== h) l.hidden = h; const dsp = h ? "none" : ""; if (l.style.display !== dsp) l.style.display = dsp; });   /* (seulement ce qui change) */
       const tags = labs.filter(l => l.querySelector("[data-ftag]")), opts = labs.filter(l => l.querySelector("[data-cardopt]"));
       reorder(tags, keyOf, c.ord); reorder(opts, keyOf, c.ord); } }
   {   /* tuiles du haut : repérées par leur titre d'origine */
@@ -522,8 +523,9 @@ function nativePass() {
     if (st) { const c = conf("tiles"), tiles = [...st.querySelectorAll(".stat")];
       const keyOf = t => t.dataset.natOrig;
       tiles.forEach((t, i) => { const l = t.querySelector(".lbl"); if (!l) return; if (t.dataset.natOrig == null || (t.dataset.natLbl !== l.textContent)) { t.dataset.natOrig = l.textContent.trim(); }
-        const k = t.dataset.natOrig; t.dataset.natI = i; const nm = str(c.lab[k]).trim(); if (nm) { l.textContent = nm; } t.dataset.natLbl = l.textContent;
-        t.style.display = c.hid.includes(k) ? "none" : ""; });
+        const k = t.dataset.natOrig; if (t.dataset.natI !== String(i)) t.dataset.natI = i; const nm = str(c.lab[k]).trim(); if (nm && l.textContent !== nm) { l.textContent = nm; }
+        if (t.dataset.natLbl !== l.textContent) t.dataset.natLbl = l.textContent;
+        const dsp = c.hid.includes(k) ? "none" : ""; if (t.style.display !== dsp) t.style.display = dsp; });   /* (seulement ce qui change) */
       const byPar = new Map(); for (const t of tiles) { if (!byPar.has(t.parentNode)) byPar.set(t.parentNode, []); byPar.get(t.parentNode).push(t); }
       for (const g of byPar.values()) reorder(g, keyOf, c.ord); } }
 }

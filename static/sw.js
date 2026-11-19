@@ -4,8 +4,10 @@
    Images : copie sur l'appareil d'abord. Une photo personnelle ne change jamais (son adresse est son contenu) ; une image du
    catalogue peut changer de source sur le serveur : sa copie est relue en fond quand elle a plus de 30 jours. */
 const SHELL = "bq-shell-v2", DATA = "bq-data-v2", IMGS = "bq-img-v3";   // (bq-img-v3, 16/11/2026 : les copies d'images gardées jusque-là sont effacées et refaites)
-const IMG_RECHECK = 30 * 86400e3;   // image du catalogue gardée depuis plus de 30 jours : relue en fond (sa source a pu changer sur le serveur)
+const IMG_RECHECK = 365 * 86400e3;   // image du catalogue gardée depuis plus d'un an : relue en fond (les visuels ne changent pas : pas de re-téléchargement avant)
 const SHELL_FILES = ["/", "/app.js", "/style.css", "/flags.woff2", "/manifest.json", "/icon.svg", "/fig-head.svg", "/bo.js", "/bo-plus.js", "/bo-max.js"];   // (bo*.js : personnalisation du back office, gardée aussi hors ligne)
+/* sites d'images relayés par le serveur (= IMG_OK de server.py) : l'appareil ne les contacte jamais lui-même */
+const EXT_IMG = /^https:\/\/(www\.brickeconomy\.com|storage\.googleapis\.com\/brickognize-static|cdn\.rebrickable\.com|www\.lego\.com\/cdn\/product-assets|www\.lego\.com\/cdn\/cs|img\.bricklink\.com\/ItemImage)\//;
 const NET_TIMEOUT = 6000;   // serveur injoignable sans erreur immédiate (mobile) : on bascule sur la copie
 /* serveur éteint derrière le proxy (nginx) : le proxy répond lui-même 502 / 503 / 504, sans la signature X-Bq de l'appli → traité comme une coupure */
 const proxyDown = r => r && typeof r === "object" && r.status >= 500 && !r.headers.get("X-Bq");
@@ -80,8 +82,8 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;   // modifications : toujours le réseau
   const u = new URL(req.url);
-  if (u.origin !== location.origin) {   // photos Rebrickable
-    if (u.hostname === "cdn.rebrickable.com") e.respondWith(cacheFirst(req));
+  if (u.origin !== location.origin) {   // une image demandée DIRECTEMENT à un site que le serveur relaie : servie par le serveur (sa copie)
+    if (EXT_IMG.test(req.url)) e.respondWith(cacheFirst(new Request("/api/img?u=" + encodeURIComponent(req.url)), e));
     return;
   }
   const p = u.pathname;

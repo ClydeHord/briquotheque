@@ -426,7 +426,7 @@ l'état : les annonces de l'élément (pièce dans sa couleur, ou figurine), à 
         ("piece-ajout-resultats", "Choisir la pièce", """
 <ol start="3"><li>Touchez la bonne pièce.</li>
 <li><b>🛒 À commander</b> (ou <b>➕ Dans un set / une figurine</b> pour l'ajouter à une fiche).</li>
-<li><b>Pour quel set ?</b> (facultatif) : les couleurs présentes dans ce set s'affichent en premier, avec leur quantité.</li>
+<li><b>Pour quel set ?</b> (facultatif) : les couleurs présentes dans ce set s'affichent en premier, avec leur quantité. Ce n'est pas pour un set ? Tapez plutôt une note (ex. « pour Paul ») et choisissez <b>📝 En faire une note</b> : elle s'affiche sur la pièce.</li>
 <li>Choisissez la <b>couleur</b>, éventuellement le <b>n° d'élément LEGO</b>, la <b>quantité</b>, l'<b>état</b> (neuf par défaut,
 occasion ou n'importe), une <b>note</b>, puis enregistrez.</li></ol>"""),
         ("piece-fiche", "La fiche d'une pièce", """
@@ -442,8 +442,8 @@ vendeurs en France s'il y en a, sinon vendeurs qui livrent en France (Europe), s
     {"title": "Nouveautés", "intro": "", "blocks": [
         ("nouveautes", "Les nouveautés LEGO", """
 <ul><li>Les sets <b>à venir</b> et les <b>sorties récentes</b> de LEGO.com, du <b>dernier apparu</b> au plus ancien, sans ceux que vous avez déjà.</li>
-<li>Celles apparues depuis votre dernière visite sont <b>encadrées en jaune</b> ; le menu en affiche le nombre. Une fois vues, elles redeviennent normales.</li>
-<li>Onglets <b>Sets</b> / <b>Figurines exclusives</b> (les figurines qu'on ne trouve que dans ces sets) ; <b>Tout / À venir / Sorties récentes</b> ; le thème.</li>
+<li>Deux onglets : <b>📰 Dernières annonces</b> (la liste) et <b>📅 Calendrier</b>. Les cases <b>Sets</b> (cochée d'office) et <b>🟡 Figurines exclusives</b> choisissent ce qui s'affiche, dans les deux onglets (les deux ensemble possible ; dans le calendrier, une figurine est à la date de son set).</li><li>Pages publiques : <code>/nouveautes</code> et <code>/calendrier</code> (la même, ouverte sur le calendrier). Les choix de chaque visiteur (onglet, cases, filtres, thème) sont gardés sur son appareil.</li><li>Raccourci : <b>📅 Calendrier des sorties</b>, sous « ✨ Nouveautés » dans le menu, ouvre directement le calendrier.</li><li>Visuel pas encore disponible : une boîte de set ou une silhouette de figurine grisée avec « ? ». La toucher relance la recherche ; les visuels manquants sont aussi recherchés à l'ouverture de la page et toutes les 6 h.</li><li><b>📅 Calendrier</b> : une frise des sorties, mois par mois et jour par jour (date de lego.com). On arrive sur « 📍 Aujourd'hui » : en dessous, les prochaines sorties ; en remontant, les sorties récentes. Toucher l'image l'agrandit ; toucher le set ouvre ses actions (liste de souhaits, à surveiller, lego.com, ne plus afficher). Liseré doré : déjà dans la liste de souhaits ; bleu : à surveiller.</li><li>Celles apparues depuis votre dernière visite sont <b>encadrées en jaune</b> ; le menu en affiche le nombre. Une fois vues, elles redeviennent normales.</li>
+<li>Filtres : <b>Tout / À venir / Sorties récentes</b> ; le thème. Les figurines exclusives sont celles qu'on ne trouve que dans ces sets.</li>
 <li>Sur chaque set : <b>⭐ Ajouter à la liste de souhaits</b>, <b>👀</b> (à surveiller), <b>🚫 Ne plus afficher</b> (« Afficher les masqués » les fait revenir). ; <b>Afficher celles sans image</b> : sans elle, les sets et figurines exclusives sans photo sont cachés</li>
 <li>Cases <b>Afficher ceux déjà dans la liste de souhaits</b> et <b>Afficher les surveillés</b> : ces sets reviennent, marqués « ⭐ Dans la liste de souhaits » (bandeau sur la photo) ou, plus discrètement, par le bouton « 👀 Surveillé » (touchez pour ouvrir la fiche).</li></ul>"""),
         ("nouveautes-themes", "🎯 Thèmes suivis", """
@@ -520,7 +520,7 @@ les boutons en carrés de même taille). Elle reste en haut de l'écran quand vo
 « Filtres » et « Tri » sont deux menus <b>identiques</b> : un appui ouvre la même fenêtre, avec une ligne par choix. Dans « Filtres » on coche
 autant d'étiquettes qu'on veut (la fenêtre reste ouverte) ; dans « Tri » on choisit un seul tri (la fenêtre se referme, et sur ordinateur le tri
 en cours est rappelé sur le bouton). Un clic ailleurs ou la touche Échap referme le menu. C'est pareil sur les pages publiques.</p>
-<p>Parmi les tris : <b>Variation de prix (%)</b> range les fiches selon leur flèche ↑ ↓ ~ — les plus grosses variations en % d'abord, hausses comme baisses (−52 % avant +10 %), celles sans relevé à la fin ; <b>Variation de prix (€)</b> met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, <b>Définir par défaut</b> fait du tri en cours le tri d'office ; <b>↺</b> y revient (et remet l'ordre normal).
+<p>Parmi les tris : <b>Variation de prix (%)</b> range les fiches selon leur flèche ↑ ↓ ~ — les plus grosses variations en % d'abord, hausses comme baisses (−52 % avant +10 %), celles sans relevé à la fin ; <b>Augmentation / baisse (%)</b> va de la plus forte hausse à la plus forte baisse (+, puis ~, puis −) ; avec 🔃 Renverser le tri, de la plus forte baisse à la plus forte hausse ; <b>Aléatoire</b> mélange les fiches (l'ordre reste le même pendant la visite ; 🔃 remélange) ; <b>Variation de prix (€)</b> met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, <b>Définir par défaut</b> fait du tri en cours le tri d'office ; <b>↺</b> y revient (et remet l'ordre normal).
 Le bouton <b>🔃 Renverser le tri</b>, à droite de « Tri » (sur téléphone aussi), donne l'ordre inverse du tri en cours : les plus
 fortes baisses d'abord, de Z à A, du moins cher au plus cher… L'ordre inversé est retenu, liste par liste, jusqu'à ce que vous touchiez de nouveau le bouton.</p>
 <p><b>Inventaire</b> : son résumé donne une information par ligne (pièces, OK, à commander avec leur prix, commandées, à vérifier, exclues).
@@ -555,6 +555,7 @@ Aucun prix tant que l'option <b>Afficher les prix sur la collection publique</b>
         (None, "", """
 <ul><li><b>💶 Prix</b> : la passe BrickLink de la nuit (dès 3 h, les plus anciens d'abord, 2 000 appels au plus) ; <b>↻ Actualiser les prix</b> relit tout de suite
 les sets, les figurines et les éléments estimés par leurs pièces (prix de plus de 24 h) ; <b>🧱 Chiffrer les pièces</b>.</li>
+<li><b>🎨 Apparence</b> : le <b>style de l'application</b> — ✨ Moderne (d'office), 🧱 Classique, 🫧 Verre, 🟥 Brique, ◻️ Minimal, 🌃 Néon, 💥 BD, 🍬 Pastel, 📐 Technique ou 🌙 Nuit : l'aspect de tous les boutons et étiquettes, partout, pages publiques comprises (changement immédiat, aperçu en mini fiche) ; et la couleur de l'application.</li>
 <li><b>🧮 Estimations</b> : la plus-value d'un set d'occasion <b>avec sa boîte</b> (%), la décote d'un exemplaire <b>modifié</b> (%), la plus-value du <b>livret de plans</b>.</li>
 <li><b>🧱 BrickLink</b> : les 4 codes de l'API officielle de BrickLink (prix des ventes réelles), et le nombre d'appels du jour. Si BrickLink refuse (adresse IP changée), un message vous prévient.</li>
 <li><b>🔑 Rebrickable</b> : la clé du catalogue (pièces, inventaires). Les clés restent sur le serveur et ne sont jamais réaffichées.</li>

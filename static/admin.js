@@ -136,7 +136,7 @@ function ask(title, html, label, o = {}) {   // une question avec une réponse �
 function choose(title, rows, o = {}) {   // choisir dans une liste (avec recherche) : rows = [{v, label, sub}]
   return modal(title, close => {
     const list = el("div", { class: "pickl" });
-    const fill = q => list.replaceChildren(...rows.filter(r => !q || (r.label + " " + (r.sub || "")).toLowerCase().includes(q)).slice(0, 200)
+    const fill = q => list.replaceChildren(...rows.filter(r => !q || (r.label + " " + (r.sub || "")).toLowerCase().includes(q)).slice(0, 5000)
       .map(r => el("button", { type: "button", onclick: () => close(r.v) }, r.label, r.sub && el("small", {}, r.sub))), rows.length ? "" : el("p", { class: "hint" }, o.empty || "Rien à choisir."));
     fill("");
     return [el("input", { type: "search", placeholder: "Rechercher…", oninput: e => fill(e.target.value.trim().toLowerCase()) }), list];
@@ -644,7 +644,8 @@ VIEW.menu = () => {
   dom.forEach((k, i) => { if (ord.includes(k)) return; const prev = dom.slice(0, i).reverse().find(p => ord.includes(p)); ord.splice(prev ? ord.indexOf(prev) + 1 : 0, 0, k); });
   for (const i of its) if (!ord.includes("bo-" + i.id)) ord.push("bo-" + i.id);
   const rows = ord.map(k => { const i = (info || []).find(x => x.key === k), hid = (mn.hidden || []).includes(k), cu = k.startsWith("bo-"), sep = i?.sep || k === "pubSep";
-    return { key: k, name: cu ? "⭐ " + (its.find(x => "bo-" + x.id === k)?.label || "Raccourci") : sep ? "──── trait de séparation" : MENU[k] || i?.text || k, off: hid, absent: !hid && !!i?.empty,
+    const sepAdded = cu && its.find(x => "bo-" + x.id === k)?.kind === "sep";
+    return { key: k, name: sepAdded ? "──── trait de séparation (ajouté)" : cu ? "⭐ " + (its.find(x => "bo-" + x.id === k)?.label || "Raccourci") : sep ? "──── trait de séparation" : MENU[k] || i?.text || k, off: hid, absent: !hid && !!i?.empty,
       sub: hid ? "masqué par vous" : i?.empty ? "vide pour l'instant" : cu || sep ? "" : (i?.text || "").slice(0, 46),
       tools: [el("button", { type: "button", class: "eye", onclick: () => change(c => { c.menu ||= {}; c.menu.hidden = hid ? (c.menu.hidden || []).filter(x => x !== k) : [...(c.menu.hidden || []), k]; }) }, hid ? "🚫 Masqué" : "👁 Affiché"),
         btn("Voir", () => flash(`.sidebar > [data-bo-key="${k}"]`, "app", hid), "small")] }; });
@@ -654,8 +655,15 @@ VIEW.menu = () => {
     !info ? note("L'aperçu doit afficher le site (connecté) pour lister le menu.", "warn") : null,
     orderList(rows, (f, t) => change(c => { c.menu ||= {}; c.menu.order = moved(ord, f, t); })),
     hint("L'ordre des listes elles-mêmes se règle dans le site, avec le bouton ⇅ du menu. Sur un petit écran d'aperçu, ouvrez le menu (☰) pour le voir."),
+    (() => { let ents = []; try { ents = b?.navEntries() || []; } catch {}   /* chaque entrée : renommée, masquée — une à une */
+      const L = mn.labels || {}, OFF = new Set(mn.off || []);
+      return card("Chaque entrée du menu", hint("Renommez (émoji compris) ou masquez chaque entrée, une à une. Vide : son texte d'origine. Les listes se renomment dans le site (✏️)."),
+        ents.length ? ents.map(e => line(el("span", { class: "lab" }, e.text),
+          txt(L[e.key] || "", v => change(c => { c.menu ||= {}; c.menu.labels ||= {}; if (v.trim()) c.menu.labels[e.key] = v; else delete c.menu.labels[e.key]; }, { key: "ml" + e.key }), e.text),
+          el("button", { type: "button", class: "eye", onclick: () => change(c => { c.menu ||= {}; const o = new Set(c.menu.off || []); o.has(e.key) ? o.delete(e.key) : o.add(e.key); c.menu.off = [...o]; }) }, OFF.has(e.key) ? "🚫 Masquée" : "👁 Affichée")))
+          : note("L'aperçu doit afficher le site (connecté) pour lister les entrées.", "warn")); })(),
     card("Mes raccourcis", hint("Une entrée de menu en plus, vers une liste, une fiche ou un autre site."),
-      its.map(it => el("div", { class: "ed" },
+      its.filter(it => it.kind !== "sep").map(it => el("div", { class: "ed" },
         el("div", { class: "cols" }, fld("Texte dans le menu", txt(it.label, v => set(it, "label", v), "ex. : ⭐ Mes préférés")),
           fld("Ouvre", sel(it.kind || "url", [["url", "une adresse internet"], ["liste", "une de mes listes"], ["fiche", "une de mes fiches"]], v => set(it, "kind", v, true)))),
         it.kind === "liste" ? fld("Quelle liste ?", sel(it.target || "", [["", "— choisir —"], ...lists.map(l => [l.id, l.name])], v => set(it, "target", v, true)))
@@ -663,7 +671,10 @@ VIEW.menu = () => {
           : [fld("Adresse", txt(it.url, v => set(it, "url", v), "https://…")), chk("Ouvrir dans le même onglet", it.same, v => set(it, "same", v, true))],
         el("div", { class: "ed-foot" }, el("span", { class: "hint" }, ""), btn("Supprimer", () => change(c => { c.menu.items = c.menu.items.filter(x => x.id !== it.id); if (c.menu.order) c.menu.order = c.menu.order.filter(k => k !== "bo-" + it.id); }), "small danger")))),
       btn("+ Ajouter un raccourci", () => change(c => { c.menu ||= {}; (c.menu.items ||= []).push({ id: uid(), label: "⭐ Mon raccourci", kind: "url", url: "https://" }); }), "primary")),
-    mn.order || mn.hidden ? card("", btn("↺ Remettre le menu d'origine (ordre et entrées masquées)", () => change(c => { delete c.menu.order; delete c.menu.hidden; }), "danger")) : null,
+    card("Traits de séparation", hint("Un trait de plus dans le menu, comme ceux d'origine : ajoutez-le, puis glissez-le à sa place dans la liste ci-dessus."),
+      its.filter(it => it.kind === "sep").map((it, n) => line(el("span", { class: "lab" }, `──── trait ajouté n° ${n + 1}`), btn("Supprimer", () => change(c => { c.menu.items = c.menu.items.filter(x => x.id !== it.id); if (c.menu.order) c.menu.order = c.menu.order.filter(k => k !== "bo-" + it.id); }), "small danger"))),
+      btn("+ Ajouter un trait de séparation", () => change(c => { c.menu ||= {}; (c.menu.items ||= []).push({ id: uid(), kind: "sep" }); }), "primary")),
+    mn.order || mn.hidden || mn.labels || mn.off ? card("", btn("↺ Remettre le menu d'origine (ordre, noms et entrées masquées)", () => change(c => { delete c.menu.order; delete c.menu.hidden; delete c.menu.labels; delete c.menu.off; }), "danger")) : null,
   ];
 };
 
@@ -696,7 +707,7 @@ VIEW.donnees = () => {
     let items = [];
     try { items = BOF()?.items() || []; } catch {}
     const list = el("div", { class: "pickl", style: "max-height:52vh" });
-    const fill = () => { const q = dataQ.toLowerCase(); list.replaceChildren(...items.filter(i => !q || i.name.toLowerCase().includes(q)).slice(0, 80).map(i => el("button", { type: "button", onclick: () => loadItem(i.id) }, i.name, el("small", {}, sheetName(i.type)))),
+    const fill = () => { const q = dataQ.toLowerCase(); list.replaceChildren(...items.filter(i => !q || i.name.toLowerCase().includes(q)).slice(0, 5000).map(i => el("button", { type: "button", onclick: () => loadItem(i.id) }, i.name, el("small", {}, sheetName(i.type)))),
       items.length ? "" : el("p", { class: "hint" }, "L'aperçu doit afficher le site (connecté) pour lister vos fiches.")); };
     fill();
     return [top, note("Ces changements touchent directement la collection, <b>sans passer par « Publier »</b>. Une sauvegarde automatique est faite avant chaque enregistrement.", "warn"),

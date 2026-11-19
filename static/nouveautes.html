@@ -5,6 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='10' width='28' height='18' rx='3' fill='%23e3000b'/><rect x='7' y='5' width='7' height='7' rx='2' fill='%23e3000b'/><rect x='18' y='5' width='7' height='7' rx='2' fill='%23e3000b'/></svg>">
 <title>Nouveautés LEGO — Briquothèque</title>
 <link rel="stylesheet" href="/style.css">
 <style>
@@ -32,10 +33,13 @@
 <main class="g-main">
   <h1 style="margin:0 0 10px">✨ Nouveautés LEGO</h1>
   <div class="nov-bar">
-    <div class="choice nov-tabs"><label><input type="radio" name="novv" value="sets" checked><span>Sets</span></label><label><input type="radio" name="novv" value="figs"><span>Figurines exclusives</span></label></div>
-    <div class="choice nov-tabs"><label><input type="radio" name="novs" value="" checked><span>Tout</span></label><label><input type="radio" name="novs" value="soon"><span>À venir</span></label><label><input type="radio" name="novs" value="new"><span>Sorties récentes</span></label></div>
-    <select id="theme" aria-label="Thème"><option value="">Tous les thèmes</option></select>
+    <div class="choice nov-tabs"><label><input type="radio" name="novv" value="sets" checked><span>📰 Dernières annonces</span></label><label><input type="radio" name="novv" value="cal"><span>📅 Calendrier</span></label></div>
+    <span class="nov-kinds"><label class="todo-chk"><input type="checkbox" data-ksets checked> Sets</label><label class="todo-chk"><input type="checkbox" data-kfigs> 🟡 Figurines exclusives</label></span><span class="nov-br"></span>
+    <div class="choice nov-tabs"><label><input type="radio" name="novs" value="" checked><span>Tout</span></label><label><input type="radio" name="novs" value="soon"><span>À venir</span></label><label><input type="radio" name="novs" value="new"><span>Sorties récentes</span></label></div><span class="nov-br"></span>
+    <select id="theme" aria-label="Thème" hidden><option value="">Tous les thèmes</option></select>
+    <button type="button" class="btn small-btn" id="thBtn">🎯 Thèmes (tous)</button>
   </div>
+  <p class="hint nov-keep">💾 Vos choix (onglet, Sets / Figurines, filtres, thème) sont gardés sur cet appareil.</p>
   <section id="b"><div class="loading"><span class="spinner"></span>Chargement…</div></section>
 </main>
 <script>
@@ -48,25 +52,74 @@ const img = u => u ? "/nouveautes/img?u=" + encodeURIComponent(u) : "";
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const relKey = x => { const m = String(x.release || "").match(/(?:(\p{L}+)\s+)?(\d{4})/u); if (!m) return 0; return +m[2] * 13 + (m[1] ? MOIS.indexOf(m[1].toLowerCase()) + 1 : 0); };
 let data = { items: [] };
+/* choix du visiteur (onglet, cases, filtres, thème) : gardés sur SON appareil ; /calendrier : ouverte sur le calendrier */
+let exTh = new Set();   /* thèmes décochés par le visiteur (gardés sur son appareil) */
+const NOV_KEEP = "bq-pub-nov", isCal = /^\/calendrier/.test(location.pathname);
+const keepGet = () => { try { return JSON.parse(localStorage.getItem(NOV_KEEP) || "{}"); } catch { return {}; } };
+const keepPut = () => { try { localStorage.setItem(NOV_KEEP, JSON.stringify({ tab: $("input[name=novv]:checked")?.value, st: $("input[name=novs]:checked")?.value,
+  sets: !!$("[data-ksets]")?.checked, figs: !!$("[data-kfigs]")?.checked, th: $("#theme")?.value || "", ex: [...exTh] })); } catch {} };
+{ const k = keepGet(), tab = isCal ? "cal" : k.tab; exTh = new Set(Array.isArray(k.ex) ? k.ex : []);
+  const r = tab && $(`input[name=novv][value="${tab}"]`); if (r) r.checked = true;
+  const s = k.st != null && $(`input[name=novs][value="${k.st}"]`); if (s) s.checked = true;
+  if (k.sets != null && $("[data-ksets]")) $("[data-ksets]").checked = k.sets; if (k.figs != null && $("[data-kfigs]")) $("[data-kfigs]").checked = k.figs;
+  if (isCal) document.title = "Calendrier des sorties LEGO — Briquothèque"; }
+/* visuel pas encore disponible : boîte de set / silhouette de figurine grisées « ? » (toucher : nouvel essai) */
+const svgUri = s => "data:image/svg+xml," + encodeURIComponent(s);
+const PH_SET = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 90'><rect width='120' height='90' fill='#eef0f3'/><path d='M24 30 60 18 96 30 60 42Z' fill='#cdd1d7'/><path d='M24 30 60 42 60 78 24 66Z' fill='#b7bcc3'/><path d='M96 30 60 42 60 78 96 66Z' fill='#a6acb4'/><g fill='#dde0e5'><ellipse cx='48' cy='26' rx='5' ry='2.4'/><ellipse cx='60' cy='30' rx='5' ry='2.4'/><ellipse cx='72' cy='26' rx='5' ry='2.4'/><ellipse cx='60' cy='22' rx='5' ry='2.4'/></g><text x='42' y='64' font-family='Arial,sans-serif' font-weight='700' font-size='22' fill='#fff' text-anchor='middle'>?</text><text x='78' y='64' font-family='Arial,sans-serif' font-weight='700' font-size='22' fill='#eef0f3' text-anchor='middle' opacity='.8'>?</text></svg>`);
+const PH_FIG = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 120'><rect width='90' height='120' fill='#eef0f3'/><g fill='#b9bec5'><rect x='38' y='6' width='14' height='6' rx='2'/><rect x='31' y='11' width='28' height='24' rx='8'/><rect x='41' y='34' width='8' height='4'/><path d='M27 38h36l6 34H21z'/><rect x='13' y='40' width='12' height='26' rx='5' transform='rotate(12 19 53)'/><rect x='65' y='40' width='12' height='26' rx='5' transform='rotate(-12 71 53)'/><rect x='23' y='72' width='44' height='8' rx='2'/><rect x='24' y='80' width='19' height='32' rx='3'/><rect x='47' y='80' width='19' height='32' rx='3'/></g><text x='45' y='65' font-family='Arial,sans-serif' font-weight='700' font-size='24' fill='#fff' text-anchor='middle'>?</text></svg>`);
+document.addEventListener("error", e => { const t = e.target; if (t.tagName !== "IMG" || !t.dataset.ph || t.src.startsWith("data:")) return; t.dataset.orig = t.src; t.src = t.dataset.ph === "fig" ? PH_FIG : PH_SET; t.classList.add("nov-ph"); }, true);
+document.addEventListener("click", e => { const t = e.target; if (t.tagName !== "IMG" || !t.classList.contains("nov-ph") || !t.dataset.orig) return; e.preventDefault(); e.stopPropagation();   // (silhouette : nouvel essai)
+  const s = t.dataset.orig.replace(/([?&])r=\d+/, ""); t.classList.remove("nov-ph"); t.src = s + (s.includes("?") ? "&" : "?") + "r=" + Date.now(); }, true);
 function draw() {
   const view = $("input[name=novv]:checked").value, st = $("input[name=novs]:checked").value, th = $("#theme").value, B = $("#b");
-  const list = data.items.filter(x => (!st || x.kind === st) && (!th || x.theme === th))
+  const wantFigs = !!$("[data-kfigs]")?.checked, wantSets = !!$("[data-ksets]")?.checked || !wantFigs;   // (cases « Sets » / « Figurines exclusives »)
+  const allTh = [...new Set(data.items.map(x => x.theme).filter(Boolean))], nOn = allTh.filter(t => !exTh.has(t)).length;
+  $("#thBtn").textContent = nOn === allTh.length ? "🎯 Thèmes (tous)" : `🎯 Thèmes (${nOn}/${allTh.length})`;
+  const list = data.items.filter(x => (!st || x.kind === st) && (!th || x.theme === th) && !exTh.has(x.theme))
     .sort((a, b) => relKey(b) - relKey(a) || (a.pos ?? 1e9) - (b.pos ?? 1e9) || (parseInt(b.number) || 0) - (parseInt(a.number) || 0) || a.name.localeCompare(b.name, "fr"));
   const when = x => x.release ? ` · 📅 ${x.kind === "soon" ? "Sortie" : "Sorti"} : ${esc(x.release)}` : "";
-  if (view === "sets") {
-    B.innerHTML = list.length ? `<div class="nov-grid">${list.map(x => `<div class="nov-card"><div class="nov-pic"><img src="${img(x.image)}" alt="" loading="lazy" data-zoom data-n="${esc(x.number)}">
+  if (view === "cal") {   /* 📅 Calendrier : sorties récentes en haut, « Aujourd'hui », puis les prochaines (mois, puis jour) */
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const dayOf = x => { const m = String(x.when || "").match(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u) || String(x.day || "").match(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u);   /* (date retenue : aussi une fois sorti) */ const mi = m ? MOIS.indexOf(m[2].toLowerCase()) : -1; return mi < 0 ? null : new Date(+m[3], mi, +m[1]); };
+    const monOf = x => { const m = String(x.release || "").match(/(?:(\p{L}+)\s+)?(\d{4})/u); return m ? { y: +m[2], m: m[1] ? MOIS.indexOf(m[1].toLowerCase()) : -1 } : null; };
+    const seenF = new Set(), items = [...(wantSets ? list.map(x => ({ x })) : []), ...(wantFigs ? list.flatMap(x => (x.figs || []).filter(f => !seenF.has(f.fig) && seenF.add(f.fig)).map(f => ({ x, f }))) : [])];
+    const rows = items.map(({ x, f }) => { const dd = dayOf(x), mo = monOf(x); return { x, f, dd, y: dd ? dd.getFullYear() : mo?.y, m: dd ? dd.getMonth() : mo ? mo.m : -1 }; }).filter(r => r.y);
+    const key = r => r.m < 0 ? r.y * 13 : r.y * 13 + 1 + r.m, nowK = today.getFullYear() * 13 + 1 + today.getMonth(), cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    rows.sort((a, b) => key(a) - key(b) || (a.dd || 0) - (b.dd || 0) || (a.x.pos ?? 1e9) - (b.x.pos ?? 1e9) || !!a.f - !!b.f);
+    const groups = new Map(); rows.forEach(r => { const k = key(r); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+    const tile = r => r.f ? `<div class="cal-tile cal-fig"><div class="cal-pic"><img src="${r.f.image ? img(r.f.image) : PH_FIG}" alt="" loading="lazy" ${r.f.image ? "" : 'class="nov-ph"'} data-ph="fig" data-zoom data-fig data-name="${esc(r.f.name)}" data-n="${esc(r.x.number)}"><span class="cal-flag">🟡</span></div><span class="cal-nm">${esc(r.f.name)}</span><small>dans ${esc(r.x.name)}</small></div>`
+      : `<div class="cal-tile"><div class="cal-pic"><img src="${r.x.image ? img(r.x.image) : PH_SET}" alt="" loading="lazy" data-ph="set" data-zoom data-n="${esc(r.x.number)}"></div><span class="cal-nm">${esc(r.x.name)}</span><small>${esc(String(r.x.number).replace(/-1$/, ""))}${r.x.price != null ? " · " + money(r.x.price) : ""}</small></div>`;
+    const todayRow = `<div class="cal-today" data-today>📍 Aujourd'hui · ${today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>`;
+    let html = "", marked = false;
+    for (const [k, rs] of groups) {
+      if (!marked && k >= nowK) { html += todayRow; marked = true; }
+      const r0 = rs[0], ns = rs.filter(r => !r.f).length, nfg = rs.length - ns;
+      const byDay = new Map(); rs.forEach(r => { const dk = r.dd ? r.dd.getDate() : 0; if (!byDay.has(dk)) byDay.set(dk, []); byDay.get(dk).push(r); });
+      html += `<section class="cal-month ${k < nowK ? "past" : ""}"><h3>${r0.m < 0 ? `${r0.y}` : `${cap(MOIS[r0.m])} ${r0.y}`} <span class="muted">· ${[ns ? `${ns} set${ns > 1 ? "s" : ""}` : "", nfg ? `${nfg} figurine${nfg > 1 ? "s" : ""}` : ""].filter(Boolean).join(", ")}</span></h3>`
+        + [...byDay].map(([dk, rr]) => (dk ? `<div class="cal-day"><span>📅 ${cap(rr[0].dd.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }))}</span></div>` : "") + `<div class="cal-grid">${rr.map(tile).join("")}</div>`).join("") + `</section>`;
+    }
+    if (!marked) html += todayRow;
+    B.innerHTML = groups.size ? `<div class="cal">${html}</div>` : `<div class="loading">Aucune sortie pour ces filtres.</div>`;
+    if (!draw.today) { const t = $("[data-today]", B); if (t) { draw.today = true; requestAnimationFrame(() => t.scrollIntoView({ block: "start" })); } }   // (on arrive sur « Aujourd'hui »)
+  } else {
+  let H1 = "", H2 = "";
+  if (wantSets) {
+    H1 = list.length ? `<div class="nov-grid">${list.map(x => `<div class="nov-card"><div class="nov-pic"><img src="${x.image ? img(x.image) : PH_SET}" alt="" loading="lazy" data-ph="set" ${x.image ? "" : 'class="nov-ph"'} data-zoom data-n="${esc(x.number)}">
         <span class="badge ${x.kind === "soon" ? "upcoming" : "onsale"}">${x.kind === "soon" ? "À venir" : "Nouveau"}</span></div>
       <div class="nov-txt"><b>${esc(x.name)}</b><small>${[esc(x.number), esc(x.theme), x.pieces ? nf.format(x.pieces) + " pièces" : ""].filter(Boolean).join(" · ")}</small>
       <small>${x.price != null ? `<b>${money(x.price)}</b>` : ""}${when(x)}</small>
       ${x.figs?.length ? `<small class="nov-figs">🟡 ${x.figs.length} figurine${x.figs.length > 1 ? "s" : ""} exclusive${x.figs.length > 1 ? "s" : ""}</small>` : ""}</div></div>`).join("")}</div>`
       : `<div class="loading">Aucune nouveauté pour ces filtres.</div>`;
-  } else {
+  }
+  if (wantFigs) {
     const figs = [], seen = new Set();
     for (const x of list) for (const f of x.figs || []) if (!seen.has(f.fig)) { seen.add(f.fig); figs.push({ f, x }); }
-    B.innerHTML = figs.length ? `<div class="nov-grid">${figs.map(({ f, x }) => `<div class="nov-card"><div class="nov-pic fig">${f.image ? `<img src="${img(f.image)}" alt="" loading="lazy" data-zoom data-fig data-name="${esc(f.name)}" data-n="${esc(x.number)}">`
-      : `<span class="nov-noimg" data-zoom data-fig data-name="${esc(f.name)}" data-n="${esc(x.number)}">🟡<small>Photo pas encore disponible</small></span>`}</div>
+    H2 = figs.length ? `<div class="nov-grid">${figs.map(({ f, x }) => `<div class="nov-card"><div class="nov-pic fig">${f.image ? `<img src="${img(f.image)}" alt="" loading="lazy" data-ph="fig" data-zoom data-fig data-name="${esc(f.name)}" data-n="${esc(x.number)}">`
+      : `<img src="${PH_FIG}" class="nov-ph" alt="" title="Photo pas encore disponible" data-zoom data-fig data-name="${esc(f.name)}" data-n="${esc(x.number)}">`}</div>
       <div class="nov-txt"><b>${esc(f.name)}</b><small>dans « ${esc(x.name)} » (${esc(x.number)})${x.theme ? " · " + esc(x.theme) : ""}</small><small>${x.price != null ? `<b>${money(x.price)}</b>` : ""}${when(x)}</small></div></div>`).join("")}</div>`
       : `<div class="loading">${data.figs_done ? "Aucune figurine exclusive pour ces filtres." : "Analyse des figurines en cours…"}</div>`;
+  }
+  B.innerHTML = H1 + (H1 && H2.includes("nov-card") ? `<h3 class="nov-sec">🟡 Figurines exclusives</h3>` : "") + (H1 && !H2.includes("nov-card") ? "" : H2);   // (les deux cases : les sets, puis les figurines)
   }
   $$("[data-zoom]", B).forEach(im => im.onclick = () => {   // en grand (figurine : la photo de son set) ; set : ses photos officielles sur le côté
     const x = im.dataset.n ? data.items.find(y => y.number === im.dataset.n) : null, fig = im.hasAttribute("data-fig");
@@ -109,10 +162,26 @@ fetch("/nouveautes/data").then(r => r.json()).then(d => {
   document.getElementById("pubLinksHead").innerHTML = pubLinksHtml("nouveautes", d.owner);   // dans l'en-tête
   const themes = [...new Set(d.items.map(x => x.theme).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   $("#theme").innerHTML = `<option value="">Tous les thèmes</option>` + themes.map(t => `<option>${esc(t)}</option>`).join("");
+  { const th = keepGet().th; if (th && themes.includes(th)) $("#theme").value = th; }   // (thème choisi la dernière fois)
   draw();
 }).catch(() => { $("#b").innerHTML = `<div class="loading">Nouveautés indisponibles pour le moment.</div>`; });
-$$("input[name=novv], input[name=novs]").forEach(r => r.onchange = draw);
-$("#theme").onchange = draw;
+$$("input[name=novs], [data-ksets], [data-kfigs]").forEach(r => r.onchange = () => { keepPut(); draw(); });
+$$("input[name=novv]").forEach(r => r.onchange = () => { keepPut(); draw.today = false; draw(); });   // (Calendrier : on arrive sur « Aujourd'hui »)
+$("#theme").onchange = () => { keepPut(); draw(); };
+$("#thBtn").onclick = () => {   /* thèmes : cases à cocher (cochés = affichés) */
+  const all = [...new Set(data.items.map(x => x.theme).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  const m = document.createElement("div"); m.className = "modal top";
+  m.innerHTML = `<div class="modal-box" style="width:min(460px,100%)"><div class="modal-head"><h2>🎯 Thèmes</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
+    <p class="hint" style="margin-top:0">Les thèmes cochés s'affichent (sets et figurines). Votre choix est gardé sur cet appareil.</p>
+    <div class="exth-list">${all.map(t => `<label class="todo-chk"><input type="checkbox" value="${esc(t)}" ${exTh.has(t) ? "" : "checked"}> ${esc(t)}</label>`).join("") || `<p class="muted">Aucun thème pour l'instant.</p>`}</div>
+    <div class="est-actions" style="justify-content:space-between;margin-top:12px"><span style="display:flex;gap:6px"><button type="button" class="btn small-btn" data-all>Tout cocher</button><button type="button" class="btn small-btn" data-none>Tout décocher</button></span><button type="button" class="btn primary" data-ok>OK</button></div></div>`;
+  document.body.append(m);
+  const close = () => m.remove();
+  m.querySelector("[data-x]").onclick = close; m.onclick = e => { if (e.target === m) close(); };
+  m.querySelector("[data-all]").onclick = () => m.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = true);
+  m.querySelector("[data-none]").onclick = () => m.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = false);
+  m.querySelector("[data-ok]").onclick = () => { exTh = new Set([...m.querySelectorAll("input[type=checkbox]:not(:checked)")].map(c => c.value)); keepPut(); close(); draw(); };
+};
 </script>
 </body>
 </html>

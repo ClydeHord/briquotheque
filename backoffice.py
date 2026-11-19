@@ -52,14 +52,14 @@ def safe_url(u):
 
 def _clean(v, key="", depth=0):
     """Une valeur des réglages, bornée : pas de nombre impossible, pas de texte ni de liste démesurés, pas de clé piégée, adresses vérifiées."""
-    if depth > 14:
+    if depth > 30:
         return None
     if key in STR_KEYS and not isinstance(v, str) and (key != "css" or depth == 0 or not isinstance(v, dict)):   # (« css » d'une règle : un groupe de propriétés)
         if isinstance(v, bool) or not isinstance(v, (int, float)):
             return None
         v = str(int(v)) if v == int(v) and abs(v) < 1e15 else str(v)
     if key in STR_LISTS:
-        return [x[:20000] for x in v[:3000] if isinstance(x, str)] if isinstance(v, list) else None
+        return [x[:1_000_000] for x in v[:100_000] if isinstance(x, str)] if isinstance(v, list) else None
     if v is None or isinstance(v, bool):
         return v
     if isinstance(v, (int, float)):
@@ -67,14 +67,14 @@ def _clean(v, key="", depth=0):
     if isinstance(v, str):
         if key in ("url", "href", "src", "link"):
             v = safe_url(v)
-        cap = 2_600_000 if v.startswith("data:image/") else 300_000 if key in ("css", "html", "js") else 20_000
+        cap = 16_000_000 if v.startswith("data:image/") else 8_000_000 if key in ("css", "html", "js") else 1_000_000
         return v[:cap].replace("\x00", "")
     if isinstance(v, list):
-        return [x for x in (_clean(i, key, depth + 1) for i in v[:3000]) if x is not None]
+        return [x for x in (_clean(i, key, depth + 1) for i in v[:100_000]) if x is not None]
     if isinstance(v, dict):
         out = {}
-        for k, x in list(v.items())[:800]:
-            k = str(k)[:120]
+        for k, x in list(v.items())[:100_000]:
+            k = str(k)[:1000]
             if k in ("__proto__", "constructor", "prototype"):
                 continue
             c = _clean(x, k, depth + 1)
@@ -90,7 +90,7 @@ def _clean(v, key="", depth=0):
     return None
 
 
-def _rows(v, cap=1500):
+def _rows(v, cap=100_000):
     """Liste de lignes {id, …} : seulement des groupes, chacun avec un identifiant simple et unique."""
     rows, seen = [], set()
     for r in v[:cap] if isinstance(v, list) else []:
@@ -127,8 +127,8 @@ def normalize(cfg):
     if not isinstance(cfg, dict):
         return {}
     out = {}
-    for k, v in list(cfg.items())[:200]:
-        k = str(k)[:60]
+    for k, v in list(cfg.items())[:5000]:
+        k = str(k)[:200]
         if not k or k.startswith("_") or k in ("__proto__", "constructor", "prototype"):   # (_note, _t… : réservés à l'historique)
             continue
         v = _clean(v, k)
@@ -165,8 +165,8 @@ def normalize(cfg):
     for r in out.get("fields", []):
         _strs(r, "types", "opts")
     for pg in out.get("pages", []):   # pages créées : une adresse simple, des blocs {id, k, …}
-        pg["blocks"] = _rows(pg.get("blocks"), 400)
-        s = re.sub(r"[^a-z0-9]+", "-", str(pg.get("slug") or pg.get("title") or "").lower()).strip("-")[:40]
+        pg["blocks"] = _rows(pg.get("blocks"))
+        s = re.sub(r"[^a-z0-9]+", "-", str(pg.get("slug") or pg.get("title") or "").lower()).strip("-")[:120]
         pg["slug"] = s or "page-" + pg["id"].lower()[:12]
     sh = out.get("sheets")
     if sh is not None:
@@ -179,9 +179,10 @@ def normalize(cfg):
             _dict_of(th, k, str)
     mn = out.get("menu")
     if mn is not None:
-        _strs(mn, "order", "hidden")
+        _strs(mn, "order", "hidden", "off")
+        _dict_of(mn, "labels", str)   # (chaque entrée du menu : son texte, et masquée ou non — « off »)
         if "items" in mn:
-            mn["items"] = _rows(mn["items"], 200)
+            mn["items"] = _rows(mn["items"])
     if "cards" in out:
         _strs(out["cards"], "hide")
     st = out.get("settings")
@@ -192,7 +193,7 @@ def normalize(cfg):
     if tg is not None:
         _dict_of(tg, "over", dict)
         if "add" in tg:
-            tg["add"] = _rows(tg["add"], 300)
+            tg["add"] = _rows(tg["add"])
     nv = out.get("native")   # éléments d'origine modifiés : {sorts|filters|tiles: {order, hidden, labels}}
     if nv is not None:
         for kk in list(nv):
@@ -370,7 +371,7 @@ def clean_x(x):
     out = {}
     if not isinstance(x, dict):
         return out
-    for k, v in list(x.items())[:200]:
+    for k, v in list(x.items())[:10_000]:
         k = str(k)[:40]
         if not re.fullmatch(r"[\w-]{1,40}", k):
             continue
@@ -378,9 +379,9 @@ def clean_x(x):
             out[k] = v
         elif isinstance(v, str):
             if v.strip():
-                out[k] = v[:5000]
+                out[k] = v[:1_000_000]
         elif isinstance(v, list):
-            vals = [str(i)[:300] for i in v[:100] if isinstance(i, (str, int, float)) and str(i).strip()]
+            vals = [str(i)[:20_000] for i in v[:10_000] if isinstance(i, (str, int, float)) and str(i).strip()]
             if vals:
                 out[k] = vals
     return out

@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 19/11/2026 08:45.
+Généré le 19/11/2026 22:21.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -714,7 +714,7 @@ Ajouter une pièce
 
 - **🛒 À commander** (ou **➕ Dans un set / une figurine** pour l'ajouter à une fiche).
 
-- **Pour quel set ?** (facultatif) : les couleurs présentes dans ce set s'affichent en premier, avec leur quantité.
+- **Pour quel set ?** (facultatif) : les couleurs présentes dans ce set s'affichent en premier, avec leur quantité. Ce n'est pas pour un set ? Tapez plutôt une note (ex. « pour Paul ») et choisissez **📝 En faire une note** : elle s'affiche sur la pièce.
 
 - Choisissez la **couleur**, éventuellement le **n° d'élément LEGO**, la **quantité**, l'**état** (neuf par défaut,
 occasion ou n'importe), une **note**, puis enregistrez.
@@ -736,9 +736,14 @@ La fiche d'une pièce
 
 - Les sets **à venir** et les **sorties récentes** de LEGO.com, du **dernier apparu** au plus ancien, sans ceux que vous avez déjà.
 
+- Deux onglets : **📰 Dernières annonces** (la liste) et **📅 Calendrier**. Les cases **Sets** (cochée d'office) et **🟡 Figurines exclusives** choisissent ce qui s'affiche, dans les deux onglets (les deux ensemble possible ; dans le calendrier, une figurine est à la date de son set).
+- Pages publiques : `/nouveautes` et `/calendrier` (la même, ouverte sur le calendrier). Les choix de chaque visiteur (onglet, cases, filtres, thème) sont gardés sur son appareil.
+- Raccourci : **📅 Calendrier des sorties**, sous « ✨ Nouveautés » dans le menu, ouvre directement le calendrier.
+- Visuel pas encore disponible : une boîte de set ou une silhouette de figurine grisée avec « ? ». La toucher relance la recherche ; les visuels manquants sont aussi recherchés à l'ouverture de la page et toutes les 6 h.
+- **📅 Calendrier** : une frise des sorties, mois par mois et jour par jour (date de lego.com). On arrive sur « 📍 Aujourd'hui » : en dessous, les prochaines sorties ; en remontant, les sorties récentes. Toucher l'image l'agrandit ; toucher le set ouvre ses actions (liste de souhaits, à surveiller, lego.com, ne plus afficher). Liseré doré : déjà dans la liste de souhaits ; bleu : à surveiller.
 - Celles apparues depuis votre dernière visite sont **encadrées en jaune** ; le menu en affiche le nombre. Une fois vues, elles redeviennent normales.
 
-- Onglets **Sets** / **Figurines exclusives** (les figurines qu'on ne trouve que dans ces sets) ; **Tout / À venir / Sorties récentes** ; le thème.
+- Filtres : **Tout / À venir / Sorties récentes** ; le thème. Les figurines exclusives sont celles qu'on ne trouve que dans ces sets.
 
 - Sur chaque set : **⭐ Ajouter à la liste de souhaits**, **👀** (à surveiller), **🚫 Ne plus afficher** (« Afficher les masqués » les fait revenir). ; **Afficher celles sans image** : sans elle, les sets et figurines exclusives sans photo sont cachés
 
@@ -863,7 +868,7 @@ les boutons en carrés de même taille). Elle reste en haut de l'écran quand vo
 autant d'étiquettes qu'on veut (la fenêtre reste ouverte) ; dans « Tri » on choisit un seul tri (la fenêtre se referme, et sur ordinateur le tri
 en cours est rappelé sur le bouton). Un clic ailleurs ou la touche Échap referme le menu. C'est pareil sur les pages publiques.
 
-Parmi les tris : **Variation de prix (%)** range les fiches selon leur flèche ↑ ↓ ~ — les plus grosses variations en % d'abord, hausses comme baisses (−52 % avant +10 %), celles sans relevé à la fin ; **Variation de prix (€)** met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, **Définir par défaut** fait du tri en cours le tri d'office ; **↺** y revient (et remet l'ordre normal).
+Parmi les tris : **Variation de prix (%)** range les fiches selon leur flèche ↑ ↓ ~ — les plus grosses variations en % d'abord, hausses comme baisses (−52 % avant +10 %), celles sans relevé à la fin ; **Augmentation / baisse (%)** va de la plus forte hausse à la plus forte baisse (+, puis ~, puis −) ; avec 🔃 Renverser le tri, de la plus forte baisse à la plus forte hausse ; **Aléatoire** mélange les fiches (l'ordre reste le même pendant la visite ; 🔃 remélange) ; **Variation de prix (€)** met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, **Définir par défaut** fait du tri en cours le tri d'office ; **↺** y revient (et remet l'ordre normal).
 Le bouton **🔃 Renverser le tri**, à droite de « Tri » (sur téléphone aussi), donne l'ordre inverse du tri en cours : les plus
 fortes baisses d'abord, de Z à A, du moins cher au plus cher… L'ordre inversé est retenu, liste par liste, jusqu'à ce que vous touchiez de nouveau le bouton.
 
@@ -915,6 +920,8 @@ Menu → **⚙️ Réglages** : une page entière (application privée seulement
 
 - **💶 Prix** : la passe BrickLink de la nuit (dès 3 h, les plus anciens d'abord, 2 000 appels au plus) ; **↻ Actualiser les prix** relit tout de suite
 les sets, les figurines et les éléments estimés par leurs pièces (prix de plus de 24 h) ; **🧱 Chiffrer les pièces**.
+
+- **🎨 Apparence** : le **style de l'application** — ✨ Moderne (d'office), 🧱 Classique, 🫧 Verre, 🟥 Brique, ◻️ Minimal, 🌃 Néon, 💥 BD, 🍬 Pastel, 📐 Technique ou 🌙 Nuit : l'aspect de tous les boutons et étiquettes, partout, pages publiques comprises (changement immédiat, aperçu en mini fiche) ; et la couleur de l'application.
 
 - **🧮 Estimations** : la plus-value d'un set d'occasion **avec sa boîte** (%), la décote d'un exemplaire **modifié** (%), la plus-value du **livret de plans**.
 

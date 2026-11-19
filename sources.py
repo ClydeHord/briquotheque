@@ -1175,7 +1175,10 @@ def bl_get(path, params=None, keys=None, timeout=20):
         req = urllib.request.Request(full, headers={"Authorization": head, "User-Agent": UA, "Accept": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            d = json.loads(r.read().decode("utf-8"))
+            body = r.read()
+            if "maintenance.bricklink.com" in (r.geturl() or "") or "html" in (r.headers.get("Content-Type") or "").lower():   # (BrickLink en maintenance : une page web, pas des données)
+                raise RuntimeError("BrickLink en maintenance (nouvel essai plus tard)")
+            d = json.loads(body.decode("utf-8"))
     except urllib.error.HTTPError as e:   # refus avec un message de BrickLink
         try:
             d = json.loads(e.read().decode("utf-8"))

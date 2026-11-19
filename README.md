@@ -120,7 +120,8 @@ Ce que vous voulez, et ce qui sort. → [Détails : souhaits](docs/FONCTIONS.md#
   défilables, lien vers lego.com ; **figurines exclusives** avec leur set, ajoutables à la liste de souhaits et, une fois sorties,
   retrouvées sur BrickLink (ou « Pas d'annonces »). La page se relit à l'ouverture. Cases pour réafficher les sets masqués, ceux déjà
   dans la liste de souhaits ou surveillés.
-- **Nouveautés relevées toutes les heures** ; ouvrir la page Nouveautés relit lego.com tout de suite. Tris « **Variation de prix (%)** » (la plus grosse hausse ou baisse d’abord) et « **Variation de prix (€)** ».
+- **Nouveautés** (pages publiques `/nouveautes` et `/calendrier`) : onglets « 📰 Dernières annonces » et « 📅 Calendrier » (la frise des sorties, mois par mois et jour par jour, ouverte sur aujourd’hui) ; sets et / ou figurines exclusives.
+- **Nouveautés relevées toutes les heures** ; ouvrir la page Nouveautés relit lego.com tout de suite. Tris « **Variation de prix (%)** » (la plus grosse hausse ou baisse d’abord), « **Aléatoire** », « **Augmentation / baisse (%)** » (de la plus forte hausse à la plus forte baisse ; inversé : l’inverse). Sous l’estimation d’une fiche : prix en magasin, neuf, d’occasion et sans figurines et « **Variation de prix (€)** ».
 
 ### 🌐 Pages publiques et partage
 Montrer sa collection sans rien risquer. → [Détails](docs/FONCTIONS.md#pages-publiques-et-partage)
@@ -138,6 +139,7 @@ Ne rien oublier : une pièce à racheter, une couleur à vérifier… → [Déta
 ### ⚙️ Réglages, aide et sécurité
 - **Réglages** sur trois colonnes (ordinateur) : prix, estimations, détourage, réseaux sociaux, BrickLink, Rebrickable, pages → [Détails : réglages](docs/FONCTIONS.md#réglages) · [aide, sécurité, mentions légales](docs/FONCTIONS.md#aide-sécurité-et-mentions-légales)
   publiques, sécurité, documentation.
+- **Thèmes** : ✨ Moderne, 🧱 Classique, 🫧 Verre, 🟥 Brique, ◻️ Minimal, 🌃 Néon, 💥 BD, 🍬 Pastel, 📐 Technique, 🌙 Nuit — l’aspect de tous les boutons, partout (aperçu en mini fiche dans les Réglages).
 - **Aide** : un « ? » discret à côté de la flèche ↑ explique les boutons de chaque page et fenêtre.
 - **Sécurité** : mot de passe pour toute modification, adresses bannies après trop d'échecs, clés API jamais réaffichées.
 - **Mentions légales** (lien en bas du menu) : le paragraphe « Éditeur » se modifie (✏️ Éditer).

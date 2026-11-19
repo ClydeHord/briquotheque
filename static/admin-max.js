@@ -106,7 +106,7 @@ const imgField = (value, on) => line(txt(/^data:/.test(value || "") ? "" : value
 let imgBusy = false;
 VIEW.images = () => {
   const d = got("imgs", "images"), w = wait(d, "imgs"), used = JSON.stringify(cfg) + JSON.stringify(published);
-  const send = fs => (async () => { imgBusy = true; draw(); let n = 0; for (const f of fs.slice(0, 30)) if (await act(() => upload(f))) n++; imgBusy = false; if (n) toast("✔ " + n + " image(s) envoyée(s)."); draw(); })();
+  const send = fs => (async () => { imgBusy = true; draw(); let n = 0; for (const f of fs.slice(0, 500)) if (await act(() => upload(f))) n++; imgBusy = false; if (n) toast("✔ " + n + " image(s) envoyée(s)."); draw(); })();
   return [head("Images", "Vos images, gardées sur le serveur : elles servent aux boutons, aux pages, aux éléments ajoutés. Une image envoyée ici a une adresse (/bo-img/…) à coller où vous voulez — ou à choisir avec « 🖼️ Choisir… »."),
     card("Envoyer", el("div", { class: "btns" }, btn(imgBusy ? "Envoi en cours…" : "⬆ Envoyer des images…", () => pickFiles(send, true), "primary")),
       hint("PNG, JPEG, WebP, GIF, SVG (sans script), ICO, AVIF — 4 Mo au plus (une photo plus lourde est réduite toute seule). Effet immédiat : pas besoin de publier.")),
@@ -317,7 +317,7 @@ function pageEditor(pg) {
       el("div", { class: "checks", style: "margin:8px 0" }, chk("Dans le menu latéral", pg.menu !== false, v => pgUpd(pg.id, x => { if (v) delete x.menu; else x.menu = false; })), chk("Afficher son titre en haut", pg.head !== false, v => pgUpd(pg.id, x => { if (v) delete x.head; else x.head = false; })),
         chk("Publique (visible sans connexion)", pg.pub === true, v => pgUpd(pg.id, x => { if (v) x.pub = true; else delete x.pub; }), "Une adresse à donner à qui vous voulez")),
       pg.pub ? note(`Adresse publique (après publication) : <a href="/p/${esc(pg.slug || "")}" target="_blank" rel="noopener"><b>${esc(location.origin)}/p/${esc(pg.slug || "")}</b></a><br>Les visiteurs ne voient que les blocs sans données (titres, textes, images, boutons vers une adresse, HTML, cadres) — jamais vos fiches ni vos prix.`) : null,
-      fld("Adresse de la page (lettres, chiffres, tirets)", txt(pg.slug, v => set("slug")(v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 40)), "ma-page")),
+      fld("Adresse de la page (lettres, chiffres, tirets)", txt(pg.slug, v => set("slug")(v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 120)), "ma-page")),
       line(el("span", { class: "lab" }, "Largeur maximale de la page"), el("input", { type: "number", class: "num", min: 320, max: 4000, value: pg.width ?? "", placeholder: "toute", oninput: e => set("width")(e.target.value === "" ? "" : +e.target.value) }), el("span", { class: "u" }, "px"))),
     card("Les blocs de la page (" + blocks.length + ")", blocks.length ? orderList(blocks.map(b => ({ key: b.id, name: (BLOCKS.find(x => x[0] === b.k)?.[1] || "") + " " + blkName(b.k), off: !!b.off,
       sub: String(b.text || b.url || b.html || "").replace(/\s+/g, " ").slice(0, 44),
@@ -377,8 +377,8 @@ VIEW.reglages = () => {
 };
 
 /* ------------------------------------------------------------------ Comportements */
-const SORTS0 = [["modified", "Dernière modification"], ["added", "Ajout récent"], ["added_old", "Ajout le plus ancien"], ["value", "Valeur décroissante"], ["variation", "Variation de prix (%)"], ["ecart", "Variation de prix (€)"], ["name", "Nom (A → Z)"], ["number", "Numéro"], ["year", "Année"], ["qty", "Nombre d'exemplaires"],
-  ["pieces", "Nombre de pièces"], ["figs", "Nombre de figurines"], ["theme", "Thème"]];
+const SORTS0 = [["modified", "Dernière modification"], ["added", "Ajout récent"], ["value", "Valeur"], ["variation", "Variation de prix (%)"], ["hausse", "Augmentation / baisse (%)"], ["ecart", "Variation de prix (€)"], ["name", "Nom"], ["number", "Numéro"], ["year", "Année"], ["qty", "Nombre d'exemplaires"],
+  ["pieces", "Nombre de pièces"], ["figs", "Nombre de figurines"], ["theme", "Thème"], ["random", "Aléatoire"]];
 VIEW.comportements = () => {
   const b = cfg.behav || {}, st = String(b.start || ""), sk = st.slice(0, Math.max(0, st.indexOf(":"))), sv = st.slice(st.indexOf(":") + 1), lists = appLists();
   const sortOpts = [["", "comme à l'origine"], ...SORTS0, ...(cfg.sorts || []).map(s => ["bo:" + s.id, "★ " + (s.label || "tri")])];
@@ -503,6 +503,8 @@ startAdmin();
 /* ------------------------------------------------------------------ 🧩 Éléments d'origine : modifier l'existant (tris, filtres, tuiles, calculs) */
 PANELS.push(["origine", "🧩", "Éléments d'origine", "Renommer, masquer, réordonner les tris, filtres et tuiles de l'appli ; régler les calculs d'origine."]);
 grp("Avancé")?.unshift("origine");
+PANELS.push(["tout", "🗂️", "Tous les éléments", "Chaque bouton, lien, menu, titre, option de l'appli — même caché : le modifier, le masquer, l'afficher."]);
+grp("Avancé")?.unshift("tout");
 try { buildNav(); } catch {}
 const obj = v => v && typeof v === "object" && !Array.isArray(v) ? v : {}, arr = v => Array.isArray(v) ? v : [];
 const FILT0 = [["complet", "Complet"], ["ameliore", "Amélioré"], ["modifie", "Modifié"], ["partiel", "Set partiel"], ["moc", "MOC"], ["cardLogo", "Logo de la liste (cartes)"], ["cardName", "Nom de la liste (cartes)"]];
@@ -550,6 +552,34 @@ VIEW.origine = () => {
 /* ------------------------------------------------------------------ clic droit dans l'aperçu : les outils de l'élément (bo.js ouvre le menu, le travail se fait ici) */
 let ctxStyle = null;   // style copié : {propriété CSS: valeur}
 const CTX_STYLE = ["color", "background-color", "font-size", "font-weight", "font-style", "text-align", "border-radius", "border-width", "border-color", "opacity"];
+/* ------------------------------------------------------------------ 🗂️ Tous les éléments : l'inventaire de l'aperçu, cherchable, avec ✏️ Modifier et 🙈 Masquer / 👁 Afficher */
+let invQ = "", invZone = "", invData = null;
+VIEW.tout = () => {
+  const B = BOF();
+  if (!B || !B.inventory) return [head("🗂️ Tous les éléments", "Tout ce que l'appli affiche, même caché."), note("L'aperçu n'est pas prêt : attendez qu'il soit chargé, puis rouvrez ce panneau.", "warn")];
+  try { if (!invData) invData = B.inventory(); } catch (e) { invData = []; }
+  const mine = x => (cfg.rules || []).some(r => r.sel === x.one && r.hide && (!r.page || r.page === B.page));
+  const zones = [...new Set(invData.map(x => x.area))];
+  const list = el("div", { class: "rowset" }), count = el("p", { class: "hint", style: "margin:0 0 6px" });
+  const fill = () => {
+    const q = invQ.trim().toLowerCase(), rows = invData.filter(x => (!invZone || x.area === invZone) && (!q || (x.text + " " + x.desc + " " + x.area).toLowerCase().includes(q)));
+    count.textContent = rows.length + " élément(s)" + (rows.length > 3000 ? " — les 3 000 premiers affichés : précisez la recherche" : "");
+    list.replaceChildren(...rows.slice(0, 3000).map(x => { const hid = mine(x);
+      return line(el("span", { class: "lab", style: "min-width:0" }, el("b", {}, x.text || "(sans texte)"), el("br"), el("small", { class: "hint" }, x.area + " · " + x.desc + (hid ? " · 🙈 masqué par vous" : x.hidden ? " · caché pour l'instant (menu fermé, autre page…)" : ""))),
+        el("span", { style: "display:flex;gap:6px;flex:none" },
+          btn("✏️ Modifier", () => { if (typeof setMode === "function" && mode !== "pick") setMode("pick"); if (!B.invPick(x.i)) { toast("Élément introuvable : ⟳ Relire l'aperçu."); } }, "small", "Ouvrir l'éditeur de cet élément (texte, style, lien, action, icône…)"),
+          hid ? btn("👁 Afficher", () => change(c => { for (const r of c.rules || []) if (r.sel === x.one && (!r.page || r.page === B.page)) delete r.hide; }), "small", "Ne plus le masquer")
+            : btn("🙈 Masquer", () => { const info = B.invInfo(x.i); if (!info) return toast("Élément introuvable : ⟳ Relire l'aperçu."); window.BO_ADMIN.onContext("hide", info); }, "small", "Le masquer (« Afficher » le remet)"))); }));
+  };
+  fill();
+  return [head("🗂️ Tous les éléments", "Chaque bouton, lien, menu, titre, étiquette, option et champ de la page affichée dans l'aperçu — y compris ce qu'on ne peut pas atteindre en cliquant (menus Trier / Filtres fermés, fenêtres, éléments masqués). « ✏️ Modifier » ouvre l'éditeur complet de l'élément ; rien n'est verrouillé."),
+    card("Chercher", el("input", { type: "search", value: invQ, placeholder: "Un mot du bouton, du menu, du titre…", style: "width:100%", oninput: e => { invQ = e.target.value; fill(); } }),
+      el("div", { class: "pills", style: "margin-top:8px" }, [["", "Toutes les zones"], ...zones.map(z => [z, z])].map(([k, l]) => el("button", { type: "button", class: invZone === k ? "on" : "", onclick: () => { invZone = k; draw(); } }, l))),
+      el("div", { class: "btns" }, btn("⟳ Relire l'aperçu", () => { invData = null; draw(); }, "small")),
+      hint("L'inventaire est celui de la page affichée dans l'aperçu : ouvrez-y une fiche, les Réglages ou une autre page, puis ⟳ Relire l'aperçu pour en lister les éléments.")),
+    card("Éléments", count, list)];
+};
+
 window.BO_ADMIN.ctxHas = k => k === "style" && !!ctxStyle;
 window.BO_ADMIN.onContext = (a, info, extra) => {
   const same = r => r.sel === info.one && (r.page || "") === (info.page || "");

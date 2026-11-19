@@ -202,7 +202,7 @@ masquage valent aussi sur les pages publiques ; les conditions, elles, se lisent
 <p>[[go:cartes]] Taille minimale des cartes, format de l'image, nombre de lignes du nom, parties affichées (numéro, quantité, thème, valeur…).</p>"""),
         ("bo-menu", "Le menu latéral", """
 <h3 id="menu">Menu</h3>
-<p>[[go:menu]] L'ordre des entrées (glisser ⠿), les entrées masquées, et vos <b>raccourcis</b> : vers une adresse, une liste, une fiche, une vue.
+<p>[[go:menu]] L'ordre des entrées (glisser ⠿), les entrées masquées, <b>chaque entrée renommée ou masquée une à une</b> (« Chaque entrée du menu » : Nouveautés, Calendrier des sorties, Réglages…), des <b>traits de séparation</b> en plus (« + Ajouter un trait de séparation »), et vos <b>raccourcis</b> : vers une adresse, une liste, une fiche, une vue.
 Les pages que vous créez et vos vues enregistrées y apparaissent aussi, et s'ordonnent ici.</p>"""),
     ]},
     # ------------------------------------------------------------------ 8
@@ -328,6 +328,14 @@ un bloc de la fiche masqué. Plusieurs effets par règle.</p>"""),
 <ul><li>Une <b>vue</b> est une liste filtrée prête à ouvrir depuis le menu (« Précieux », « À construire cet hiver »…).</li>
 <li>Un <b>tri</b> à vous s'ajoute au menu « ⇅ Tri » du site (marqué ★).</li>
 <li>Un <b>filtre</b> à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).</li></ul>
+<h3 id="tout">Tous les éléments : rien n'est verrouillé</h3>
+<p>[[go:tout]] L'inventaire de <b>tout</b> ce que la page affichée dans l'aperçu contient : boutons, liens, entrées du menu, titres, étiquettes,
+onglets, options des listes déroulantes, champs — y compris ce qu'on ne peut pas atteindre en cliquant (menus « Trier par » et « ⚙️ Filtres »
+fermés, fenêtres, éléments déjà masqués). Une recherche et un tri par zone (barre du haut, menu latéral, fiche, fenêtres…) ; sur chaque ligne :</p>
+<ul><li><b>✏️ Modifier</b> : l'éditeur complet de l'élément, comme au clic (texte, style, lien, action, icône, position) ;</li>
+<li><b>🙈 Masquer</b> / <b>👁 Afficher</b> d'un appui.</li></ul>
+<p>Ouvrez dans l'aperçu une fiche, les Réglages ou une autre page, puis « ⟳ Relire l'aperçu » pour en lister les éléments. Les noms, icônes,
+colonnes, blocs et entrées n'ont plus de limite pratique (seule reste la taille d'un envoi : 16 Mo).</p>
 <h3 id="origine">Éléments d'origine : modifier l'existant</h3>
 <p>[[go:origine]] Ce que l'application propose déjà, à votre main :</p>
 <ul><li><b>Tris</b> (menu « Trier par »), <b>Filtres</b> (menu « ⚙️ Filtres ») et <b>tuiles du haut</b> : un nouveau nom (vide : celui d'origine), « masquer »,
