@@ -1023,6 +1023,23 @@ def set_market(number):
     return None
 
 
+def bo_fig_image(fid):
+    """La photo officielle d'une minifig sur sa page BrickOwl (réf. BrickLink, ex. sw0530) : la page dont le texte porte bien ce n°,
+    sa grande image. Rend l'adresse de l'image, ou "" (rien de sûr). (Mêmes pages que celles lues pour les prix.)"""
+    page = _get_en("https://www.brickowl.com/search/catalog?query=" + urllib.parse.quote(fid))
+    links = [l for l in dict.fromkeys(re.findall(r'href="(/catalog/lego-[^"]+)"', page))
+             if "-set-" not in l and not l.endswith("-instructions")]
+    for l in links[:3]:
+        p = _get_en("https://www.brickowl.com" + l)
+        if not re.search(r"(?<![\w-])" + re.escape(fid) + r"(?![\w-])", p, re.I):   # bonne minifig ?
+            continue
+        slug = l.rsplit("/", 1)[-1]
+        imgs = re.findall(r'https://img\.brickowl\.com/files/image_cache/larger/' + re.escape(slug) + r'-\d+\.(?:jpg|png)', p)
+        if imgs:
+            return imgs[0]
+    return ""
+
+
 def fig_used_price(fid):
     """Prix d'occasion relevé d'une minifig (réf. BrickLink, ex. sw0002) : médiane des offres « Used » BrickOwl,
     vendeurs français (au moins 3), sinon UE, sinon monde. None si aucune offre d'occasion."""

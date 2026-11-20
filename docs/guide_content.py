@@ -27,7 +27,7 @@ explorez-les, modifiez-les ou supprimez-les.</li></ol>""", "blocks": [
 <h3>L'écran principal</h3>
 <ul><li><b>☰</b> : ouvre le menu (listes, inventaires, pages…).</li>
 <li>Le <b>logo</b> ramène à l'accueil (toute la collection, en haut).</li>
-<li><b>+ Nouveau</b> : ajouter un set, une figurine, un MOC (dans une liste de pièces : une pièce).</li>
+<li><b>+</b> : ajouter un set, une figurine, un MOC (dans une liste de pièces : une pièce).</li>
 <li><b>Valeur de la collection</b> : estimation d'occasion ; dessous, ce qu'elle vaudrait neuve.</li>
 <li>Tuiles <b>Sets</b> / <b>Figurines</b> / <b>Pièces</b> : les totaux. Touchez Sets ou Figurines pour afficher l'un, l'autre ou les deux.</li></ul>"""),
         ("accueil-cartes", "Les vignettes", """
@@ -89,9 +89,9 @@ dans un set emmène son set (et tout son contenu) — sa vignette se glisse auss
     ]},
     # ------------------------------------------------------------------ 3
     {"title": "Ajouter un set", "intro": "", "blocks": [
-        ("ajout-recherche", "+ Nouveau : chercher", """
+        ("ajout-recherche", "+ : chercher", """
 <h3>1. Chercher le set</h3>
-<ol><li>Touchez <b>+ Nouveau</b>.</li>
+<ol><li>Touchez <b>+</b>.</li>
 <li>Tapez le <b>numéro</b> (ex. 77256) ou le <b>nom</b> (en français ou en anglais), puis <b>Rechercher</b>.</li>
 <li>Ou bien : <b>📷 Appareil photo</b> — visez la boîte, le set monté, ou le <b>code-barres</b> de la boîte (lu tout seul) ; touchez l'image pour prendre la photo.
 <b>📁 Importer une image</b> ou <b>📋 Coller</b> : une photo déjà prise ou copiée.</li>
@@ -121,7 +121,7 @@ tant que le set est vendu ou à venir ; rien pour un set retiré, une figurine o
     # ------------------------------------------------------------------ 4
     {"title": "Ajouter une figurine", "intro": "", "blocks": [
         ("ajout-figurine", "Chercher une figurine", """
-<ol><li><b>+ Nouveau</b>, puis tapez son <b>nom</b> (« Dark Vador ») ou sa <b>référence</b> (sw0001). La photo marche aussi.</li>
+<ol><li><b>+</b>, puis tapez son <b>nom</b> (« Dark Vador ») ou sa <b>référence</b> (sw0001). La photo marche aussi.</li>
 <li>Onglet <b>Figurines</b> : chaque résultat indique ses sets et sa cote d'occasion.</li>
 <li>Touchez la bonne : sa fiche s'ouvre. Choisissez la <b>liste</b>, la <b>quantité</b>, puis <b>Ajouter à la liste</b>.</li></ol>
 <p class="tip">Figurine à collectionner (sachet ou boîte) : tapez le <b>code à 7 chiffres</b> imprimé sous la boîte, ou visez-le avec l'appareil photo.</p>"""),
@@ -173,9 +173,7 @@ ce qu'il contient (ex. Biggs dans « Star Wars » : le X-Wing et ses figurines s
 <li>« <b>Aussi dans ce set — pas dans ma collection</b> » : les autres sets du catalogue qui contiennent cette figurine et que vous n'avez pas
 (ceux que vous avez sont dans « Dans mes sets »).</li>
 <li><b>Supprimer</b> (en bas) : sur la fiche d'une figurine d'un de vos sets, la retire de ce set ; sur celle d'une figurine que vous avez aussi dans des
-sets, ne supprime que les exemplaires sans set (la confirmation le précise).</li>
-<li>Une figurine sans aucune image disponible (ni au catalogue des cotes, ni chez BrickLink) et sans photo reçoit d'office la tâche
-<b>« Photo à faire »</b> ; elle part d'elle-même dès qu'une image existe.</li></ul>"""),
+sets, ne supprime que les exemplaires sans set (la confirmation le précise).</li></ul>"""),
         ("figurine-exemplaires", "Une figurine, plusieurs exemplaires", """
 <h3>Une même figurine, seule et dans vos sets</h3>
 <p>Une même figurine peut être à la fois <b>seule</b> et <b>dans un ou plusieurs de vos sets</b> (ex. celle fournie avec un set, et la même achetée à part).
@@ -324,7 +322,7 @@ une ligne plate veut dire que le prix n'a pas bougé depuis le premier relevé.<
     {"title": "Les MOC et sets partiels", "intro": "<p>Un <b>MOC</b> est une création personnelle ; un <b>set partiel</b>, un set incomplet. Les deux sont estimés par leurs pièces.</p>", "blocks": [
         ("ajout-moc", "Créer un MOC", """
 <h3>Créer un MOC</h3>
-<ol><li><b>+ Nouveau → 🛠️ Ajouter un MOC</b> (ou ✍️ Ajouter sans rechercher).</li>
+<ol><li><b>+ → 🛠️ Ajouter un MOC</b> (ou ✍️ Ajouter sans rechercher).</li>
 <li>Choisissez le type : <b>MOC</b>, <b>set partiel</b> (indiquez le set d'origine) ou <b>figurine MOC</b>.</li>
 <li>Donnez un <b>nom</b> et une <b>photo</b> (📷, 📁 ou 📋 Coller), recadrée au format des vignettes.</li>
 <li>Ses <b>pièces</b> : <b>📄 Import XML</b> (liste exportée de Rebrickable ou BrickLink), <b>🔎 Rechercher des pièces</b>, ou <b>+ Ajouter une pièce</b> une à une (photo possible).</li>
@@ -487,8 +485,7 @@ fiche l'indique (« prix gardé : seulement 1 vente »). Le minimum se règle da
 numéroté, la liste en bas l'explique (▾ la replie ; touchez une explication pour voir son bouton). Il a l'allure des boutons ↑ et ↻ ;
 <b>Réglages › 🎨 Apparence</b> l'affiche ou le masque (affiché par défaut) ; ce <b>guide</b> est dans <b>Réglages › 📚 Aide et documentation</b>, qui s'ouvre dans le navigateur.</li>
 <li><b>Une tâche d'une figurine</b> (même rangée dans un set) reste sur la fiche de la figurine : elle n'apparaît pas sur le set.</li>
-<li>Certaines tâches viennent de l'application : « couleur à valider » (pièce ajoutée sans couleur) ; <b>« Photo à faire »</b> (figurine sans aucune image
-disponible ni photo — vérifiée une fois par jour, elle disparaît dès qu'une image existe).</li>
+<li>Certaines tâches viennent de l'application : « couleur à valider » (pièce ajoutée sans couleur).</li>
 <li><b>⚙️ Gérer les catégories</b> (en bas de « À faire ») : <b>✏️ Renommer</b> ou <b>🗑 Supprimer</b> une catégorie, même Photo, Pièces ou
 Accessoires. Ses tâches suivent ; supprimée, elles vont dans <b>« Autres »</b>, qui ne peut être ni supprimée ni renommée. Le nombre de
 tâches de chaque catégorie est indiqué.</li>

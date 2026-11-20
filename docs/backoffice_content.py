@@ -281,8 +281,7 @@ Deux cases règlent cela :</p>
 <ul><li><b>Ne pas regrouper…</b> : chaque exemplaire retrouve sa carte (celle du set, celle achetée à part). L'aperçu le montre tout de suite ; les pages
 publiques suivent après publication.</li>
 <li><b>Ne pas demander « est-ce celle de ce set ? »</b> : le set ajouté garde sa propre figurine, la vôtre reste seule.</li></ul>
-<p>La tâche automatique « Photo à faire » se règle dans <a href="#parametres">Paramètres du serveur</a> ; la décote « modifié », dans les Réglages de
-l'application (Estimations).</p>"""),
+<p>La décote « modifié » se règle dans les Réglages de l'application (Estimations).</p>"""),
     ]},
     # ------------------------------------------------------------------ 11
     {"id": "images", "title": "Images", "intro": "", "blocks": [
@@ -409,9 +408,7 @@ Une copie de l'ancien fichier est gardée à chaque écriture. Les fichiers de m
         ("bo-parametres", "Durées, quotas, tailles ; port, proxy, démonstration", """
 <h3 id="parametres">Paramètres du serveur</h3>
 <p>[[go:parametres]] Les durées de garde des caches, les quotas d'appels, les tailles d'images, la durée des sessions… appliqués <b>à chaud</b>.
-Les réglages de démarrage (port, proxy, démonstration publique) demandent un redémarrage, proposé sur place.</p>
-<p><b>Tâche « Photo à faire »</b> : l'application la pose d'office sur une figurine sans aucune image disponible ni photo, et la retire dès qu'une image
-existe. Ce paramètre règle le rythme de la vérification (toutes les 24 h d'origine) ; <b>0 = jamais</b> (les tâches déjà posées restent : retirez-les à la main).</p>"""),
+Les réglages de démarrage (port, proxy, démonstration publique) demandent un redémarrage, proposé sur place.</p>"""),
         ("bo-code", "Le code de l'application, avec trois filets de sécurité", """
 <h3 id="code">Code de l'application</h3>
 <p>[[go:code]] En dernier recours, les fichiers du programme se modifient depuis le navigateur :</p>

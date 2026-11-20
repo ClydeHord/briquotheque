@@ -1,6 +1,6 @@
 # Briquothèque — Notice du back office (condensé pour IA)
 
-Généré le 19/11/2026 22:21.
+Généré le 20/11/2026 19:36.
 
 Consigne pour l'IA : ce texte est la notice complète du back office de Briquothèque (les coulisses : apparence, textes, fiches, étiquettes, pages, sauvegardes… sans code), une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur cette notice : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si la notice ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -460,8 +460,7 @@ publiques suivent après publication.
 
 - **Ne pas demander « est-ce celle de ce set ? »** : le set ajouté garde sa propre figurine, la vôtre reste seule.
 
-La tâche automatique « Photo à faire » se règle dans Paramètres du serveur ; la décote « modifié », dans les Réglages de
-l'application (Estimations).
+La décote « modifié » se règle dans les Réglages de l'application (Estimations).
 
 Figurines identiques : regrouper ou non, proposer ou non
 
@@ -669,9 +668,6 @@ N'importe quelle donnée enregistrée, ligne par ligne
 
 Ouvrir : Paramètres du serveur ↗ Les durées de garde des caches, les quotas d'appels, les tailles d'images, la durée des sessions… appliqués **à chaud**.
 Les réglages de démarrage (port, proxy, démonstration publique) demandent un redémarrage, proposé sur place.
-
-**Tâche « Photo à faire »** : l'application la pose d'office sur une figurine sans aucune image disponible ni photo, et la retire dès qu'une image
-existe. Ce paramètre règle le rythme de la vérification (toutes les 24 h d'origine) ; **0 = jamais** (les tâches déjà posées restent : retirez-les à la main).
 
 Durées, quotas, tailles ; port, proxy, démonstration
 

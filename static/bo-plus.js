@@ -458,6 +458,30 @@ function viewLinks() {   // les vues dans le menu de gauche
     a.classList.toggle("on", view === v.id); }
 }
 
+/* ------------------------------------------------------------------ 📝 règles « si… alors » → tâches à faire (vraies tâches, marquées par leur règle) */
+let rtSent = "", rtTimer = 0;
+function ruleTodos() {
+  if (!app() || B._.admin() || B._.PUBLIC || W.BQ_DEMO || !Array.isArray(state.items) || !state.items.length) return;   /* (jamais dans l'aperçu du back office : son brouillon) */
+  const want = {}, rules = (cfg().auto || []).filter(r => r && !r.off && (r.acts || []).some(a => a.k === "todo"));
+  for (const it of state.items) {
+    if (it.kind === "part") continue;
+    const t = itemType(it), out = [];
+    for (const r of rules) {
+      if ((r.types || []).length && !r.types.includes(t)) continue;
+      let ok = false; try { ok = test(r.cond, it); } catch {}
+      if (ok) for (const a of r.acts) if (a.k === "todo") out.push({ rule: r.id, cat: a.cat || "Autres", note: (a.text != null ? fill(a.text, it) : "") || r.label || "À faire" });
+    }
+    if (out.length) want[it.id] = out;
+  }
+  const have = {}; for (const it of state.items) { const ts = (it.todos || []).filter(t => t && t.rule).map(t => ({ rule: t.rule, cat: t.cat, note: t.note })); if (ts.length) have[it.id] = ts; }
+  const sig = JSON.stringify(want);
+  if (sig === JSON.stringify(have) || sig === rtSent) return;   /* (déjà à jour, ou déjà envoyé) */
+  rtSent = sig;
+  fetch("/api/rule-todos", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: want }) })
+    .then(r => r.json()).then(r => { if (r && r.changed && typeof load === "function") load(); }).catch(() => { rtSent = ""; });
+}
+HOOKS.refresh.push(() => { clearTimeout(rtTimer); rtTimer = setTimeout(() => { try { ruleTodos(); } catch (e) { console.warn("BO+ tâches", e); } }, 2500); });
+
 /* ------------------------------------------------------------------ branchement sur bo.js */
 HOOKS.apply.push(() => { stamp++; asts.clear(); tileSig = ""; shownSig = ""; });
 HOOKS.refresh.push(() => {

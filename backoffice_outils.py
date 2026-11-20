@@ -57,7 +57,6 @@ PARAMS = [
     ("auth.SHORT_SESSION_HOURS", "Connexion simple : durée", "", "heures", 1, 1, 24 * 30),
     ("auth.MAX_FAILS", "Mots de passe faux avant blocage de l'adresse", "", "essais", 1, 3, 1000),
     ("auth.BAN_SECONDS", "Durée d'un blocage", "", "heures", 3600, 0.1, 24 * 365),
-    ("server.PHOTO_TODO_GAP", "Tâche « Photo à faire » : vérifiée toutes les…", "Posée d'office sur une figurine sans aucune image disponible ni photo. 0 = jamais (les tâches déjà posées restent : retirez-les à la main).", "heures", 3600, 0, 24 * 30),
     ("sources.RB_GAP", "Rebrickable : pause entre deux requêtes", "Leur limite est d'une requête par seconde.", "secondes", 1, 1, 60),
 ]
 ENV = [   # réglages lus au démarrage (data/backoffice_env.json, appliqués par la garde de démarrage de server.py)

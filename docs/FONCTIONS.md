@@ -167,8 +167,6 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
   enregistrée, elle est annulée), ➡️ ranger dans un set ou déplacer vers un autre set, ↩ sortir du set.
 - « **Aussi dans ce set — pas dans ma collection** » : les autres sets du catalogue qui contiennent la figurine.
 - **Figurines du BrickLink Designer Program** : image et prix pris chez BrickLink sous sa référence (« bdp… »).
-- **« Photo à faire »** : tâche posée d'office quand aucune image n'existe pour une figurine (ni au catalogue, ni chez BrickLink) et que vous
-  n'avez pas mis de photo ; elle part d'elle-même ensuite.
 
 ---
 
@@ -302,8 +300,7 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
 
 - Une tâche se rattache à une **fiche** (la figurine concernée, même dans un set) ou reste **libre** ; la carte de la fiche porte ⚠️.
 - **Catégories** : créer, renommer, supprimer (« Autres » reste) ; la page **📝 À faire** les regroupe.
-- Certaines tâches viennent de l'application : « couleur à valider » (pièce ajoutée sans couleur), « Photo à faire » (figurine sans aucune
-  image disponible ni photo ; vérifiée une fois par jour, réglable dans le back office).
+- Certaines tâches viennent de l'application : « couleur à valider » (pièce ajoutée sans couleur).
 
 ---
 
@@ -382,7 +379,7 @@ Adresse `/backoffice` (Réglages → 🛠 Back office). Notice complète : `/bac
   tuiles et totaux, vues enregistrées, tris et filtres.
 - **Données** : fiche brute, corrections du catalogue (nom, thème, année, pièces, image, prix), tableur CSV (export, import des champs).
 - **Serveur** : sauvegardes (créer, télécharger, déposer, restaurer, export `.zip`), état et journal, redémarrage, mots de passe et sécurité,
-  fichiers de données, paramètres (durées, quotas, tailles, tâche « Photo à faire » ; port, proxy, démonstration), code de l'application (syntaxe vérifiée, versions gardées,
+  fichiers de données, paramètres (durées, quotas, tailles ; port, proxy, démonstration), code de l'application (syntaxe vérifiée, versions gardées,
   retour arrière automatique au démarrage, page de secours `/backoffice/secours`).
 - **Sécurité** : outils sensibles limités au réseau local (sauf réglage contraire), réglages toujours vérifiés par le serveur (types, adresses, tailles),
   aucune donnée privée servie aux visiteurs, `?bo=off` pour afficher le site sans personnalisation. Absent de la démonstration.

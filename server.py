@@ -183,6 +183,24 @@ def _save(path, data):
                 print(f"Liens entre fiches : {_nl} correction(s) à l'enregistrement (fiche remise seule, ou marque « d'origine » retirée)", flush=True)
         except Exception as e:
             print("Vérification des liens impossible :", e, flush=True)
+        try:
+            _np = fig_photos_on_sheets(data)
+            if _np:
+                print(f"Figurines : leurs données rangées sur leur propre fiche ({_np} mise(s) à jour)", flush=True)
+        except Exception as e:
+            print("Images des figurines : rangement impossible :", e, flush=True)
+        try:
+            _pm = parts_merge_same(data)
+            if _pm:
+                print(f"Pièces en double regroupées : {_pm} ligne(s) fondue(s) dans une autre", flush=True)
+        except Exception as e:
+            print("Regroupement des pièces impossible :", e, flush=True)
+        try:
+            _nm = figs_merge_identical(data)
+            if _nm:
+                print(f"Fiches identiques regroupées : {_nm} fiche(s) fondue(s) dans une autre (nombre d'exemplaires additionné)", flush=True)
+        except Exception as e:
+            print("Regroupement des fiches identiques impossible :", e, flush=True)
     compact = os.path.basename(path).startswith("cache_")   # caches : format compact (plus petit, plus rapide) ; collection : lisible
     track = os.path.basename(path) in ("collection.json", "notes.json")   # photos qui ne servent plus : supprimées tout de suite
     before = set()
@@ -206,6 +224,163 @@ def _save(path, data):
             os.replace(ORPHANS_FILE + ".tmp", ORPHANS_FILE)
         except Exception as e:
             print("Ménage des photos impossible :", e, flush=True)
+
+
+FIG_OWN_MAP = {"photo_url": "photo_url", "alt_photos": "alt_photos", "alt_names": "alt_names", "alt_hidden": "alt_hidden", "main_name": "main_name",
+               "name": "display_name", "rb_fig": "rb_fig", "fig_swaps": "fig_swaps", "swap_price": "swap_price", "accessories": "accessories"}   # set (fig_mods) → fiche
+FIG_OWN_LOT = ("fig_swaps", "swap_price", "accessories")   # valables pour le LOT de la figurine dans le set : déplacés si elle y a UNE seule fiche
+FIG_IMG_KEYS = ("photo_url", "alt_photos", "alt_names", "alt_hidden", "main_name")   # (les images : toujours sur la fiche, p_photos_fiches.py)
+
+
+def fig_name_spread(db, number, old, new, skip=None):
+    """Nom donné à une figurine : ses autres fiches (même numéro) sans nom à elles, ou qui avaient l'ancien nom, le prennent aussi
+    (un nom différent choisi exprès n'est jamais écrasé). Rend le nombre de fiches renommées."""
+    old, new, n = old or "", new or "", 0
+    if old == new or not number:
+        return 0
+    for x in db.get("items") or []:
+        if x is skip or not isinstance(x, dict) or x.get("kind") != "fig" or x.get("number") != number or x.get("indiv_copy"):
+            continue
+        if (x.get("display_name") or "") in ("", old) and (x.get("display_name") or "") != new:
+            if new:
+                x["display_name"] = new
+            else:
+                x.pop("display_name", None)
+            n += 1
+    return n
+
+
+def fig_photos_on_sheets(db):
+    """Tout ce qui appartient à une figurine d'origine est rangé dans SA fiche (règle du 20/11) — images, nom, pièces échangées, chiffrage,
+    accessoires, version Rebrickable ; le set n'en garde qu'une copie (fig_mods[n°], marquée « _own »). Modifié par le set depuis la dernière
+    copie → reporté sur la fiche ; sinon la fiche fait foi et le set est recopié. Rend le nombre de changements."""
+    import copy as _cp
+    items = db.get("items") or []
+    H = {i.get("id"): i for i in items if isinstance(i, dict)}
+    kids = {}
+    for i in items:
+        if isinstance(i, dict) and i.get("set_orig") and i.get("attached_to") in H:
+            kids.setdefault((i["attached_to"], i.get("number")), []).append(i)
+    n = 0
+    for (hid, num), ks in kids.items():
+        h = H[hid]
+        keys = [k for k in FIG_OWN_MAP if len(ks) == 1 or k not in FIG_OWN_LOT]   # (lot : seulement avec une seule fiche)
+        mods = h.get("fig_mods") if isinstance(h.get("fig_mods"), dict) else {}
+        m = mods.get(num) if isinstance(mods.get(num), dict) else {}
+        cur = {k: _cp.deepcopy(m[k]) for k in keys if m.get(k)}
+        mark = m.get("_own")
+        if mark is None:   # première fois : ce que le set gardait va sur la fiche là où elle n'a rien (jamais écrasé)
+            for c in ks:
+                for k, v in cur.items():
+                    if not c.get(FIG_OWN_MAP[k]):
+                        c[FIG_OWN_MAP[k]] = _cp.deepcopy(v); n += 1
+        elif cur != {k: v for k, v in mark.items() if k in keys}:   # modifié « par le set » depuis la dernière copie : reporté sur la fiche
+            for c in ks:
+                for k in keys:
+                    f = FIG_OWN_MAP[k]
+                    if k in cur:
+                        if c.get(f) != cur[k]:
+                            if k == "name":   # (renommée par le set : ses autres fiches aussi)
+                                fig_name_spread(db, num, c.get(f), cur[k], skip=c)
+                            c[f] = _cp.deepcopy(cur[k]); n += 1
+                    elif k in mark and c.get(f):
+                        c.pop(f, None); n += 1
+        src = next((c for c in ks if any(c.get(FIG_OWN_MAP[k]) for k in keys)), ks[0])   # la fiche fait foi : sa copie dans le set
+        want = {k: _cp.deepcopy(src[FIG_OWN_MAP[k]]) for k in keys if src.get(FIG_OWN_MAP[k])}
+        if not want and num not in mods:
+            continue
+        nm = {k: v for k, v in m.items() if k not in keys and k not in ("_own", "_img")}
+        nm.update(_cp.deepcopy(want)); nm["_own"] = _cp.deepcopy(want)
+        if nm != m:
+            mods[num] = nm; h["fig_mods"] = mods; n += 1
+    for h in items:   # figurine partie du set : la copie gardée par le set n'a plus lieu d'être (la fiche a tout)
+        mods = h.get("fig_mods") if isinstance(h, dict) and isinstance(h.get("fig_mods"), dict) else None
+        if not mods:
+            continue
+        for num in list(mods):
+            m = mods[num]
+            if not isinstance(m, dict) or (h.get("id"), num) in kids:
+                continue
+            mk = m.get("_own", m.get("_img"))
+            if mk is not None and {k: m[k] for k in mk if k in m} == mk:
+                rest = {k: v for k, v in m.items() if k not in mk and k not in ("_own", "_img")}
+                if rest:
+                    mods[num] = rest
+                else:
+                    del mods[num]
+                n += 1
+    return n
+
+
+def parts_merge_same(db):
+    """Pièces à commander : une seule ligne par (liste, référence, couleur, état reçue ou non) — quantités additionnées, liens et notes gardés.
+    La ligne gardée est la plus ancienne. Rend le nombre de lignes fondues."""
+    groups = {}
+    for it in db.get("items") or []:
+        if isinstance(it, dict) and it.get("kind") == "part" and it.get("part_num"):
+            groups.setdefault((it.get("list_id"), str(it.get("part_num")), str(it.get("color_id")), bool(it.get("got"))), []).append(it)
+    gone = set()
+    for same in groups.values():
+        if len(same) < 2:
+            continue
+        same.sort(key=lambda i: (i.get("added_at") or 0, i["id"]))
+        keep = same[0]
+        for o in same[1:]:
+            try:
+                keep["quantity"] = int(keep.get("quantity", 1) or 1) + int(o.get("quantity", 1) or 1)
+            except (TypeError, ValueError):
+                continue
+            links = list(keep.get("inv_links") or [])
+            for ln in o.get("inv_links") or []:
+                if ln not in links:
+                    links.append(ln)
+            if links:
+                keep["inv_links"] = links
+            if (o.get("notes") or "").strip() and (o.get("notes") or "").strip() not in (keep.get("notes") or ""):
+                keep["notes"] = ((keep.get("notes") or "").strip() + "\n" + o["notes"].strip()).strip()
+            for k in ("part_name", "bricklink", "color_name", "color_rgb", "element_id", "image"):
+                if not keep.get(k) and o.get(k):
+                    keep[k] = o[k]
+            gone.add(o["id"])
+        keep["updated_at"] = int(time.time())
+    if gone:
+        db["items"] = [i for i in db["items"] if i.get("id") not in gone]
+    return len(gone)
+
+
+FIG_SAME_SKIP = ("id", "added_at", "updated_at", "quantity")   # ce qui peut différer entre deux fiches « identiques »
+
+
+def figs_merge_identical(db):
+    """Fiches de figurine strictement identiques au même endroit (même set/MOC, ou seules dans la même liste) : une seule, avec le nombre
+    d'exemplaires additionné ; la plus ancienne est gardée. Jamais : figurine d'origine, exemplaire mis à part, copie pas encore modifiée,
+    copie en attente ; ni si le back office le demande (noMerge). Rend le nombre de fiches fondues."""
+    try:
+        if bo_behav("noMerge"):
+            return 0
+    except Exception:
+        pass
+    groups = {}
+    for it in db.get("items") or []:
+        if not isinstance(it, dict) or it.get("kind") != "fig" or it.get("set_orig") or it.get("indiv") or it.get("indiv_copy") or it.get("dup_pending"):
+            continue
+        k = json.dumps({x: v for x, v in it.items() if x not in FIG_SAME_SKIP}, sort_keys=True, ensure_ascii=False)
+        groups.setdefault(k, []).append(it)
+    gone = set()
+    for same in groups.values():
+        if len(same) < 2:
+            continue
+        same.sort(key=lambda i: (i.get("added_at") or 0, i["id"]))
+        keep = same[0]
+        try:
+            keep["quantity"] = sum(max(1, int(i.get("quantity", 1) or 1)) for i in same)
+        except (TypeError, ValueError):
+            continue
+        keep["updated_at"] = int(time.time())
+        gone |= {i["id"] for i in same[1:]}
+    if gone:
+        db["items"] = [i for i in db["items"] if i.get("id") not in gone]
+    return len(gone)
 
 
 def _upload_refs():
@@ -250,6 +425,7 @@ def uploads_gc(min_age=86400):
     up = os.path.join(DATA, "uploads")
     if not os.path.isdir(up):
         return 0, 0
+    return 0, 0   # (20/11 : les photos envoyées restent TOUJOURS sur le serveur — plus aucune suppression automatique)
     used, now, olds, size = _upload_refs(), time.time(), set(), 0
     orph = _load(ORPHANS_FILE, {})
     for name in os.listdir(up):
@@ -2106,7 +2282,8 @@ def clean_todos(b):
         if isinstance(t, dict):
             fig = str(t.get("fig") or "")
             out.append({"cat": " ".join(str(t.get("cat") or "").split())[:30] or "Autres", "note": str(t.get("note") or "").strip()[:500],
-                        **({"fig": fig, "fig_name": " ".join(str(t.get("fig_name") or "").split())[:80]} if re.fullmatch(r"[\w.-]{1,40}", fig) else {})})   # figurine du set
+                        **({"fig": fig, "fig_name": " ".join(str(t.get("fig_name") or "").split())[:80]} if re.fullmatch(r"[\w.-]{1,40}", fig) else {}),   # figurine du set
+                        **({"rule": str(t["rule"])} if re.fullmatch(r"[\w-]{1,48}", str(t.get("rule") or "")) else {})})   # tâche posée par une règle du back office
     return out
 
 
@@ -3760,6 +3937,10 @@ def offline_warm():
                 rb = lst[0]["fig_num"] if lst and lst[0].get("sure") else None
             if rb and "mf2:" + rb not in _parts_cache():
                 rb_fig_parts(rb); done += 1
+            if not rb:   # plusieurs versions possibles (choix demandé une fois) : les pièces des candidates de ses sets, prêtes d'avance — 20/11
+                for m in [x for x in (_parts_cache().get("rbm:" + n) or {}).get("l") or [] if x.get("from") and x.get("from") != "nom"][:8]:
+                    if m.get("fig_num") and "mf2:" + m["fig_num"] not in _parts_cache():
+                        rb_fig_parts(m["fig_num"]); done += 1
         except (sources.RebrickableBusy, PermissionError):
             return
         except Exception:
@@ -4032,7 +4213,6 @@ def mod_copies(swaps, q):
 
 
 PHOTO_TODO = "Photo à faire : aucune image disponible pour cette figurine"
-PHOTO_TODO_GAP = 86400   # « Photo à faire » : une vérification par jour (0 : jamais — réglable dans le back office, Paramètres du serveur)
 
 
 def bo_behav(key):
@@ -4076,63 +4256,6 @@ def lot_swaps_migrate():
         db["lot_swaps"] = True
         _save(DB_FILE, db)
         return n
-
-
-def fig_photo_keeper():
-    """Arrière-plan (au démarrage puis chaque jour) : une figurine de la collection sans aucune image disponible (catalogue qui refuse
-    l'application, BrickLink qui ne la connaît pas) et sans photo à moi reçoit la tâche « Photo à faire » ; elle est retirée dès qu'il y a
-    une photo (la mienne, ou une image enfin trouvée). Seulement après un refus net des sources (403 / 404) : pas sur une coupure réseau."""
-    time.sleep(240)
-    while True:
-        if PHOTO_TODO_GAP <= 0:   # coupée dans le back office : on attend qu'elle soit remise
-            time.sleep(600)
-            continue
-        try:
-            db, cache = load_db(), _load(CACHE_FILE, {})
-            kinds, by = list_kinds(db), {i["id"]: i for i in db["items"]}
-            add, rem = set(), set()
-            for it in db["items"]:
-                if it.get("kind") != "fig" or kinds.get(it.get("list_id")) != "collection":
-                    continue
-                host = by.get(it.get("attached_to")) if it.get("set_orig") else None
-                mine = it.get("photo_url") or (((host or {}).get("fig_mods") or {}).get(it["number"]) or {}).get("photo_url")
-                has = any(t.get("note") == PHOTO_TODO for t in it.get("todos") or [])
-                url = (cache.get("fig:" + it["number"]) or {}).get("image") or ""
-                if mine or (url and has_local(url)):
-                    if has:
-                        rem.add(it["id"])
-                    continue
-                if url and IMG_OK.match(url):
-                    try:
-                        cache_any(url)   # trouvée (gardée en copie locale) : la tâche, si elle y était, n'a plus lieu d'être
-                        if has:
-                            rem.add(it["id"])
-                        continue
-                    except Exception as e:
-                        if not (isinstance(e, LookupError) or getattr(e, "code", None) in (403, 404, 410)):
-                            continue   # réseau : on réessaiera
-                    time.sleep(2)
-                if not has:
-                    add.add(it["id"])
-            if add or rem:
-                with lock:
-                    db = load_db()
-                    for it in db["items"]:
-                        ts = clean_todos(it)
-                        if it["id"] in add and not any(t.get("note") == PHOTO_TODO for t in ts):
-                            ts = ts + [{"cat": "Photo", "note": PHOTO_TODO}]
-                        elif it["id"] in rem:
-                            ts = [t for t in ts if t.get("note") != PHOTO_TODO]
-                        else:
-                            continue
-                        it["todos"], it["todo"], it["todo_note"] = ts[:12], bool(ts), ts[0]["note"] if ts else ""
-                    _save(DB_FILE, db)
-                print(f"Photos à faire : {len(add)} ajoutée(s), {len(rem)} retirée(s)", flush=True)
-        except Exception as e:
-            print("Photos à faire :", e, flush=True)
-        t0 = time.time()
-        while PHOTO_TODO_GAP > 0 and time.time() - t0 < PHOTO_TODO_GAP:   # (par tranches : un nouveau réglage est pris en compte sans redémarrer)
-            time.sleep(300)
 
 
 def fig_mods_delta(item, have):
@@ -4971,10 +5094,14 @@ def orig_fig_leaves(db, fig, to_set=None):
 
 
 def items_removed(db, ids):
-    """Fiches retirées : un set emporte les fiches de ses figurines d'origine ; une figurine d'origine retirée seule est déduite
-    de son set (« je ne l'ai pas »)."""
+    """Fiches retirées. Un set retiré ne touche JAMAIS à ses figurines (20/11) : celles d'origine deviennent des fiches indépendantes,
+    avec ce que le set gardait pour elles (photo, nom, pièces échangées…) ; celles ajoutées restent, seules. Une figurine d'origine
+    retirée seule est déduite de son set (« je ne l'ai pas »)."""
     ids = set(ids)
-    ids |= {i["id"] for i in db["items"] if i.get("set_orig") and i.get("attached_to") in ids}
+    for f in [i for i in db["items"] if i.get("set_orig") and i.get("attached_to") in ids and i["id"] not in ids]:
+        orig_fig_leaves(db, f)   # (ses personnalisations copiées sur elle ; plus « d'origine »)
+        f.pop("attached_to", None)
+        f["updated_at"] = int(time.time())
     for f in [i for i in db["items"] if i["id"] in ids and i.get("set_orig") and i.get("attached_to") not in ids]:
         host = next((i for i in db["items"] if i["id"] == f.get("attached_to")), None)
         if host:
@@ -6217,7 +6344,7 @@ def links_fix(db):
     Une fiche a un seul parent (attached_to) : 1 exemplaire = 1 fiche parent ; X exemplaires se partagent en lots (voir /attach).
     Rend le nombre de corrections."""
     items = db.get("items") or []
-    by, kinds, n = {i.get("id"): i for i in items}, list_kinds(db), 0
+    by, kinds, n, cat = {i.get("id"): i for i in items}, list_kinds(db), 0, None
     for i in items:
         a = i.get("attached_to")
         if a:
@@ -6234,7 +6361,20 @@ def links_fix(db):
             if h is None or h.get("kind", "set") != "set" or not h.get("fig_items"):
                 i.pop("set_orig", None)
                 n += 1
+            else:   # (20/11) sa référence officielle doit être une figurine de ce set au catalogue ; sinon : figurine ajoutée (comptée pour son prix)
+                if cat is None:
+                    cat = _load(CACHE_FILE, {})
+                mf = (cat.get(h.get("number") or "") or {}).get("minifigs")
+                if mf and not any(isinstance(f, dict) and figkey_srv(f.get("id")) == figkey_srv(i.get("number")) for f in mf):
+                    i.pop("set_orig", None)
+                    n += 1
     return n
+
+
+def figkey_srv(n):
+    """Référence officielle d'une figurine, comparable (casse et zéros de tête du numéro ignorés : sw0001 = sw001 = SW1)."""
+    m = re.fullmatch(r"([a-z]+)0*(\d+)([a-z]?)", str(n or "").strip().lower())
+    return (m.group(1) + m.group(2) + m.group(3)) if m else str(n or "").strip().lower()
 
 
 def dup_cancel_apply(db, new):
@@ -6362,7 +6502,7 @@ def share_fig_payload(it, db, fid):
     new = fi.get("value") if fi.get("value") is not None else next((x.get("value") for x in info.get("minifigs") or [] if x.get("id") == fid), None)
     unit = used if used is not None else new
     return {"kind": "fig", "number": fid, "name": (with_fr_fig({"name": f.get("name")}) or {}).get("name") or fid, "theme": info.get("theme"), "year": fi.get("years") or info.get("year"),
-            "quantity": f.get("qty", 1), "condition": it.get("condition"), "image": f.get("image"), "photo_url": "", "photo": "",
+            "quantity": f.get("qty", 1), "condition": it.get("condition"), "image": f.get("image"), "photo_url": mod.get("photo_url") or "", "photo": "",
             "value": round(unit * f.get("qty", 1), 2) if unit is not None else None, "fig_value": new, "fig_used": used,
             "modified": bool(mod.get("fig_swaps")), "swaps": _share_swaps(mod.get("fig_swaps")), "fig_parts": True, "set_parts": False,
             "minifigs": [], "accessories": [], "moc_lots": [], "portion": 100,
@@ -7121,7 +7261,7 @@ class Handler(BaseHTTPRequestHandler):
                 "custom_type": it.get("custom_type"), "added_at": it.get("added_at"),
                 "updated_at": max((host.get("fig_at") or {}).get(it["number"]) or 0, it.get("added_at") or 0) if inset and it.get("set_orig")
                               else max((it.get("own_at") or 0) if it.get("fig_touch") and it.get("fig_touch") == it.get("updated_at") else (it.get("updated_at") or 0), it.get("added_at") or 0), "photo": it.get("photo", ""),   # figurine d'origine : sa date à elle (comme la page privée)
-                "photo_url": (mods or {}).get("photo_url") or it.get("photo_url", ""), "modified": is_modified(view),   # pièces retirées ou remplacées (pas seulement ajoutées)
+                "photo_url": it.get("photo_url") or (mods or {}).get("photo_url") or "", "modified": is_modified(view),   # (ma photo d'abord, toujours)   # pièces retirées ou remplacées (pas seulement ajoutées)
                 "accessories": it.get("accessories") or [], "catalog_set": bool(it.get("catalog_set")), "tags": list(it.get("tags") or []), "tags_off": list(it.get("tags_off") or []),
                 "main_name": it.get("main_name") or "", "as_set": bool(it.get("as_set")), **(lambda lg: {"item_logo": lg} if lg else {})(it.get("item_logo") or ((host.get("item_logo") or "") if inset and not it.get("no_logo") else "")),   # (figurine d'un set : le logo du set, sauf retiré)
                 "st": {**guest_status(view, info, attached.get(it["id"], [])),   # étiquettes de la carte (Modifié, Amélioré…), comme la page privée ;
@@ -7645,7 +7785,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         raise
                     hint_img = (q.get("img") or [""])[0][:400]
                     f = {"type": "fig", "number": m.group(1), "name": (q.get("name") or [""])[0][:150] or rec.get("name") or m.group(1),
-                         "image": hint_img if IMG_OK.match(hint_img) else None, "bo_only": True, "fetched_at": 0}
+                         "image": hint_img if IMG_OK.match(hint_img) else None, "bo_only": True, "pending_prices": True, "fetched_at": 0}
                     return self.send_json({**f, **({"value": rec["new"]["unit"]} if (rec.get("new") or {}).get("unit") else {}), "used": rec.get("unit"),
                                            "used_stats": fig_used_stats(m.group(1)), "market": {"used": fig_used_stats(m.group(1)), "new": rec.get("new"), "src": rec.get("src") or "BrickOwl"}, "own_hist": []})
                 fid_ = m.group(1)
@@ -7839,7 +7979,16 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 show_hidden = (q.get("hidden") or [""])[0] == "1"
                 ex_th = {theme_norm(t) for t in ex_th}
                 noimg = lambda u: not u or "/assets/?" in u   # lego.com sans photo pour l'instant : celle de Rebrickable
-                src = [{**x, "theme": theme_norm(x.get("theme")), **({"image": (x.get("images") or [RB_IMG.format(x["number"])])[0]} if noimg(x.get("image")) else {})}
+                def nov_pick(x):   # la première image vraiment disponible (sur le serveur, ou pas encore refusée par sa source) — 20/11
+                    cands = [u for u in [x.get("image"), *(x.get("images") or [])] if u and not noimg(u)]
+                    for u in cands:
+                        if has_local(u):
+                            return u
+                    for u in cands:
+                        if time.time() - _img_miss.get(u, 0) >= 6 * 3600:
+                            return u
+                    return cands[0] if cands else RB_IMG.format(x["number"])
+                src = [{**x, "theme": theme_norm(x.get("theme")), "image": nov_pick(x)}
                        for x in d.get("items") or [] if x.get("pieces")]
                 all_themes = sorted({x["theme"] for x in src}, key=str.lower)
                 items = [x for x in src if x["number"] not in mine and x["theme"] not in ex_th and (show_hidden or x["number"] not in hidden)]
@@ -7854,7 +8003,12 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                                        "themes": all_themes, "excluded_themes": sorted(ex_th, key=str.lower),
                                        "hidden_count": len([n for n in hidden if n not in mine])})
             if p == "/api/img":
-                return self.proxy_image((q.get("u") or [""])[0], (q.get("w") or [""])[0])
+                _u = (q.get("u") or [""])[0]
+                if _u.startswith("https://cdn.rebrickable.com/media/parts/") and not has_local(_u):   # photo de pièce absente du serveur : sa photo de remplacement cherchée tout de suite
+                    _el_img["want"].add(_u); bg_once("elimg-now", el_img_job, every=600)
+                if be_fig_no(_u) and not has_local(_u):   # photo de figurine absente du serveur : sa photo Rebrickable cherchée tout de suite (10 min entre deux recherches)
+                    bg_once("figimg-now", fig_img_job, every=600)
+                return self.proxy_image(_u, (q.get("w") or [""])[0])
             if p == "/api/hd":   # zoom : la plus grande version connue (alt : grande photo Rebrickable d'une minifig dont la version est connue)
                 return self.send_hd((q.get("u") or [""])[0], (q.get("alt") or [""])[0])
             if p == "/api/shares":   # fiches partagées (réglages)
@@ -8123,7 +8277,10 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         if x.get("attached_to") == it["id"]:
                             x.pop("attached_to", None)
                     _save(DB_FILE, db)
-                fig_used_many([num])
+                try:
+                    fig_used_many([num])
+                except Exception:
+                    pass
                 return self.send_json({"ok": True, "id": m.group(1)})
             m = re.fullmatch(r"/api/items/(\w+)/to-set", p)
             if m:   # {"number": "75192"} : la fiche devient ce set du catalogue (erreur de type) ; liste, quantité, notes, tâches et photo gardées
@@ -8133,8 +8290,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 try:
                     get_set(num)
                 except Exception:
-                    if not placeholder_set(num, strict=True):   # catalogue des prix injoignable : fiche provisoire (Rebrickable), sinon inconnu
-                        return self.error(f"Set {num} introuvable")
+                    placeholder_set(num)   # catalogue des prix injoignable : fiche provisoire (Rebrickable si possible, sinon son numéro), prix plus tard
                 with lock:
                     db = load_db()
                     idx = next((k for k, i in enumerate(db["items"]) if i["id"] == m.group(1)), None)
@@ -8933,6 +9089,29 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         sh[tok] = {"item": b["item_id"], "at": int(time.time()), **({"fig": fig} if fig else {})}
                         _save(SHARES_FILE, sh)
                 return self.send_json({"ok": True, "token": tok, "url": f"/s/{tok}"})
+            if p == "/api/rule-todos":   # tâches posées par les règles « si… alors » du back office : l'état voulu COMPLET (les tâches à moi : jamais touchées)
+                want = self.json_body().get("items")
+                want = want if isinstance(want, dict) else {}
+                changed = 0
+                with lock:
+                    db = load_db()
+                    for it in db["items"]:
+                        w, seen = [], set()
+                        for t in (want.get(it["id"]) if isinstance(want.get(it["id"]), list) else [])[:12]:
+                            if not isinstance(t, dict) or not re.fullmatch(r"[\w-]{1,48}", str(t.get("rule") or "")):
+                                continue
+                            x = {"cat": " ".join(str(t.get("cat") or "").split())[:30] or "Autres", "note": str(t.get("note") or "").strip()[:500], "rule": str(t["rule"])}
+                            if (x["rule"], x["note"]) not in seen:
+                                seen.add((x["rule"], x["note"])); w.append(x)
+                        ts = clean_todos(it)
+                        if [t for t in ts if t.get("rule")] == w:
+                            continue
+                        ts = ([t for t in ts if not t.get("rule")] + w)[:12]
+                        it["todos"], it["todo"], it["todo_note"] = ts, bool(ts), ts[0]["note"] if ts else ""
+                        changed += 1
+                    if changed:
+                        _save(DB_FILE, db)
+                return self.send_json({"ok": True, "changed": changed})
             if p == "/api/free-todos":   # notes « À faire » libres : la liste entière est renvoyée à chaque changement
                 raw = self.json_body().get("todos")
                 out = []
@@ -9204,21 +9383,34 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         get_fig(number)
                     except Exception:   # catalogue des cotes injoignable (BrickEconomy refuse) : le catalogue officiel de BrickLink, sinon une fiche provisoire
                         bl = bl_fig_info(number) or {}
-                        if not (bl or b.get("no_price_ok") or b.get("name_hint")):
-                            raise
+                        if not bl:   # BrickLink muet aussi : le relevé BrickOwl (celui qui a servi à afficher la fiche) suffit — 20/11
+                            try:
+                                fig_used_fetch(number, max_age=6 * 3600)
+                            except Exception:
+                                pass
+                            bo_rec = _fu_cache().get(number) or {}
+                            if bo_rec.get("name") or bo_rec.get("unit") is not None:
+                                bl = {"name": bo_rec.get("name") or ""}
+                        # (aucun site ne répond : la figurine est ajoutée quand même, sans prix, sous son nom donné par l'appli ou son numéro)
                         placeholder_fig(number, str(b.get("name_hint") or bl.get("name") or "")[:150], str(b.get("image_hint") or bl.get("image") or ""))
-                    fig_used_many([number])   # prix d'occasion relevé tout de suite
+                    try:
+                        fig_used_many([number])   # prix d'occasion relevé tout de suite (site muet : relevé plus tard, l'ajout continue)
+                    except Exception:
+                        pass
+                    bg_once("figimg-add", fig_img_job, every=120)   # (sa photo sur le serveur, tout de suite si celle du catalogue ne vient pas)
                     if RB_FIG.fullmatch(str(number)):
                         b["rb_fig"] = number   # ses pièces : celles de cette minifig Rebrickable
                 else:
+                    number = b["number"] = norm_set(str(number)) or number   # (« 40003 » → « 40003-1 » : même fiche qu'en ligne, pas de doublon)
                     try:
                         get_set(number)  # met en cache les infos et prix
-                    except Exception:
-                        if not b.get("no_price_ok"):
-                            raise
-                        placeholder_set(number, str(b.get("name_hint") or "")[:150], image=str(b.get("image_hint") or ""), soon=str(b.get("release_hint") or "")[:80])   # ajouté sans cote (BrickEconomy injoignable)
+                    except Exception:   # aucun site de prix ne répond : ajouté quand même, sans cote (relue plus tard)
+                        placeholder_set(number, str(b.get("name_hint") or "")[:150], image=str(b.get("image_hint") or ""), soon=str(b.get("release_hint") or "")[:80])
                         b["_parts_estimate"] = True
-                    fig_used_fill()  # prix d'occasion de ses minifigs, en arrière-plan
+                    try:
+                        fig_used_fill()  # prix d'occasion de ses minifigs, en arrière-plan
+                    except Exception:
+                        pass
                 item = self.clean_item(b)
                 item["id"] = uuid.uuid4().hex[:12]
                 item["added_at"] = int(time.time())
@@ -9247,7 +9439,10 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     _set_scan_status(item["id"], "done")
                 elif item.get("kind") == "custom" and item.get("custom_type") == "fig" and item.get("image"):
                     moc_scan_start(item["id"])   # scan des pièces en tâche de fond
-                item_parts_refresh(item["id"])   # ses pièces : inventaire, noms et prix tout de suite
+                try:
+                    item_parts_refresh(item["id"])   # ses pièces : inventaire, noms et prix tout de suite (site muet : plus tard, la fiche est déjà enregistrée)
+                except Exception as e:
+                    print("Pièces de la nouvelle fiche : plus tard,", e, flush=True)
                 if not item.get("no_parts_est") and (b.get("_parts_estimate") or (_load(CACHE_FILE, {}).get(cache_key(item)) or {}).get("pending_prices")):   # sans cote : estimation par ses pièces (case cochée)
                     threading.Thread(target=parts_estimate_start, args=(item["id"],), daemon=True).start()
                 return self.send_json(enrich(item), 201)
@@ -9877,6 +10072,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                             for ln in new.get("inv_links") or []:
                                 inv_row_status(db, ln["inv"], ln["row"], "ok" if new.get("got") else "cmd")
                         db["items"][idx] = new
+                        if new.get("kind") == "fig" and (new.get("display_name") or "") != (it.get("display_name") or ""):   # renommée : ses autres fiches aussi
+                            fig_name_spread(db, new.get("number"), it.get("display_name"), new.get("display_name"), skip=new)
                         if new.get("list_id") != it.get("list_id"):   # autre liste : le set qui la contient / ce qui y est rangé suivent
                             move_linked(db, {new["id"]}, new["list_id"], touch_lead=False, prev={new["id"]: it.get("list_id")})   # (sa liste d'avant : ses figurines de cette liste suivent)
                         if new.get("fig_items") or (new.get("kind", "set") == "set" and new.get("list_id") != it.get("list_id")):   # set : ses figurines (fiches) suivent son nombre de figurines, sa liste, son état (set acquis depuis la liste de souhaits : créées tout de suite)
@@ -10117,7 +10314,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
 
 
 # ---------------------------------------------------------------- images : copie locale de toutes les images externes
-IMG_OK = re.compile(r"https://(www\.brickeconomy\.com|storage\.googleapis\.com/brickognize-static|cdn\.rebrickable\.com|www\.lego\.com/cdn/product-assets|www\.lego\.com/cdn/cs|img\.bricklink\.com/ItemImage)/")
+IMG_OK = re.compile(r"https://(www\.brickeconomy\.com|storage\.googleapis\.com/brickognize-static|cdn\.rebrickable\.com|www\.lego\.com/cdn/product-assets|www\.lego\.com/cdn/cs|img\.bricklink\.com/ItemImage|img\.brickowl\.com/files/image_cache)/")   # (BrickOwl : photos du catalogue, dernier recours des figurines — 20/11)
 
 
 # 🪄 détourage ISNet : Python à part (onnxruntime) et modèle, hors du dépôt (voir detourage.py) ; absents → détourage sur l'appareil
@@ -10129,7 +10326,15 @@ _cutout_lock = threading.Lock()
 
 def img_fallbacks(u):
     """Image d'un site qui refuse désormais les robots (BrickEconomy) : la même chose sur un site ouvert —
-    Rebrickable ou la banque d'images BrickLink pour un set, BrickLink pour une figurine."""
+    Rebrickable ou la banque d'images BrickLink pour un set, BrickLink pour une figurine. Photo « élément » de pièce absente chez
+    Rebrickable : l'image de la pièce dans sa couleur (trouvée par el_img_job)."""
+    m = re.fullmatch(r"https://cdn\.rebrickable\.com/media/parts/elements/(\d+)\.\w+", u or "")
+    if m:
+        alt = el_img_map().get(m.group(1)) or ""
+        return [alt] if alt else []
+    if (u or "").startswith("https://cdn.rebrickable.com/media/parts/"):   # autre photo de pièce absente : l'image de la pièce dans sa couleur
+        alt = el_img_map().get("u:" + u) or ""
+        return [alt] if alt else []
     m = re.search(r"brickeconomy\.com/resources/images/sets/(?:lego-)?([\w.-]+?)_(?:large|medium|small|thumb)(?:-\d+)?\.\w+", u or "")
     if m:   # (photo principale, ou photo de galerie « <n°>_large-4.jpg » : la photo principale du set ailleurs)
         return [f"https://cdn.rebrickable.com/media/sets/{m.group(1)}.jpg", f"https://img.bricklink.com/ItemImage/SN/0/{m.group(1)}.png"]
@@ -10138,11 +10343,155 @@ def img_fallbacks(u):
         n = m.group(1)
         bl = sources.bl_fig_no(n)
         if bl != n:   # préfixe propre à BrickLink (« adp107 » du catalogue des cotes = « bdp107 ») : son image là-bas
-            return [f"https://img.bricklink.com/ItemImage/MN/0/{bl}.png"]
+            return [f"https://img.bricklink.com/ItemImage/MN/0/{bl}.png"] + fig_rb_img(n)   # (et sa photo de secours : Rebrickable / BrickOwl)
         p = re.fullmatch(r"([a-z]+)(\d{1,3})([a-z]?)", n)
         pad = f"{p.group(1)}{int(p.group(2)):04d}{p.group(3)}" if p else n
         return [f"https://img.bricklink.com/ItemImage/MN/0/{x}.png" for x in dict.fromkeys((pad, n))] + fig_rb_img(n)
     return []
+
+
+# ---- pièces : photo « élément » absente chez Rebrickable → l'image de la pièce dans sa couleur (20/11)
+EL_IMG_FILE = os.path.join(ROOT, "data", "cache_el_img.json")   # {n° d'élément: image de remplacement, ou "" (rien trouvé)}
+_el_img = {"busy": False, "want": set(), "left": False}   # (left : arrêtée par une pause de Rebrickable — reprise dans 15 min)
+EL_RE = re.compile(r"https://cdn\.rebrickable\.com/media/parts/elements/(\d+)\.\w+")
+
+
+def part_shape_img(pn, cid):
+    """Image de la forme d'une pièce imprimée (« 92743pr0004 » → « 92743 ») dans sa couleur, sinon dans n'importe quelle couleur ; "" si rien."""
+    base = re.sub(r"(?:pr|pat|pb|ps|px|pat)\d+[a-z0-9]*$", "", str(pn or ""))
+    if not base or base == pn:
+        return ""
+    alt = ""
+    if cid is not None:
+        try:
+            alt = (sources.rb(f"lego/parts/{urllib.parse.quote(base)}/colors/{cid}/") or {}).get("part_img_url") or ""
+        except sources.RebrickableBusy:
+            raise
+        except Exception:
+            alt = ""
+    if not alt:
+        try:
+            alt = (sources.rb(f"lego/parts/{urllib.parse.quote(base)}/") or {}).get("part_img_url") or ""
+        except sources.RebrickableBusy:
+            raise
+        except Exception:
+            alt = ""
+    return alt
+
+
+def el_img_map():
+    return _load(EL_IMG_FILE, {})
+
+
+def el_img_job():
+    """Photos « élément » de pièces absentes chez Rebrickable : l'image de la même pièce dans sa couleur, enregistrée sur le serveur."""
+    if DEMO or COPIE or _el_img["busy"]:
+        return
+    _el_img["busy"] = True
+    try:
+        urls = set(_el_img["want"]); _el_img["want"].clear()
+        rows = {}   # photo indiquée → (pièce Rebrickable, couleur) : pour trouver l'image de la pièce dans sa couleur si la photo n'existe pas
+        for k, v in list(_parts_cache().items()):   # pièces des figurines (gardées : « mf2:<version> »)
+            if k.startswith("mf2:") and isinstance(v, dict):
+                for r in v.get("parts") or []:
+                    u0 = str((r or {}).get("image") or "") if isinstance(r, dict) else ""
+                    if EL_RE.fullmatch(u0):
+                        urls.add(u0)
+                    if u0.startswith("https://cdn.rebrickable.com/") and r.get("part_num"):
+                        rows.setdefault(u0, (r["part_num"], r.get("color_id")))
+        mp, got = dict(el_img_map()), 0
+        for u, (pn, cid) in sorted(rows.items()):   # (toute photo de pièce, pas seulement « élément » : rendu LDraw, photo…)
+            if EL_RE.fullmatch(u) or os.path.exists(img_path(u)):
+                continue
+            if "u:" + u in mp:   # (remplacement connu : sur le disque, sinon retéléchargé)
+                if mp["u:" + u] and not os.path.exists(img_path(mp["u:" + u])):
+                    try:
+                        cache_image(mp["u:" + u]); got += 1
+                    except Exception:
+                        pass
+                continue
+            try:
+                cache_image(u)
+                continue
+            except Exception as e:
+                if not (getattr(e, "code", None) in (404, 410, 403) or isinstance(e, LookupError)):
+                    continue
+            try:
+                alt = ""
+                if cid is not None:
+                    alt = (sources.rb(f"lego/parts/{urllib.parse.quote(str(pn))}/colors/{cid}/") or {}).get("part_img_url") or ""
+                alt = alt or (sources.rb(f"lego/parts/{urllib.parse.quote(str(pn))}/") or {}).get("part_img_url") or ""
+                alt = alt or part_shape_img(pn, cid)   # (dernier recours : la même forme sans impression)
+            except sources.RebrickableBusy:
+                _el_img["left"] = True
+                break
+            except Exception:
+                continue
+            mp["u:" + u] = alt if alt and IMG_OK.match(alt) and alt != u else ""
+            _save(EL_IMG_FILE, mp)
+            if mp["u:" + u]:
+                try:
+                    cache_image(mp["u:" + u]); got += 1
+                except Exception:
+                    pass
+        for u in sorted(urls):
+            el = EL_RE.fullmatch(u).group(1)
+            if os.path.exists(img_path(u)):
+                continue
+            if el in mp and not mp[el] and "x:" + el not in mp:   # (rien trouvé : une nouvelle tentative, avec la forme sans impression)
+                pass
+            elif el in mp:   # déjà cherchée : son remplacement doit être sur le disque (effacé par un ménage : retéléchargé)
+                if mp[el] and not os.path.exists(img_path(mp[el])):
+                    try:
+                        cache_image(mp[el]); got += 1
+                    except Exception:
+                        pass
+                continue
+            try:
+                cache_image(u)   # (la photo « élément » existe : gardée telle quelle)
+                continue
+            except Exception as e:
+                if not (getattr(e, "code", None) in (404, 410) or isinstance(e, LookupError)):
+                    continue   # (erreur passagère : au prochain passage)
+            try:
+                d = sources.rb(f"lego/elements/{el}/") or {}
+                pn, cid = (d.get("part") or {}).get("part_num"), (d.get("color") or {}).get("id")
+                alt = ""
+                if pn and cid is not None:
+                    alt = (sources.rb(f"lego/parts/{urllib.parse.quote(pn)}/colors/{cid}/") or {}).get("part_img_url") or ""
+                alt = alt or (d.get("part") or {}).get("part_img_url") or ""
+                if not alt and pn:
+                    alt = (sources.rb(f"lego/parts/{urllib.parse.quote(pn)}/") or {}).get("part_img_url") or ""
+                if not alt and pn:   # dernier recours : la même forme sans impression
+                    alt = part_shape_img(pn, cid)
+                mp["x:" + el] = 1
+            except sources.RebrickableBusy:
+                _el_img["left"] = True
+                break
+            except Exception:
+                continue
+            mp[el] = alt if alt and IMG_OK.match(alt) else ""
+            _save(EL_IMG_FILE, mp)
+            if mp[el]:
+                try:
+                    cache_image(mp[el]); got += 1
+                except Exception:
+                    pass
+        if got:
+            print(f"Images de pièces : {got} photo(s) de remplacement enregistrée(s) sur le serveur", flush=True)
+    finally:
+        _el_img["busy"] = False
+
+
+def el_img_loop():
+    time.sleep(150)   # (après le démarrage)
+    while True:
+        _el_img["left"] = False
+        try:
+            el_img_job()
+        except Exception as e:
+            print("Images de pièces :", e, flush=True)
+        time.sleep(900 if _el_img.get("left") else 6 * 3600)   # (interrompue : reprise dans 15 min)
 
 
 # ---- figurines : la photo Rebrickable de la même figurine, quand BrickEconomy (bloqué) et BrickLink (fermé) ne la donnent pas
@@ -10171,6 +10520,23 @@ def be_fig_no(u):
     return m.group(1) if m else None
 
 
+FIG_NAME_STOP = {"with", "and", "the", "minifigure", "minifig", "lego", "of", "in", "a", "an", "figure"}
+
+
+def fig_pick_by_name(n, cands):
+    """Plusieurs versions Rebrickable possibles : celle que le nom BrickOwl désigne sans ambiguïté (tous ses mots distinctifs dans le nom
+    de la version), d'abord parmi les versions trouvées dans ses sets ; sinon None."""
+    bo = str((_fu_cache().get(n) or {}).get("name") or "").lower()
+    words = {w for w in re.findall(r"[a-z]+", bo) if len(w) > 2 and w not in FIG_NAME_STOP}
+    if len(words) < 2:   # (un seul mot, ex. « Stormtrooper » : trop vague)
+        return None
+    for pool in ([c for c in cands if c.get("from") and c.get("from") != "nom"], cands):
+        hit = [c for c in pool if words <= set(re.findall(r"[a-z]+", str(c.get("name") or "").lower()))]
+        if len(hit) == 1:
+            return hit[0]
+    return None
+
+
 def fig_img_job():
     """Pour chaque figurine de la collection dont aucune image n'est sur le serveur : la photo Rebrickable de la même figurine
     (correspondance sûre seulement), enregistrée en local pour toujours. Freinée (Rebrickable : une requête à la fois)."""
@@ -10179,27 +10545,55 @@ def fig_img_job():
     _fig_img["busy"] = True
     try:
         mp, now, got = dict(fig_img_map()), time.time(), 0
+        chosen = {}   # n° de figurine → version Rebrickable choisie sur une de ses fiches (correspondance sûre : c'est moi qui l'ai dit)
+        for it in load_db().get("items") or []:
+            if it.get("kind") == "fig" and RB_FIG.fullmatch(str(it.get("rb_fig") or "")):
+                chosen.setdefault(str(it.get("number") or ""), it["rb_fig"])
         todo = []
         for u in sorted(pinned_image_urls()):
             n = be_fig_no(u)
             e = mp.get(n) if n else None
-            if n and n not in todo and not has_local(u) and (not e or (not e.get("u") and now - e.get("t", 0) > 30 * 86400)):
+            if n and n not in todo and not has_local(u) and e and e.get("u") and IMG_OK.match(e["u"]):   # secours connu, effacé du disque : retéléchargé
+                try:
+                    cache_image(e["u"]); got += 1
+                except Exception:
+                    pass
+                continue
+            if n and n not in todo and not has_local(u) and (not e or (not e.get("u") and (now - e.get("t", 0) > 30 * 86400 or e.get("v", 0) < 3 or (n in chosen and e.get("rb") != chosen[n])))):
                 todo.append(n)
         for n in todo:
             img = None
             try:
                 c = _parts_cache().get("fc:" + n) or {}
-                rbn = n if RB_FIG.fullmatch(n) else c.get("rb")
+                rbn = n if RB_FIG.fullmatch(n) else c.get("rb") or chosen.get(n)
                 if rbn:   # référence Rebrickable déjà connue : sa photo
                     img = (sources.rb(f"lego/minifigs/{urllib.parse.quote(rbn)}/") or {}).get("set_img_url") or ""
                 else:   # sinon : celle de ses sets qui correspond sans ambiguïté
-                    sure = [m for m in rb_fig_match(n) if m.get("sure")]
-                    img = (sure[0].get("image") or "") if len(sure) == 1 else ""
+                    try:
+                        cands = rb_fig_match(n)
+                    except sources.RebrickableBusy:
+                        raise
+                    except Exception:   # (fiche du catalogue des cotes refusée, etc. : pas de version Rebrickable — BrickOwl ensuite)
+                        cands = []
+                    sure = [m for m in cands if m.get("sure")]
+                    pick = sure[0] if len(sure) == 1 else fig_pick_by_name(n, cands)   # (plusieurs versions : le nom BrickOwl départage, sinon rien)
+                    img = (pick.get("image") or "") if pick else ""
+                if not img:   # toujours rien de sûr chez Rebrickable : la photo officielle de SA page BrickOwl (son n° BrickLink y figure)
+                    pp = re.fullmatch(r"([a-z]+)(\d{1,3})([a-z]?)", n)
+                    for bid in dict.fromkeys([sources.bl_fig_no(n), f"{pp.group(1)}{int(pp.group(2)):04d}{pp.group(3)}" if pp else n, n]):
+                        try:
+                            img = sources.bo_fig_image(bid)
+                        except Exception:
+                            img = ""
+                        time.sleep(1.5)   # (BrickOwl : sans hâte)
+                        if img:
+                            break
             except sources.RebrickableBusy:
-                break   # (Rebrickable demande une pause : la suite au prochain passage)
+                _fig_img["left"] = True
+                break   # (Rebrickable demande une pause : la suite au prochain passage — dans 15 min)
             except Exception:
                 continue   # (erreur passagère : réessayé au prochain passage)
-            mp[n] = {"u": img if img and IMG_OK.match(img) else "", "t": time.time()}
+            mp[n] = {"u": img if img and IMG_OK.match(img) else "", "t": time.time(), "v": 3, **({"rb": rbn} if rbn else {})}   # (v 3 : essayé avec le nom BrickOwl, puis la page BrickOwl)
             _save(FIG_IMG_FILE, mp)
             if mp[n]["u"]:
                 try:
@@ -10215,11 +10609,12 @@ def fig_img_job():
 def fig_img_loop():
     time.sleep(90)   # (après le démarrage)
     while True:
+        _fig_img["left"] = False
         try:
             fig_img_job()
         except Exception as e:
             print("Images de figurines :", e, flush=True)
-        time.sleep(6 * 3600)
+        time.sleep(900 if _fig_img.get("left") else 6 * 3600)   # (interrompue : reprise dans 15 min)
 IMG_LIMIT = 500 * 1024 * 1024    # au-delà : on fait de la place…
 IMG_TARGET = 400 * 1024 * 1024   # … jusqu'à redescendre ici, en supprimant d'abord les images inutilisées les plus anciennes
 _img_new, _img_lock = [0], threading.Lock()
@@ -10554,6 +10949,11 @@ def pinned_image_urls():
             add(u)
         for f in x.get("figs") or []:
             add(f.get("image"))
+    for k, v in list(_parts_cache().items()):   # pièces des figurines (« mf2: ») : leurs photos, et donc leurs remplacements — 20/11
+        if k.startswith("mf2:") and isinstance(v, dict):
+            for r in v.get("parts") or []:
+                if isinstance(r, dict):
+                    add(r.get("image"))
     for u in list(urls):   # la source de secours gardée à la place d'une image bloquée
         for c in img_fallbacks(u):
             if os.path.exists(img_path(c)):
@@ -10968,8 +11368,7 @@ if __name__ == "__main__":
             print(f"Tâches de figurines rangées sur leur fiche : {_moved}", flush=True)
     if not COPIE:
         threading.Thread(target=nocolor_keeper, daemon=True).start()
-        if not DEMO:
-            threading.Thread(target=fig_photo_keeper, daemon=True).start()   # figurines sans aucune image : tâche « Photo à faire »   # pièces sans couleur : couleurs revérifiées une fois par jour   # scans de figurines MOC en échec : relancés toutes les 3 h
+        # (« Photo à faire » automatique : retirée le 20/11 — toutes les images sont gardées sur le serveur)   # pièces sans couleur : couleurs revérifiées une fois par jour   # scans de figurines MOC en échec : relancés toutes les 3 h
     _raw = _load(REVIEW_FILE, {})
     for _it in ([] if COPIE else load_db()["items"]):
         if _it.get("kind") == "custom" and _it.get("custom_type") == "fig" and not _it.get("moc_parts") and not _it.get("moc_reviewed") \
@@ -10986,6 +11385,7 @@ if __name__ == "__main__":
     if not DEMO and not COPIE:
         threading.Thread(target=_releasing, daemon=True).start()
         threading.Thread(target=fig_img_loop, daemon=True).start()
+        threading.Thread(target=el_img_loop, daemon=True).start()   # pièces : photo « élément » absente chez Rebrickable → image de la pièce dans sa couleur
         threading.Thread(target=offline_loop, daemon=True).start()   # pièces de toutes les figurines et de tous les sets, prêtes d'avance   # figurines sans image : la photo Rebrickable, gardée en local
     class QuietServer(ThreadingHTTPServer):   # (connexion fermée par le navigateur en cours de réponse : normal, pas une erreur)
         def handle_error(self, request, client_address):

@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 19/11/2026 22:21.
+Généré le 20/11/2026 19:36.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -35,7 +35,7 @@ explorez-les, modifiez-les ou supprimez-les.
 
 - Le **logo** ramène à l'accueil (toute la collection, en haut).
 
-- **+ Nouveau** : ajouter un set, une figurine, un MOC (dans une liste de pièces : une pièce).
+- **+** : ajouter un set, une figurine, un MOC (dans une liste de pièces : une pièce).
 
 - **Valeur de la collection** : estimation d'occasion ; dessous, ce qu'elle vaudrait neuve.
 
@@ -155,7 +155,7 @@ Plusieurs éléments à la fois
 
 #### 1. Chercher le set
 
-- Touchez **+ Nouveau**.
+- Touchez **+**.
 
 - Tapez le **numéro** (ex. 77256) ou le **nom** (en français ou en anglais), puis **Rechercher**.
 
@@ -166,7 +166,7 @@ Plusieurs éléments à la fois
 
 Pas trouvé ? « ✍️ Ajouter sans rechercher » crée l'élément à la main ; « 🛠️ Ajouter un MOC » crée une création personnelle.
 
-+ Nouveau : chercher
++ : chercher
 
 #### 2. Remplir la fiche
 
@@ -205,7 +205,7 @@ Figurines et estimation
 
 ## Ajouter une figurine
 
-- **+ Nouveau**, puis tapez son **nom** (« Dark Vador ») ou sa **référence** (sw0001). La photo marche aussi.
+- **+**, puis tapez son **nom** (« Dark Vador ») ou sa **référence** (sw0001). La photo marche aussi.
 
 - Onglet **Figurines** : chaque résultat indique ses sets et sa cote d'occasion.
 
@@ -285,9 +285,6 @@ ce qu'il contient (ex. Biggs dans « Star Wars » : le X-Wing et ses figurines s
 
 - **Supprimer** (en bas) : sur la fiche d'une figurine d'un de vos sets, la retire de ce set ; sur celle d'une figurine que vous avez aussi dans des
 sets, ne supprime que les exemplaires sans set (la confirmation le précise).
-
-- Une figurine sans aucune image disponible (ni au catalogue des cotes, ni chez BrickLink) et sans photo reçoit d'office la tâche
-**« Photo à faire »** ; elle part d'elle-même dès qu'une image existe.
 
 La fiche d'une figurine
 
@@ -539,7 +536,7 @@ Un **MOC** est une création personnelle ; un **set partiel**, un set incomplet.
 
 #### Créer un MOC
 
-- **+ Nouveau → 🛠️ Ajouter un MOC** (ou ✍️ Ajouter sans rechercher).
+- **+ → 🛠️ Ajouter un MOC** (ou ✍️ Ajouter sans rechercher).
 
 - Choisissez le type : **MOC**, **set partiel** (indiquez le set d'origine) ou **figurine MOC**.
 
@@ -818,8 +815,7 @@ numéroté, la liste en bas l'explique (▾ la replie ; touchez une explication 
 
 - **Une tâche d'une figurine** (même rangée dans un set) reste sur la fiche de la figurine : elle n'apparaît pas sur le set.
 
-- Certaines tâches viennent de l'application : « couleur à valider » (pièce ajoutée sans couleur) ; **« Photo à faire »** (figurine sans aucune image
-disponible ni photo — vérifiée une fois par jour, elle disparaît dès qu'une image existe).
+- Certaines tâches viennent de l'application : « couleur à valider » (pièce ajoutée sans couleur).
 
 - **⚙️ Gérer les catégories** (en bas de « À faire ») : **✏️ Renommer** ou **🗑 Supprimer** une catégorie, même Photo, Pièces ou
 Accessoires. Ses tâches suivent ; supprimée, elles vont dans **« Autres »**, qui ne peut être ni supprimée ni renommée. Le nombre de

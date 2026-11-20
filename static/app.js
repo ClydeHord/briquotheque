@@ -44,18 +44,19 @@ const curPhoto = (id, fid = "") => {
   if (!h) return "";
   return (fid ? h.fig_mods?.[fid]?.photo_url || figPhoto((h.info?.minifigs || []).find(f => f.id === fid)?.image) : itemImage(h)) || "";
 };
-const itemImage = i => (!i.kind || i.kind === "set" ? (i.photo_url || setPhoto(i.info, i.photo)) : (i.kind === "fig" && (i._mods?.photo_url || i.photo_url)) || i.info?.image);   // (figurine d'origine : la photo choisie dans son set)
+const itemImage = i => (!i.kind || i.kind === "set" ? (i.photo_url || setPhoto(i.info, i.photo)) : (i.kind === "fig" && (i.photo_url || i._mods?.photo_url)) || i.info?.image);   // (figurine d'origine : la photo choisie dans son set)
 const IMG_PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cg fill='none' stroke='%23888' stroke-width='1.5' opacity='.55'%3E%3Crect x='6' y='12' width='28' height='13' rx='2'/%3E%3Crect x='10' y='7' width='7' height='5' rx='1'/%3E%3Crect x='23' y='7' width='7' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E";
 /* image en cours de chargement : un rond qui tourne ; échec : « ↻ » — un appui la redemande */
 const IMG_RETRY = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cg fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M26.5 10.5a8 8 0 1 0 1.5 7'/%3E%3Cpath d='M27.5 5.5v5.5h-5.5'/%3E%3C/g%3E%3C/svg%3E";
 {
-  const mark = im => { const s = im.getAttribute("src") || ""; if (s && !/^(data|blob):/.test(s) && !im.complete) im.classList.add("img-ld"); else im.classList.remove("img-ld"); };
+  const seenImg = new Set();   // images déjà affichées pendant la session : jamais de roue au prochain affichage (copie de l'appareil)
+  const mark = im => { const s = im.getAttribute("src") || ""; if (s && !/^(data|blob):/.test(s) && !im.complete && !seenImg.has(s)) im.classList.add("img-ld"); else im.classList.remove("img-ld"); };
   new MutationObserver(ms => { for (const m of ms) {
     if (m.type === "attributes") { if (m.target.tagName === "IMG") mark(m.target); continue; }
     for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.tagName === "IMG") mark(n); else if (n.querySelectorAll) n.querySelectorAll("img").forEach(mark); }
   } }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
   document.querySelectorAll("img").forEach(mark);
-  document.addEventListener("load", e => { if (e.target.tagName === "IMG") e.target.classList.remove("img-ld"); }, true);
+  document.addEventListener("load", e => { if (e.target.tagName === "IMG") { e.target.classList.remove("img-ld"); const s = e.target.getAttribute("src"); if (s && seenImg.size < 20000) seenImg.add(s); } }, true);
   /* vignettes de figurines : une photo prise en largeur (la figurine au milieu) est recadrée, pour que toutes aient la même taille (page publique : pareil) */
   document.addEventListener("load", e => { const t = e.target; if (t.tagName === "IMG" && t.naturalWidth > t.naturalHeight * 1.15) t.classList.add("wide"); }, true);
   document.addEventListener("click", e => {   // ↻ : on réessaie (sans ouvrir la fiche dessous)
@@ -221,15 +222,15 @@ async function api(path, opts = {}) {
       ...opts,
       body: opts.body && !(opts.body instanceof Blob) && typeof opts.body !== "string" ? JSON.stringify(opts.body) : opts.body,
     });
-  } catch (e) {   // serveur injoignable
-    net.set(true);
+  } catch (e) {   // serveur injoignable (ou réseau pas encore revenu au réveil du téléphone : vérifié avant d'afficher « Hors ligne »)
+    net.suspect();
     if (queueable) return outbox.add(path, method, opts.body);
     if (method === "GET") { const d = await offlinePack.find(path); if (d !== undefined) return d; }   // fiche jamais ouverte : le paquet hors ligne
     throw new Error("Hors ligne : impossible pour le moment, réessayez une fois la connexion revenue");
   }
-  if (r.headers.get("X-From-Cache") || r.headers.get("X-Offline")) net.set(true);   // copie gardée sur l'appareil
+  if (r.headers.get("X-From-Cache") || r.headers.get("X-Offline")) net.suspect();   // copie gardée sur l'appareil (coupure à confirmer)
   else if (net.off && r.status < 500) net.check();
-  if (queueable && [502, 503, 504].includes(r.status)) { net.set(true); return outbox.add(path, method, opts.body); }   // serveur arrêté derrière le proxy
+  if (queueable && [502, 503, 504].includes(r.status)) { net.suspect(); return outbox.add(path, method, opts.body); }   // serveur arrêté derrière le proxy
   if (r.status === 401 && path !== "/api/password") { location.href = "/login"; throw new Error("Connexion requise"); }
   const data = await r.json().catch(() => ({}));
   if (!r.ok && method === "GET" && (r.headers.get("X-Offline") || [502, 503, 504].includes(r.status))) {   // hors ligne, pas de copie de CETTE adresse : le paquet hors ligne
@@ -341,16 +342,25 @@ const net = {
     if (!off) outbox.flush();
     this.schedule();
   },
-  async check() {
+  async ping() {   /* le serveur répond-il ? (5 s au plus) */
     const ac = new AbortController(), to = setTimeout(() => ac.abort(), 5000);
-    try { const r = await fetch("/api/ping", { cache: "no-store", signal: ac.signal }); this.set(r.status >= 500); }
-    catch { this.set(true); }
+    try { const r = await fetch("/api/ping", { cache: "no-store", signal: ac.signal }); return r.status < 500; }
+    catch { return false; }
     finally { clearTimeout(to); }
+  },
+  async check() {   /* en ligne dès qu'il répond ; « Hors ligne » seulement après DEUX échecs espacés de 2,5 s (réveil du téléphone : réseau lent à revenir) */
+    if (await this.ping()) return this.set(false);
+    if (!this.off) { await new Promise(r => setTimeout(r, 2500)); if (await this.ping()) return this.set(false); }
+    this.set(true);
+  },
+  suspect() {   /* une demande a échoué : on vérifie avant de crier « Hors ligne » (la copie gardée sert en attendant) */
+    if (this.off || this._sus) return;
+    this._sus = true; this.check().finally(() => { this._sus = false; });
   },
   schedule() { clearTimeout(this.t); this.t = setTimeout(() => this.check(), this.off ? 5000 : 30000); },   // tente toujours de se reconnecter
 };
 window.addEventListener("online", () => net.check());
-window.addEventListener("offline", () => net.set(true));
+window.addEventListener("offline", () => net.suspect());   /* (Android l'annonce aussi au réveil, un instant : vérifié d'abord) */
 document.addEventListener("visibilitychange", () => {   // retour dans l'appli : connexion vérifiée, compteur des nouveautés relu
   if (document.hidden) return;
   net.check();
@@ -444,6 +454,21 @@ function stepperize(inp) {
    donnait des photos en largeur, la figurine petite au milieu), verrouillé par défaut (🔒, déverrouillable : 🔓 format libre),
    et cadrage proposé d'office (la figurine entière, centrée, à la même taille sur toutes les photos). Seul le recadrage d'une recherche est libre. */
 const FIG_CROP = { ratio: 3 / 4, auto: true };
+/* éditeur d'image : un appui long sur la photo (ou sur le dessin du pinceau) n'ouvre jamais le menu du téléphone — 20/11 */
+document.addEventListener("contextmenu", e => { if (e.target.closest?.(".crop-wrap, .crop-alpha .modal-box, .modal canvas")) e.preventDefault(); }, true);
+/* menus déroulants (Filtres, Tri…) : toujours entiers dans l'écran — décalés vers la gauche ou la droite si besoin, à l'ouverture — 20/11 */
+document.addEventListener("toggle", e => {
+  const m = e.target; if (!(m instanceof HTMLDetailsElement) || !m.classList.contains("filt-menu") || !m.open) return;
+  const pop = m.querySelector(".filt-pop"); if (!pop) return;
+  pop.style.transform = ""; pop.style.left = pop.style.right = pop.style.width = "";
+  let r = pop.getBoundingClientRect(); const W = document.documentElement.clientWidth;
+  if (r.width > W - 16 && pop.offsetParent) {   // (plus large que l'écran — menus sur toute la largeur de la barre : ramené entre les marges)
+    const c = pop.offsetParent.getBoundingClientRect();
+    pop.style.left = `${Math.round(8 - c.left)}px`; pop.style.right = `${Math.round(c.right - (W - 8))}px`; pop.style.width = "auto"; return;
+  }
+  const dx = r.right > W - 8 ? (W - 8) - r.right : r.left < 8 ? 8 - r.left : 0;
+  if (dx) pop.style.transform = `translateX(${Math.round(dx)}px)`;
+}, true);
 function cropImage(src, title = "Modifier l'image", opts = {}) {
   return new Promise(resolve => {
     const d = document.createElement("div");
@@ -1123,6 +1148,9 @@ $("#btnTarifs").onclick = () => {
 /* BrickLink : onglet « Items For Sale » de l'objet (type S set, M figurine, P pièce), filtré sur la zone où il y a des annonces
    (France : vendeurs en France ; UE : vendeurs qui livrent en France ; monde : sans filtre), l'état (N / U) et la couleur d'une pièce */
 const blFigNo = n => String(n ?? "").replace(/^adp(?=\d)/i, "bdp");   // figurines du BrickLink Designer Program : « adp107 » (catalogue des cotes) = « bdp107 » chez BrickLink
+/* une pièce sur Rebrickable (son n° Rebrickable) ; une figurine par son nom (recherche) — à côté de chaque lien BrickLink, 20/11 */
+const rbPartUrl = n => n ? `https://rebrickable.com/parts/${encodeURIComponent(n)}/` : "";
+const rbFigSearch = name => `https://rebrickable.com/search/?q=${encodeURIComponent(name || "")}&search_type=minifig`;
 function blSale(type, no, { zone = "", cond = "", color = null } = {}) {
   if (type === "M") no = blFigNo(no);
   const o = { iconly: 0, ...(cond ? { cond } : {}), ...zoneOpts(zone) };
@@ -1151,12 +1179,12 @@ function priceBox(m, extra = [], fallback = {}, chg = {}) {   // chg : variation
     : fb != null ? `<div class="pb-row"><span class="pb-k">${k}</span><b class="pb-avg">${money(fb)}${cm(k)}</b><span class="pb-mm muted">—</span><span class="pb-z muted">cote</span>${s?.thin ? `<span class="pb-why">${thinTxt(s)}</span>` : ""}</div>`
     : `<div class="pb-row"><span class="pb-k">${k}</span><span class="pb-none muted">aucune vente ni annonce</span></div>`;
   const ex = extra.filter(x => x && x[1] != null);
-  return `<div class="price-box"><div class="pb-head"><b>Prix ${esc(src)}</b><span class="muted">ventes 6 mois · min – max · zone</span></div>
+  return `<div class="price-box"><div class="pb-head"><b>Prix</b><span class="muted">ventes 6 mois · min – max · zone</span></div>
     ${row("Neuf", m?.new, fallback.new)}${row("Occasion", m?.used, fallback.used)}
     ${ex.length ? `<div class="pb-extra">${ex.map(([k, v]) => `<span>${esc(k)} : <b>${money(v)}</b></span>`).join("")}</div>` : ""}</div>`;
 }
 const marketPills = m => !m ? "" : [["Neuf", m.new], ["Occasion", m.used]].filter(([, s]) => s && s.min != null).map(([k, s]) =>
-  `<span class="pill used-range" title="Annonces ${esc(m.src || "BrickOwl")} · zone : ${esc(zoneName(s.zone))}">${ZONE_FLAG[s.zone] || ""} ${k} ${esc(m.src || "BrickOwl")} : ${money(s.min)} – ${money(s.max)} · ${s.kind === "ventes" ? "ventes 6 mois" : "annonces"} <b>${money(s.unit ?? s.avg)}</b> <small>(${s.offers})</small></span>`).join("");
+  `<span class="pill used-range" title="Zone : ${esc(zoneName(s.zone))}">${ZONE_FLAG[s.zone] || ""} ${k} : ${money(s.min)} – ${money(s.max)} · ${s.kind === "ventes" ? "ventes 6 mois" : "annonces"} <b>${money(s.unit ?? s.avg)}</b> <small>(${s.offers})</small></span>`).join("");
 const isNewPrice = f => f?.used == null && f?.value != null;
 const figPriceTxt = f => usedOf(f) == null ? "prix inconnu" : (f.used != null && ZONE_FLAG[f.used_zone] ? ZONE_FLAG[f.used_zone] + " " : "") + money(usedOf(f)) + (isNewPrice(f) ? " (neuve)" : "");
 const isCustom = i => i?.kind === "custom";
@@ -1387,7 +1415,7 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape") for (const m of $$("#filtMenu[open], #sortMenu[open]")) m.open = false; });   // Échap : fermé
 /* un set partiel prend le nom de la partie possédée (ex. « Mercedes-AMG G 63 ») */
-const itemName = i => i._mods?.name || i.display_name || i.info?.name || i.number;   // nom choisi (figurine d'origine : celui gardé dans son set), sinon celui du catalogue
+const itemName = i => i.display_name || i._mods?.name || i.info?.name || i.number;   // nom choisi (figurine d'origine : celui gardé dans son set), sinon celui du catalogue
 /* liste de souhaits : prix retenu (magasin tant que le set est en vente, sinon occasion) */
 const wishSrc = i => !isWish(i.list_id) || isFig(i) || isCustom(i) || i.no_estimate ? ""
   : (i.wish_lines || []).length ? `<span class="qp-unit wish-lines">${i.wish_lines.map(l => {   // une ligne par état cherché, « sans figurines » en dessous
@@ -1512,6 +1540,7 @@ function pieceMenu(anchor, p, { from = null, remove = null, extra = [], zoom = f
   const acts = [
     ...(ro ? [] : extra),   // 1) modifier la pièce sur cette fiche
     ["🔎 Détail de la pièce", () => openPartInfo(p)],   // 2) l'info
+    ...(p.image ? [["🔍 Agrandir la photo", () => openZoom(img(p.image), p.name || p.part)]] : []),   /* (la photo de la pièce en grand — 20/11) */
     ["🛒 À commander", () => orderPart(p)],   // 3) les autres fiches et listes
     ["📋 Cocher dans un inventaire…", () => partToInventory(p)],
     ["📄 Copier vers une autre fiche…", () => move(true)],
@@ -1774,7 +1803,7 @@ function openMocEvolution(it) {
   $("[data-x]", d).onclick = close;
   d.onclick = e => { if (e.target === d) close(); };
   const h = it.value_hist || [], box = $("[data-h]", d);
-  const sub = `Prix de ses ${nf.format(it.moc_info?.lots || 0)} références de pièces (BrickOwl), rechiffrées chaque semaine.`;
+  const sub = `Prix de ses ${nf.format(it.moc_info?.lots || 0)} références de pièces, rechiffrées chaque semaine.`;
   if (h.length < 2) {
     box.innerHTML = `<h3>📈 Évolution de la valeur</h3><p class="muted small">${sub}</p>
       <p>${h.length ? `Suivi commencé le <b>${new Date(h[0][0]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</b> (${money(h[0][1])}).` : "Le suivi commence au prochain chiffrage."}
@@ -2067,7 +2096,7 @@ function figHave(i, mfs, n) {
 }
 function figsOf(i) {
   const extra = (i._att || []).filter(x => !x.set_orig).flatMap(x => Array.from({ length: isFigLike(x) ? x.quantity || 1 : 1 }, () => figsOf(x)).flat());   /* (un élément par exemplaire : un lot ×9 rangé = 9 figurines) */   // minifigs rattachées au set (ajoutées ; celles d'origine sont déjà comptées)
-  if (isFig(i)) return [{ id: i.number, name: itemName(i), name_en: i.info?.name_en, image: i.photo_url || i.info?.image, value: usedOf(i.info), isNew: isNewPrice(i.info), newValue: i.info?.value, modified: !!i.fig_swaps?.length || 0, standalone: true,
+  if (isFig(i)) return [{ id: i.number, name: itemName(i), name_en: i.info?.name_en, image: i.photo_url || i._mods?.photo_url || i.info?.image, value: usedOf(i.info), isNew: isNewPrice(i.info), newValue: i.info?.value, modified: !!i.fig_swaps?.length || 0, standalone: true,
     theme: i.info?.theme, year: i.info?.year || i.info?.years }];   // (sa gamme à elle, même rattachée à un set d'une autre gamme)
   if (isCustom(i)) return i.custom_type === "fig" ? [{ id: "custom-" + i.id, name: i.info?.name, image: i.info?.image, value: i.no_estimate ? null : i.unit_value, approx: !!i.approx, standalone: true, custom: true }] : extra;   // set partiel : ses minifigs rattachées
   if (!i.with_minifigs) return extra;
@@ -2152,6 +2181,8 @@ const trendMark = (pct, force = false) => {   // force : dans une fiche, la vari
 };
 const trendOf = (i, force = false) => i && i.chg != null && !isWish(i.list_id) ? trendMark(i.chg, force) : "";
 const trendTot = ids => { let a = 0, b = 0; for (const id of ids) { const x = state.trendLists?.[id]; if (x) { a += x[0]; b += x[1]; } } return a > 0 ? trendMark((b - a) / a * 100) : ""; };
+/* MOC / set partiel : valeur des figurines rangées dedans (sa carte l'ajoute, comme sa fiche — affichage seulement) */
+const mocKidsV = i => i.kind === "custom" && i.custom_type !== "fig" ? (i._att || []).reduce((a, x) => a + (x.total_value || 0), 0) : 0;
 const valueFoot = (cat, mine, apx, q, flag = "", tr = "") => {   // le réel (s'il diffère) et l'unité (plusieurs exemplaires), puis le prix en gros TOUT EN BAS (17/11)
   const diff = Math.abs((cat || 0) - (mine || 0)) >= 0.015;   // flag : drapeau de la zone du prix catalogue (sur lui seul)
   const lines = [q > 1 ? `${money(mine / q)} l'unité` : ""].filter(Boolean);   /* (plus de ligne « réel / sans modifs. », 17/11) */
@@ -2160,8 +2191,9 @@ const valueFoot = (cat, mine, apx, q, flag = "", tr = "") => {   // le réel (s'
 /* tuiles Sets / Figurines / Pièces sorties de l'écran : leur rappel dans la barre du haut (téléphone ; sur PC le résumé y est déjà) */
 /* boutons du haut : toujours sur PC ; sur téléphone quand les tuiles sont sorties de l'écran ; jamais pour souhaits / à construire / inventaires */
 const phoneMq = matchMedia("(max-width: 820px)");
-new ResizeObserver(() => document.documentElement.style.setProperty("--hdr-h", $(".topbar").getBoundingClientRect().height + "px")).observe($(".topbar"));   // (au pixel près : pas d'espace sous la barre)
-new ResizeObserver(() => document.documentElement.style.setProperty("--tv2-h", ($("#topViews2")?.offsetHeight || 0) + "px")).observe($("#topViews2"));   // (la barre des filtres se colle sous celle de la liste)
+addEventListener("scroll", () => document.documentElement.classList.toggle("sc-any", scrollY > 1), { passive: true });   // (on a défilé, même un peu : barre du haut en verre dense — 20/11)
+new ResizeObserver(() => document.documentElement.style.setProperty("--hdr-h", Math.ceil($(".topbar").getBoundingClientRect().height) + "px")).observe($(".topbar"), { box: "border-box" });   // (taille totale, marges intérieures comprises : elle se réduit en défilant — 20/11) (au pixel près : pas d'espace sous la barre ; arrondi : sinon la barre des filtres tombe entre deux pixels et dessine un trait clair — 20/11)
+new ResizeObserver(() => document.documentElement.style.setProperty("--tv2-h", ($("#topViews2")?.offsetHeight || 0) + "px")).observe($("#topViews2"), { box: "border-box" });   // (la barre des filtres se colle sous celle de la liste)
 function topViewsShow() {
   $("#topViews").hidden = phoneMq.matches && state.tilesSeen !== false && !state.noViews;
   $("#topViews2").hidden = $("#topViews").hidden || !$("#topViews2").innerHTML;
@@ -2247,14 +2279,17 @@ function render() {
     try { localStorage.setItem("bq-sort", JSON.stringify(state.sortBy)); localStorage.setItem("bq-sort-rev", JSON.stringify(state.sortRev || {})); } catch {}
     syncFiltMenu(); render();
   };
-  $("#topViews").innerHTML = `<button type="button" class="tv-home ${state.current === ALL ? "on" : ""}" data-thome title="Toute la collection, par valeur décroissante"><span class="nm">📚 Toute la collection</span><span class="ct">${moneyA(all.value, all.apx)}</span></button>`
+  $("#topViews").innerHTML = `<button type="button" class="tv-home ${state.current === ALL ? "on" : ""}" data-thome title="Toute la collection, avec le tri par défaut"><span class="nm">📚 Toute la collection</span><span class="ct">${moneyA(all.value, all.apx)}</span></button>`
     + pills(all, state.current === ALL ? mode : "");   // toute la collection (comme dans le menu de gauche)
   const list0 = state.lists.find(l => l.id === state.current), lname = list0?.name || "";   // (barre du haut : son logo, son nom s'il est affiché)
   const sh = [ALL, STATS, UNBUILT, NOV].includes(state.current) ? summary(items) : withOut(summary(items), state.subDirect === state.current ? [state.current] : [state.current, ...descendants(state.current)]);   // ce qui est affiché (+ figurines rangées dans un set d'une autre liste)
-  $("#topViews2").innerHTML = inList ? `<button type="button" class="tv-home on" data-thome2 title="${esc(lname)} : par valeur, du plus cher au moins cher"><span class="nm">${listLogo(list0, "list-logo", "bar")}${listNm(list0, lname, "bar")}</span><span class="ct">${moneyA(sh.value, sh.apx)}</span></button>` + pills(sh, mode) : "";
+  $("#topViews2").innerHTML = inList ? `<button type="button" class="tv-home on" data-thome2 title="${esc(lname)} : avec le tri par défaut"><span class="nm">${listLogo(list0, "list-logo", "bar")}${listNm(list0, lname, "bar")}</span><span class="ct">${moneyA(sh.value, sh.apx)}</span></button>` + pills(sh, mode) : "";
   $$("#topViews [data-tv]").forEach(b => b.onclick = () => { clearFilter(); if (state.current !== ALL) { state.current = ALL; state.selected.clear(); } toggleView(b.dataset.tv); });
   $("#topViews [data-tparts]").onclick = () => { clearFilter(); openAllParts(ALL); };
-  const byValue = () => { const so = $("#sort"); so.value = "value"; so.dispatchEvent(new Event("change")); };   // la collection / la liste, par valeur décroissante
+  const byValue = () => {   // la collection / la liste : le tri défini « par défaut », sens normal (plus « par valeur » imposé — 20/11)
+    delete state.sortBy[state.current]; if (state.sortRev) delete state.sortRev[state.current]; state.sortFor = null;
+    try { localStorage.setItem("bq-sort", JSON.stringify(state.sortBy)); localStorage.setItem("bq-sort-rev", JSON.stringify(state.sortRev || {})); } catch {}
+    render(); };
   $("#topViews [data-thome]").onclick = () => { clearFilter(); state.current = ALL; state.selected.clear(); render(); byValue(); };
   $("#topViews2 [data-thome2]")?.addEventListener("click", () => { clearFilter(); render(); byValue(); });
   $$("#topViews2 [data-tv]").forEach(b => b.onclick = () => { clearFilter(); toggleView(b.dataset.tv); });
@@ -2323,7 +2358,7 @@ function render() {
   $("#listTitle").append(PUB_VISITS, PUB_SHARE);   // nombre de vues et 📤 : à côté du titre
   if (pub) $("#lnkPublic").href = location.origin + (PUB_PATH[pub] || "/");
   drawVisits(pub);
-  $("#btnAdd").textContent = "+ Nouveau";
+  $("#btnAdd").textContent = "+";   // (juste « + » ; « Nouveau » en info-bulle — 20/11)
   $("#filtMenu").hidden = isPartsList(state.current) || isWish(state.current);   // souhaits, pièces : pas de filtre par étiquette
   const statsMode = state.current === STATS, novMode = state.current === NOV;
   $(".toolbar").hidden = statsMode || novMode; $("#items").hidden = statsMode || novMode; $("#statsView").hidden = !statsMode;
@@ -2524,7 +2559,8 @@ function render() {
         ${isWish(i.list_id) && !isFig(i) && !isCustom(i) ? `<div class="meta prices3">${threePrices(i.info)}</div>
         ${releaseText(i.info) ? `<div class="meta release">📅 ${esc(releaseText(i.info))}</div>` : ""}
         ${retiringSoon(i.info) && retireText(i.info) ? `<div class="meta">⏳ ${esc(retireText(i.info))}</div>` : ""}` : ""}
-        <div class="foot">${i.no_estimate ? `<span class="value no-est">Sans estimation</span>` : catUsed(i) != null ? valueFoot(catUsed(i) + (i.box_add || 0), i.total_value, i.approx, i.quantity || 1, "", trendOf(i)) : i.quantity > 1 && i.total_value != null
+        <div class="foot">${mocKidsV(i) > 0.004 ? valueFoot((i.no_estimate ? 0 : (i._ownTotal ?? i.total_value) || 0) + mocKidsV(i), (i.no_estimate ? 0 : (i._ownTotal ?? i.total_value) || 0) + mocKidsV(i), (!i.no_estimate && i.approx) || (i._att || []).some(x => x.approx), 1)
+          : i.no_estimate ? `<span class="value no-est">Sans estimation</span>` : catUsed(i) != null ? valueFoot(catUsed(i) + (i.box_add || 0), i.total_value, i.approx, i.quantity || 1, "", trendOf(i)) : i.quantity > 1 && i.total_value != null
           ? `<span class="value">Prix ${moneyA(i.total_value, i.approx)}${trendOf(i)}<span class="qp-unit">Prix unitaire : ${moneyA(i.total_value / i.quantity, i.approx)}</span>${wishSrc(i)}</span>` : `<span class="value">${moneyA(i.total_value, i.approx)}${trendOf(i)}${wishSrc(i)}</span>`}${itemLogoOf(i) && views.cardLogo !== false ? `<span class="num-list" title="Logo de la fiche"><img class="list-logo tiny" src="${esc(itemLogoOf(i))}" alt=""></span>` : numLogo(i.list_id)}
 </div>
       </div>`;   // infos d'une carte (aussi pour ses apparences alternatives)
@@ -2540,7 +2576,7 @@ function render() {
         <div class="meta">${[i.info.theme, i.info.year].filter(Boolean).map(esc).join(" · ")}</div>
         <div class="foot">${i._cat != null ? valueFoot(i._cat, i.total_value, false, i.quantity || 1) : `<span class="value">${money(i.total_value)}</span>`}${numLogo(i._sets[0]?.i.list_id)}</div></div></article>`;
     return `<article class="card ${state.selected.has(i.id) ? "picked" : ""} ${isWish(i.list_id) ? "wishcard" : ""}" data-id="${i.id}" draggable="true">
-      <div class="pic"><img src="${thumb(itemImage(i))}" alt="" loading="lazy" draggable="false">
+      <div class="pic"><img src="${thumb(itemImage(i))}" ${i.kind === "fig" && !i.photo_url && !i._mods?.photo_url && figSibPhoto(i.number) ? `data-fb="${esc(thumb(figSibPhoto(i.number)))}"` : ""} alt="" loading="lazy" draggable="false">
         <label class="sel" title="Sélectionner"><input type="checkbox" data-sel ${state.selected.has(i.id) ? "checked" : ""} aria-label="Sélectionner"></label>
         <div class="badges">${isCustom(i) ? customBadge(i) : ""}${isCustom(i) ? "" : isWish(i.list_id) ? `
           ${isRetired(i.info) ? `<span class="badge retired">Retiré</span>` : isUpcoming(i.info) ? `<span class="badge upcoming">Bientôt disponible</span>` : retiringSoon(i.info) ? `<span class="badge soon">Bientôt retiré</span>` : ""}` : `
@@ -2614,8 +2650,11 @@ function renderSelBar() {
   $("#selNone").onclick = () => { state.selected.clear(); render(); };
   $("#selDel").onclick = async () => {
     const wh = [...new Set([...state.selected].map(id => fromWhere(state.items.find(i => i.id === id)?.list_id)))];   // une seule origine : on la nomme
-    if (!await confirmBox(`Retirer ${n} élément${n > 1 ? "s" : ""} ${wh.length === 1 ? wh[0] : "de leurs listes"} ?`)) return;
-    await api("/api/items/delete", { method: "POST", body: { ids: [...state.selected] } });
+    const hosts = [...state.selected].map(id => state.items.find(i => i.id === id)).filter(h => h && (h._att || []).some(x => isFigLike(x) && !state.selected.has(x.id)));
+    let extra = [];
+    if (hosts.length) { extra = await askHostFigs(hosts, state.selected); if (extra === null) return; }   // sets avec des figurines rattachées : on demande
+    else if (!await confirmBox(`Retirer ${n} élément${n > 1 ? "s" : ""} ${wh.length === 1 ? wh[0] : "de leurs listes"} ?`)) return;
+    await api("/api/items/delete", { method: "POST", body: { ids: [...state.selected, ...extra] } });
     state.selected.clear(); await load(); toast(`${n} élément${n > 1 ? "s" : ""} retiré${n > 1 ? "s" : ""}`);
   };
 }
@@ -2652,7 +2691,7 @@ document.addEventListener("click", e => { if (!e.target.closest?.("#btnSubLists"
   state.navSubs = !state.navSubs; try { localStorage.setItem("bq-nav-subs", state.navSubs ? "1" : "0"); } catch {} renderNav(); });
 /* téléphone, en descendant : la liste en cours (sa pastille, recopiée) dans la barre du haut, entre ☰ et + (html.sc-down, style.css) */
 /* hauteurs de la barre du haut et de la barre de la liste : posées tout de suite (sinon la barre des filtres suit une image plus tard) */
-function barVars() { const r = document.documentElement.style; r.setProperty("--hdr-h", $(".topbar").getBoundingClientRect().height + "px"); r.setProperty("--tv2-h", ($("#topViews2")?.offsetHeight || 0) + "px"); }
+function barVars() { const r = document.documentElement.style; r.setProperty("--hdr-h", Math.ceil($(".topbar").getBoundingClientRect().height) + "px"); r.setProperty("--tv2-h", ($("#topViews2")?.offsetHeight || 0) + "px"); }
 /* en défilant (barre réduite), Tout / Sets / Figurines : la grille repart de son début, sous la barre des filtres */
 function viewTop() { if (!document.documentElement.classList.contains("sc-down")) return;
   requestAnimationFrame(() => { const it = $("#items"), tb = $(".main > .toolbar"); if (!it) return;
@@ -2720,6 +2759,7 @@ function renderNav() {
     + (state.reorder ? "" : `<button class="nav-item ${state.current === NOV ? "on" : ""} ${state.novCount?.new ? "nav-new" : ""}" data-id="${NOV}" title="${state.novCount?.new ? `${state.novCount.new} nouveauté${state.novCount.new > 1 ? "s" : ""} apparue${state.novCount.new > 1 ? "s" : ""} depuis votre dernière visite` : "Nouveautés LEGO (selon vos thèmes suivis)"}">
       <span class="nm">✨ Nouveautés</span><span class="ct">${state.novCount ? `${state.novCount.new ? `<b class="nav-new-n">+${nf.format(state.novCount.new)}</b> · ` : ""}${nf.format(state.novCount.count)}` : ""}</span></button>
       <button class="nav-item nav-novcal" data-id="${NOV}" data-novcal title="Les prochaines sorties LEGO, mois par mois"><span class="nm">📅 Calendrier des sorties</span></button>`);   // (raccourci : la page Nouveautés, onglet Calendrier)
+  try { novNavSync(); } catch {}   /* (Nouveautés / Calendrier : la bonne entrée en surbrillance) */
   $$("[data-fold]").forEach(f => f.onclick = e => {   // replier / déplier sans ouvrir la liste
     e.stopPropagation(); e.preventDefault();
     const id = f.dataset.fold; isFolded(id) ? state.unfolded.add(id) : state.unfolded.delete(id);   // le temps de la visite
@@ -3272,7 +3312,7 @@ async function openPartColors(p) {
       <span class="fpic"><img src="${img(imgs[c.color_id] || p.image)}" alt="" loading="lazy"></span>
       <span class="fname">${swatch(c.rgb, c.trans)} ${esc(c.color_fr)}</span>
       <span class="fval">×${nf.format(c.qty)}</span>
-      <span class="ap-val">${c.unit != null ? `${money(c.unit * c.qty)} <small>(${money(c.unit)} pièce${c.approx ? ", d'après des pièces similaires" : c.manual ? ", prix saisi" : ""})</small>` : `<small class="muted">${c.tried ? "introuvable sur BrickOwl" : "pas encore chiffrée"}</small>`}</span>${setsOf(c)}</button>`).join("");
+      <span class="ap-val">${c.unit != null ? `${money(c.unit * c.qty)} <small>(${money(c.unit)} pièce${c.approx ? ", d'après des pièces similaires" : c.manual ? ", prix saisi" : ""})</small>` : `<small class="muted">${c.tried ? "prix introuvable" : "pas encore chiffrée"}</small>`}</span>${setsOf(c)}</button>`).join("");
     $$("[data-k]", d).forEach(b => b.onclick = e => { const os = e.target.closest("[data-openset]");
       if (os) { const it = state.items.find(i => i.number === os.dataset.openset && kindOf(i.list_id) === "collection"); if (it) { close(); openEdit(it.id); } return; }   // un de mes sets : sa fiche
       const c = p.colors[+b.dataset.k];
@@ -3869,25 +3909,42 @@ const PH_FIG = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 1
 const legoUrl = x => x?.url || `https://www.lego.com/fr-fr/search?q=${encodeURIComponent(String(x?.number || "").replace(/-1$/, ""))}`;
 /* ✨ nouveautés (lego.com) : à venir et sorties récemment, sans ce que j'ai déjà ; leurs minifigs exclusives ; « ajouter à la liste de souhaits » / « ne plus afficher » */
 /* menu : « 📅 Calendrier des sorties » → la page Nouveautés, onglet Calendrier (ouverte, ou déjà là) */
+document.addEventListener("click", e => {   /* « ✨ Nouveautés » (menu de gauche) alors que le Calendrier est ouvert : retour aux Dernières annonces — 20/11 */
+  const b = e.target.closest?.(".nav-item[data-id]"); if (!b || b.dataset.id !== NOV || b.hasAttribute("data-novcal")) return;
+  setTimeout(() => { const r = document.querySelector('#novView input[name=novv][value="sets"]'); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change", { bubbles: true })); } scrollTo(0, 0); }, 60); }, true);
 document.addEventListener("click", e => { if (!e.target.closest?.("[data-novcal]")) return; state.novWant = "cal";
   setTimeout(() => { const r = document.querySelector('#novView input[name=novv][value="cal"]'); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change")); } state.novWant = null; }, 60); }, true);
+function novNavSync() {   /* menu de gauche : « 📅 Calendrier des sorties » en surbrillance quand l'onglet Calendrier est ouvert, sinon « ✨ Nouveautés » — 20/11 */
+  const on = state.current === NOV, cal = on && !!document.querySelector('#novView input[name=novv][value="cal"]')?.checked;
+  document.querySelectorAll('.nav-item[data-id="' + NOV + '"]').forEach(b => b.classList.toggle("on", b.hasAttribute("data-novcal") ? cal : on && !cal));
+}
 function openNovelties(host = null) {   // host : la page (menu de gauche) ; sinon une fenêtre
   const d = host || document.createElement("div");
   if (!host) d.className = "modal";
   d.innerHTML = `<div class="${host ? "nov-page" : "modal-box wide"} nov-box">${host ? "" : `<div class="modal-head"><h2>✨ Nouveautés</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>`}
     <div class="nov-bar"><div class="choice nov-tabs"><label><input type="radio" name="novv" value="sets" checked><span>📰 Dernières annonces</span></label><label><input type="radio" name="novv" value="cal"><span>📅 Calendrier</span></label></div>
-      <span class="nov-kinds"><label class="todo-chk"><input type="checkbox" data-ksets checked> Sets</label><label class="todo-chk"><input type="checkbox" data-kfigs> 🟡 Figurines exclusives</label></span><span class="nov-br"></span>
+      <span class="nov-br"></span>
       <div class="choice nov-tabs"><label><input type="radio" name="novs" value="" checked><span>Tout</span></label><label><input type="radio" name="novs" value="soon"><span>À venir</span></label><label><input type="radio" name="novs" value="new"><span>Sorties récentes</span></label></div><span class="nov-br"></span>
-      <select data-theme aria-label="Thème"><option value="">Tous les thèmes</option></select>
-      <button type="button" class="btn small-btn" data-exth>🎯 Thèmes suivis</button><span class="nov-br"></span>
-      <label class="todo-chk"><input type="checkbox" data-hidden> Afficher les masqués</label>
-      <label class="todo-chk"><input type="checkbox" data-noimg> Afficher celles sans image</label>
-      <label class="todo-chk"><input type="checkbox" data-wished> Afficher ceux déjà dans la liste de souhaits</label>
-      <label class="todo-chk"><input type="checkbox" data-watched> Afficher les surveillés</label></div>
+      <div class="nov-filters"><select data-theme aria-label="Thème" hidden><option value="">Tous les thèmes</option></select><!-- (retirée de l'écran le 20/11 ; lue par les filtres : reste sur « tous ») -->
+      <button type="button" class="btn small-btn" data-exth>🎯 Thèmes suivis</button>
+      <details class="filt-menu nov-filt"><summary class="btn small-btn" title="Filtres" aria-label="Filtres">⚙️ Filtres <b class="filt-n" data-novfn hidden></b></summary>   <!-- (cases regroupées : menu déroulant — 20/11) -->
+        <div class="filt-pop">
+      <label class="moc-chk"><input type="checkbox" data-hidden> Afficher les masqués</label>
+      <label class="moc-chk"><input type="checkbox" data-noimg> Afficher sans image</label>
+      <label class="moc-chk"><input type="checkbox" data-wished> Afficher les souhaits</label>
+      <label class="moc-chk"><input type="checkbox" data-watched> Afficher les surveillés</label>
+      <span class="nov-kinds"><label class="moc-chk"><input type="checkbox" data-ksets checked> Sets</label><label class="moc-chk"><input type="checkbox" data-kfigs> 🟡 Figurines exclusives</label></span></div></details></div></div>
     <div data-b><div class="loading"><span class="spinner"></span>Recherche des nouveautés…</div></div></div>`;
   if (!host) document.body.append(d);
-  if (host && state.novWant === "cal") { const r = $('input[name=novv][value="cal"]', d); if (r) r.checked = true; }   // (menu : « 📅 Calendrier des sorties »)
+  if (host && state.novWant === "cal") { const r = $('input[name=novv][value="cal"]', d); if (r) r.checked = true; }
+  if (host) setTimeout(novNavSync, 0);   // (menu : « 📅 Calendrier des sorties »)
   if ($("[data-x]", d)) $("[data-x]", d).onclick = () => d.remove();
+  {   /* ⚙️ Filtres des Nouveautés : nombre de cases changées (par rapport à l'affichage d'office) sur le bouton ; clic ailleurs / Échap : fermé — 20/11 */
+    const fm = $(".nov-filt", d), cnt = () => { const n = ["[data-hidden]", "[data-noimg]", "[data-wished]", "[data-watched]", "[data-kfigs]"].filter(q => $(q, d)?.checked).length + ($("[data-ksets]", d)?.checked ? 0 : 1);
+      const b = $("[data-novfn]", d); if (b) { b.textContent = n || ""; b.hidden = !n; } fm?.classList.toggle("on", n > 0); };
+    fm?.addEventListener("change", () => setTimeout(cnt, 0)); setTimeout(cnt, 0);
+    document.addEventListener("click", e => { if (fm?.open && !fm.contains(e.target)) fm.open = false; });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && fm?.open) fm.open = false; }); }
   const wishId = isWish(state.current) && !isGiftList(state.current) ? state.current : state.lists.find(l => l.kind === "wishlist" && !l.parent_id && !l.gift)?.id || state.lists.find(l => l.kind === "wishlist" && !l.gift)?.id;
   let data = { items: [] }, timer = null, fresh = null;
   const B = $("[data-b]", d);
@@ -4037,7 +4094,13 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       $$("[data-calfig]", B).forEach(t => t.onclick = () => { const x = byNum(t.dataset.cal), f = (x?.figs || []).find(g => g.fig === t.dataset.calfig); if (f) sheet(x, f); });   // la figurine : sa fenêtre
       $$("[data-cal]:not([data-calfig])", B).forEach(t => t.onclick = () => { const x = byNum(t.dataset.cal); if (x) sheet(x); });   // le set : sa fenêtre
       if (!d._calToday) { const t = $("[data-today]", B); if (t) { d._calToday = true; requestAnimationFrame(() => {   // (on arrive sur « Aujourd'hui »)
-        if (host) { const tb = $(".main > .toolbar"), y = scrollY + t.getBoundingClientRect().top - $(".topbar").getBoundingClientRect().height - (tb ? tb.getBoundingClientRect().height : 0) - 12; window.scrollTo({ top: Math.max(0, y) }); }
+        if (host) {   /* juste sous ce qui reste collé en haut (barre du haut, en-tête des Nouveautés) ; recalé si la page bouge encore — 20/11 */
+          let moved = false; const mine = () => { moved = true; };   // (un vrai geste : doigt, molette, clavier — on ne touche plus à rien)
+          for (const ev of ["touchstart", "wheel", "keydown", "mousedown"]) addEventListener(ev, mine, { once: true, passive: true });
+          const go = () => { if (moved) return;
+            const bar = $(".nov-bar", d), top = Math.max($(".topbar").getBoundingClientRect().bottom, bar ? bar.getBoundingClientRect().bottom : 0);
+            window.scrollTo({ top: Math.max(0, scrollY + t.getBoundingClientRect().top - top - 8) }); };
+          go(); setTimeout(go, 700); setTimeout(go, 1600); }
         else t.scrollIntoView({ block: "start" }); }); } }
       return;
     }
@@ -4085,7 +4148,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
         if (r.no && !r.zone) return toast(`Pas d'annonces sur BrickLink pour « ${r.name || f.name} » (${r.no})`);   // trouvée, mais rien en vente
         window.open(r.no ? blSale("M", r.no, { zone: r.zone }) : search, "_blank", "noopener");
       };
-      openZoom.actions = [["⭐ La figurine dans la liste de souhaits", () => addFig(f, x, c.querySelector("[data-addfig]"))], ...(x.kind === "new" ? [["🔎 La figurine sur BrickLink", blFig]] : []), ["🔗 Le set sur lego.com", () => window.open(legoUrl(x), "_blank", "noopener")], ["⭐ Ajouter le set à la liste de souhaits", () => add(x, c.querySelector("[data-add]"))], [x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher", () => hide(x, !x.hidden)]];
+      openZoom.actions = [["⭐ La figurine dans la liste de souhaits", () => addFig(f, x, c.querySelector("[data-addfig]"))], ...(x.kind === "new" ? [["🔎 La figurine sur BrickLink", blFig], ["🔎 La figurine sur Rebrickable", () => window.open(rbFigSearch(f.name), "_blank", "noopener")]] : []), ["🔗 Le set sur lego.com", () => window.open(legoUrl(x), "_blank", "noopener")], ["⭐ Ajouter le set à la liste de souhaits", () => add(x, c.querySelector("[data-add]"))], [x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher", () => hide(x, !x.hidden)]];
       openZoom(pics[0]?.src || img(x.image), f.image ? f.name : `${f.name || "Figurine"} (photo pas encore disponible) — le set :`);
     });
     $$(".nov-card:not([data-fig]) .nov-pic img", B).forEach(im => im.onclick = () => {   // en grand : les photos officielles (lego.com) défilables sur le côté
@@ -4098,7 +4161,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
     });
   };
   $$("input[name=novs], [data-ksets], [data-kfigs]", d).forEach(r => r.onchange = draw);
-  $$("input[name=novv]", d).forEach(r => r.onchange = () => { d._calToday = false; fetchIt(); });   // (📅 Sorties : relu avec les souhaités / surveillés)
+  $$("input[name=novv]", d).forEach(r => r.onchange = () => { d._calToday = false; fetchIt(); novNavSync(); });   // (📅 Sorties : relu avec les souhaités / surveillés)
   $("[data-theme]", d).onchange = draw;
   $("[data-hidden]", d).onchange = $("[data-wished]", d).onchange = $("[data-watched]", d).onchange = fetchIt;
   { const c = $("[data-noimg]", d); try { c.checked = localStorage.getItem("bq-nov-noimg") === "1"; } catch {}   /* (« sans image » : retenu sur l'appareil) */
@@ -4528,7 +4591,7 @@ async function openInventory(itemId, setName, opts = {}) {
   const ipKey = r => { const s0 = st[r.key] || {}; return `${s0.p || r.bricklink || r.part_num}|${effColor(r).id}`; };
   const ipRule = x => {
     if (!x) return null;
-    if (x.src !== "BrickLink") return x.unit != null ? { unit: x.unit, how: "BrickOwl" } : null;
+    if (x.src !== "BrickLink") return x.unit != null ? { unit: x.unit, how: "" } : null;
     const n = x.new, u = x.used;
     if (n && n.zone === homeZone()) return { unit: n.unit, how: "neuf" };
     if (u) return { unit: u.unit, how: `occasion ${ZONE_FLAG[u.zone] || ""}` };
@@ -4537,7 +4600,7 @@ async function openInventory(itemId, setName, opts = {}) {
   };
   const ipTxt = r => { const v = ip[ipKey(r)]; const q = st[r.key]?.q || r.need;
     return v === undefined || v === "…" ? `<span class="muted">prix…</span>` : !v ? `<span class="muted">prix inconnu</span>`
-      : `≈ <b>${money(v.unit * q)}</b> <small class="muted">(${money(v.unit)} / pièce, ${esc(v.how)})</small>`; };
+      : `≈ <b>${money(v.unit * q)}</b> <small class="muted">(${money(v.unit)} / pièce${v.how ? ", " + esc(v.how) : ""})</small>`; };
   const isRest = r => !["ok", "x", "order", "cmd"].includes(st[r.key]?.s);   // pièce sans statut (« à vérifier ») : pas encore triée
   const fetchIp = async () => {   // une à la fois, 3 en parallèle : d'abord les pièces à commander ou commandées, puis les pièces restantes (pour leur estimation)
     if (ipBusy) return; ipBusy = true;
@@ -4974,7 +5037,7 @@ function condPick(n, u, cond) {   // (3e valeur : "n" prix neuf retenu, "u" prix
 }
 function buyPrice(p, cond = "N") {
   if (!p || p.loading) return null;
-  if (p.src !== "BrickLink") return p.unit != null ? { unit: p.unit, how: "BrickOwl", src: "BrickOwl" } : null;
+  if (p.src !== "BrickLink") return p.unit != null ? { unit: p.unit, how: "", src: "BrickOwl" } : null;
   const ok = s => s?.unit != null ? s : null, pk = condPick(ok(p.new), ok(p.used), cond);
   return pk ? { unit: pk[0].unit, how: `${pk[1]} ${pk[0].kind === "ventes" ? "(ventes 6 mois)" : "(annonces)"} ${ZONE_FLAG[pk[0].zone] || ""}`, src: "BrickLink", which: pk[2] } : null;
 }
@@ -5019,10 +5082,9 @@ function renderPartsView(items) {
   const sets = new Set(items.map(i => i.set_number).filter(Boolean));
   const known = items.filter(i => partBuy(i)?.unit != null);
   const cost = known.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0);
-  const srcs = [...new Set(known.map(i => partBuy(i).src))];
   setTimeout(() => fetchPartPrices(items), 0);
   $("#stats").innerHTML = `
-    <div class="stat main-stat parts-stat"><div class="lbl">Coût estimé</div><div class="val">≈ ${money(cost)}</div><div class="sub">${known.length < items.length ? `${known.length}/${items.length} références chiffrées · ` : ""}${srcs.includes("BrickLink") ? "BrickLink, selon l'état voulu" : ""}${srcs.includes("BrickOwl") ? (srcs.length > 1 ? " · en partie BrickOwl" : "BrickOwl") : ""}</div></div>
+    <div class="stat main-stat parts-stat"><div class="lbl">Coût estimé</div><div class="val">≈ ${money(cost)}</div><div class="sub">${known.length < items.length ? `${known.length}/${items.length} références chiffrées` : ""}</div></div>
     <div class="stat"><div class="lbl">À commander</div><div class="val">${nf.format(n)} élément${n > 1 ? "s" : ""}</div></div>
     <div class="stat"><div class="lbl">Références</div><div class="val">${nf.format(items.length)}</div><div class="sub">pièce + couleur</div></div>
     <div class="stat"><div class="lbl">Sets concernés</div><div class="val">${nf.format(sets.size)}</div></div>`;
@@ -5063,7 +5125,7 @@ function renderPartsView(items) {
       <div class="inv-info"><div class="inv-name fig-link bl-name" data-open title="${esc(i.kind === "fig" ? itemName(i) : i.part_name || i.part_num)}">${esc(i.kind === "fig" ? itemName(i) : i.part_name || i.part_num)}</div>
         <div class="inv-meta">${i.kind === "fig" ? `🟡 Figurine · <b>${esc(i.number)}</b>` : `${color(i)} · <b>${esc(i.part_num)}</b>${i.element_id ? ` · élément ${esc(i.element_id)}` : ""}`}</div>
         <div class="inv-meta bl-cond-row"><label class="bl-cond">État <select data-cond aria-label="État voulu">${BL_CONDS.map(([v, t]) => `<option value="${v}" ${condOf(i) === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-          <a class="ext bl-go" href="${esc(orderLink(i))}" target="_blank" rel="noopener" title="Les annonces BrickLink de cet élément, dans la zone d'où vient le prix, à l'état voulu">BrickLink ↗</a></div>
+          <a class="ext bl-go" href="${esc(orderLink(i))}" target="_blank" rel="noopener" title="Les annonces BrickLink de cet élément, dans la zone d'où vient le prix, à l'état voulu">BrickLink ↗</a>${i.kind === "fig" ? `<a class="ext" href="${esc(rbUrl(i.number, true))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : i.part_num ? `<a class="ext" href="${esc(rbPartUrl(i.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div>
         <div class="inv-meta">${priceText(i)}</div>
         ${i.set_number ? `<div class="inv-meta">🧱 Pour <button type="button" class="link bl-for" data-forset="${esc(i.set_number)}" title="Ouvrir la fiche du set">${esc(setLabel(i.set_number))}</button></div>` : ""}
         ${i.notes ? `<div class="inv-meta">📝 ${esc(i.notes)}</div>` : ""}
@@ -5326,7 +5388,8 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     $d("[data-img]").src = img(p.image || p.photo_image);
     $d("[data-num]").textContent = p.part_num + (p.bricklink && p.bricklink !== p.part_num ? ` · BrickLink ${p.bricklink}` : "");
     $d("[data-name]").textContent = p.name || "";
-    $d("[data-links]").innerHTML = `<a href="${esc(blSale("P", p.bricklink || p.part_num))}" target="_blank" rel="noopener">BrickLink ↗</a>`   // les annonces (plus de lien Rebrickable)
+    $d("[data-links]").innerHTML = `<a href="${esc(blSale("P", p.bricklink || p.part_num))}" target="_blank" rel="noopener">BrickLink ↗</a>`   // les annonces
+      + (p.part_num ? ` · <a href="${esc(rbPartUrl(p.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : "")   /* (et Rebrickable, à côté — 20/11) */
       + ` · <a href="#" data-where title="Les sets et les figurines qui contiennent cette pièce (dans la couleur choisie)">🔎 Où la trouver</a>`;
     $d("[data-where]").onclick = e => { e.preventDefault();   // provenance, comme sur BrickLink : sets et figurines avec cette pièce
       openPartInfo({ part: p.bricklink || p.part_num, part_num: p.part_num, name: p.name, image: chosen?.image || p.image, ...(chosen && chosen.color_id !== 9999 ? { color_id: chosen.color_id, color_fr: chosen.color_fr } : {}) }); };
@@ -5367,7 +5430,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
   }
   function drawColors() {
     const q = $d("[data-cfilter]").value.trim().toLowerCase();
-    $d("[data-colcount]").textContent = `(${colors.length} existante${colors.length > 1 ? "s" : ""})`;
+    $d("[data-colcount]").textContent = `(${colors.length} existante${colors.length > 1 ? "s" : ""})` + (canMulti && colors.length > 1 ? " · touchez-en plusieurs pour les ajouter ensemble" : "");
     const shown = colors.filter(c => !q || (c.color_fr + " " + c.color_name).toLowerCase().includes(q));
     $d("[data-colors]").innerHTML = shown.map(c => `<button type="button" class="color-opt ${(multi.size > 1 ? multi.has(c.color_id) : chosen === c) ? "on" : ""} ${c.in_set ? "in-set" : ""}" data-c="${colors.indexOf(c)}"
         title="${esc(c.color_name)}${c.elements?.length ? " · élément(s) " + esc(c.elements.join(", ")) : ""}">
@@ -5376,7 +5439,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
         ${c.in_set ? `<span class="co-set">×${c.in_set} dans le set</span>` : ""}</button>`).join("") || `<div class="loading">Aucune couleur connue pour cette pièce : elle sera ajoutée ${chosen?.noColor && similarTo?.color_fr ? `en ${esc(similarTo.color_fr)} (couleur de la pièce remplacée)` : "sans couleur précise"}.</div>`;
     $$d("[data-c]").forEach(b => b.onclick = () => {
       const c = colors[b.dataset.c];
-      if (canMulti && chosen && c !== chosen && (multi.size > 1 || qtyNow() > 1)) {   // quantité > 1 : couleurs en plus (appui à nouveau = retirée)
+      if (canMulti && chosen && c !== chosen) {   // une autre couleur : ajoutée en plus (appui à nouveau = retirée) — toujours possible, 20/11
         if (!multi.size) multi.set(chosen.color_id, qtyNow());
         multi.has(c.color_id) ? multi.delete(c.color_id) : multi.set(c.color_id, 1);
         collapse(); drawColors(); chooseElement(); return;
@@ -5921,7 +5984,7 @@ $("#btnSettings").onclick = async () => {
             <div class="thp-frow"><span class="btn small-btn">🔶 Pièces</span><span class="btn small-btn">📘 Plan</span></div></div></div>
         <div class="thp-flbl">Photo</div>
         <div class="thp-frow"><span class="btn small-btn">📷 Appareil photo</span><span class="btn small-btn">📁 Importer une image</span><span class="btn small-btn">📋 Coller</span><span class="btn small-btn">✂️ Recadrer</span></div>
-        <div class="thp-frow thp-fend"><span class="btn primary small-btn">💾 Enregistrer</span><span class="btn ghost small-btn">↩️ Annuler</span><span class="ext">BrickLink ↗</span><span class="ext">LEGO.com ↗</span></div>
+        <div class="thp-frow thp-fend"><span class="btn primary small-btn">💾 Enregistrer</span><span class="btn ghost small-btn">↩️ Annuler</span><span class="ext">BrickLink ↗</span><span class="ext">Rebrickable ↗</span><span class="ext">LEGO.com ↗</span></div>
       </div></div>
     <p class="set-sub">Couleur de l'application</p>
     <p class="hint" style="margin-top:0">La couleur des boutons, surlignages et de la barre du téléphone. Une liste peut avoir sa propre couleur (✏️ Modifier la liste) : elle passe avant.</p>
@@ -6269,6 +6332,7 @@ function squarePic() {   /* photo carrée : son bas sur le bas des boutons Pièc
   const diff = () => { const r = right.getBoundingClientRect().top; return (pic.getBoundingClientRect().bottom - r) - ((actOn() ? act : right).getBoundingClientRect().bottom - r); };
   let a = lo, b = hi;   // (dichotomie : plus la photo est grande, plus son bas descend et plus la colonne de droite s'allonge — moins vite)
   set(a); if (diff() >= 0) b = a; else { set(b); if (diff() <= 0) a = b; else for (let k = 0; k < 9; k++) { const m = (a + b) / 2; set(m); if (diff() < 0) a = m; else b = m; } }
+  sqLast.w = W; sqLast.t = Date.now();
   set(a); const d = diff();   // texte plus court que la photo : le type et les boutons descendent jusqu'au bas de la photo
   if (d > 0.5 && actOn()) act.style.marginTop = (parseFloat(getComputedStyle(act).marginTop) || 0) + d + "px";
 }
@@ -6286,7 +6350,10 @@ function alignKindSel() {
   if (d > 0.5 && d < 400) sel.style.marginTop = (parseFloat(getComputedStyle(sel).marginTop) || 0) + d + "px";
   else if (d < -0.5 && d > -400) act.style.marginTop = (parseFloat(getComputedStyle(act).marginTop) || 0) - d + "px";
 }
-new ResizeObserver(() => requestAnimationFrame(alignKindSel)).observe($(".cfg-top"));
+const sqLast = { w: 0, t: 0 };   // (dernier calage de la photo : largeur et heure — évite la boucle calage ↔ barre de défilement)
+new ResizeObserver(() => { const w = $(".cfg-top")?.getBoundingClientRect().width || 0;
+  if (Math.abs(w - sqLast.w) < 2 || (Date.now() - sqLast.t < 800 && Math.abs(w - sqLast.w) < 26)) return;   // (pas de vrai changement de largeur)
+  requestAnimationFrame(alignKindSel); }).observe($(".cfg-top"));
 $("#cfgImg").addEventListener("load", () => requestAnimationFrame(alignKindSel));
 $("#modalEdit").onclick = () => { if (!state.draft) return; state.draft.editing = true; syncRo(); toast("Modification : 💾 pour enregistrer"); };
 new MutationObserver(() => { if (modal.hidden) { modal.classList.remove("ro"); document.body.classList.remove("sheet-ro"); } }).observe(modal, { attributes: true, attributeFilter: ["hidden"] });
@@ -6861,7 +6928,7 @@ function openEstimate(file, direct = null) {
     if (fig) {
       tiles = info.used == null
         ? box("Neuve / détachée", info.value, "pas encore de prix d'occasion relevé", true)
-        : box("Occasion", info.used, "prix relevé (BrickOwl)", true) + box("Neuve / détachée", info.value);
+        : box("Occasion", info.used, "prix relevé", true) + box("Neuve / détachée", info.value);
       extra = `<div class="in-sets big" data-insets></div><div class="in-sets big" data-catsets></div>`;
     } else {
       const used = info.used_value, figsU = info.minifig_used || 0;   // figurines : prix d'occasion relevés
@@ -7018,7 +7085,7 @@ async function addCatalogSet(r) {
   const cur = state.lists.find(l => l.id === state.current && (l.kind || "collection") === "collection");
   const list = cur || state.lists.find(l => (l.kind || "collection") === "collection");
   if (!list) return toast("Créez d'abord une liste");
-  if (!await confirmBox(`Ajouter « ${r.name} » (${r.number}) à la liste « ${list.name} » ? Il n'est pas dans le catalogue des prix : sa valeur sera estimée par ses ${r.pieces ? nf.format(r.pieces) + " " : ""}pièces (BrickOwl).`, { ok: "Ajouter" })) return;
+  if (!await confirmBox(`Ajouter « ${r.name} » (${r.number}) à la liste « ${list.name} » ? Il n'est pas dans le catalogue des prix : sa valeur sera estimée par ses ${r.pieces ? nf.format(r.pieces) + " " : ""}pièces.`, { ok: "Ajouter" })) return;
   try {
     const it = await api("/api/items/catalog-set", { method: "POST", body: { number: r.number, list_id: list.id } });
     await load(); openEdit(it.id); toast("Set ajouté : chiffrage de ses pièces en cours");
@@ -7596,7 +7663,7 @@ function fillConfig() {
   if (state.draft.adjust?.fid === undefined && state.draft.adjust && !own) state.draft.adjust = null;
   if (state.draft.adjust?.fid) {   // figurine d'un de mes sets : c'est sa fiche — type affiché sous la photo, pas de retour vers la recherche
     const ks = $("#cuKindSel");
-    [...ks.options].forEach(o => o.hidden = !["cat", "tofig", "toset", "partial", "moc", "fig"].includes(o.value));
+    [...ks.options].forEach(o => o.hidden = !["cat", "toset", "partial", "moc", "fig"].includes(o.value));   // (« Figurine seule (sortir du set) » retirée le 20/11 : « − » de « Dans mes sets »)
     ks.querySelector("option[value=cat]").textContent = "🟡 Figurine";
     ks.querySelector("option[value=tofig]").textContent = "🟡 Figurine seule (sortir du set)";
     ks.querySelector("option[value=toset]").textContent = "🧱 Set complet"; ks.querySelector("option[value=fig]").textContent = "🟠 Figurine MOC";
@@ -8262,7 +8329,21 @@ function addThen(fn) {
   $("#stepConfig").requestSubmit($("#btnSave"));
 }
 /* rangée du bas : + Figurine · + Pièce · + Accessoire · + Apparence (les encadrés au-dessus n'apparaissent que s'ils ont du contenu) */
+function drawQtyLogo() {   /* logo de la liste (ou logo individuel de la fiche) au bout de la ligne « Quantité » — 20/11 */
+  const row = $(".qty-row"); if (!row) return; let el = $("#qtyLogo", row);
+  const dr = state.draft, it = dr?.item, lid = it?.list_id || $("#cfgList")?.value || "";
+  let l = state.lists.find(x => x.id === lid); const seen = new Set();
+  while (l && !(l.logo || l.emoji) && l.parent_id && !seen.has(l.id)) { seen.add(l.id); l = state.lists.find(x => x.id === l.parent_id); }
+  const own = it ? itemLogoOf(it) : "";
+  const html = own ? (/^(\/|https?:|data:)/.test(own) ? `<img class="list-logo" src="${esc(own)}" alt="">` : `<span class="list-emo">${esc(own)}</span>`) : l && (l.logo || l.emoji) ? listLogo(l, "list-logo") : "";
+  row.classList.toggle("has-logo", !!html);
+  if (!html) { el?.remove(); return; }
+  if (!el) { el = document.createElement("span"); el.id = "qtyLogo"; el.className = "qty-logo go-list"; el.setAttribute("role", "link"); row.append(el); }
+  if (el._h !== html) { el._h = html; el.innerHTML = html; }
+  el.dataset.golist = l?.id || lid; el.title = l ? `Liste « ${l.name} »` : "";
+}
 function drawAddBar() {
+  try { drawQtyLogo(); } catch {}
   const dr = state.draft; let bar = $("#addBar");
   if (!bar) { bar = document.createElement("div"); bar.id = "addBar"; bar.className = "add-bar"; }
   if (!dr || !sheetExtras()) { bar.remove(); return; }
@@ -8309,7 +8390,7 @@ function drawFigExtra0() {
   const own = isCustom(it) && it.partial_set ? new Set((it.info?.set_minifigs || []).map(figKey)) : null;   // set partiel : les figurines de son set sont ses originales
   const attOrig = own ? att.filter(a => isFig(a) && own.has(figKey(a.number))) : (fo => att.filter(a => fo.used.has(a.id)))(origFill(it)), attAdd = att.filter(a => !attOrig.includes(a));   /* (🧩 originale mise à part : avec les originales) */
   const nOrig = attOrig.reduce((a, x) => a + (x.quantity || 1), 0), nAdd = attAdd.reduce((a, x) => a + (x.quantity || 1), 0) + nExtra;
-  const tile = a => `<div class="fig figq"><span class="fq-pic"><img src="${thumb(itemImage(a))}" alt="" loading="lazy" class="fig-link" data-feopen="${esc(a.id)}" title="Ouvrir la fiche"><b class="fq-n">×${nf.format(a.quantity || 1)}</b></span>
+  const tile = a => `<div class="fig figq"><span class="fq-pic"><img src="${thumb(itemImage(a))}" alt="" loading="lazy" class="fig-link" data-feopen="${esc(a.id)}" title="Ouvrir la fiche"><b class="fq-n tap" data-feqty="${esc(a.id)}" title="Modifier la quantité">×${nf.format(a.quantity || 1)}</b></span>
       <span class="fq-txt"><span class="fn fig-link" role="button" tabindex="0" data-feopen="${esc(a.id)}" title="Ouvrir la fiche">${esc(itemName(a))}${realSwaps(a.fig_swaps).length ? ` <span class="mod-tag">(modifiée)</span>` : ""}</span><span class="fv">${isCustom(a) ? `<span class="moc-pill">${esc(mocWord(a))}</span>` : esc(a.number)} · ${a.no_estimate ? "sans estimation" : moneyA(a.total_value, a.approx) + trendOf(a, true)}</span></span>
       <button type="button" class="icon-btn fq-more" data-femenu="${esc(a.id)}" title="Copier, déplacer, retirer du set…" aria-label="Actions">⋯</button></div>`;
   const sub = (n, w) => `<div class="fig-sub">${nf.format(n)} ${w}${n > 1 ? "s" : ""}</div>`;
@@ -8331,7 +8412,7 @@ function drawFigExtra0() {
         toast(`${itemName(a)} ${copy ? "copiée" : "déplacée"} vers « ${itemName(t)} »`);
       } catch (e) { toast(e.message); }
     };
-    actionMenu(b, [...(isFig(a) && (a.quantity || 1) > 1 ? [["✏️ Dupliquer puis modifier", () => indivOut(it, a.id, "add", itemName(a))]] : []),
+    actionMenu(b, [["🔢 Modifier la quantité", () => feQty(a)], ...(isFig(a) && (a.quantity || 1) > 1 ? [["✏️ Dupliquer puis modifier", () => indivOut(it, a.id, "add", itemName(a))]] : []),
       ...(isFig(a) ? [["📄 Copier vers un autre set…", () => go(true)]] : []), ["➡️ Déplacer vers un autre set…", () => go(false)],
       ["↩ Sortir du set (redevient une figurine seule)", async () => {
         if ((a.quantity || 1) < 2) return setAttached(a.id, "", it);
@@ -8351,6 +8432,15 @@ function drawFigExtra0() {
         } catch (e) { toast(e.message); }
       }]]);
   });
+  async function feQty(a) {   /* figurine ajoutée dans ce set : combien d'exemplaires (au moins 1 ; pour l'enlever : « Supprimer » ou « Sortir du set ») — 20/11 */
+    const v = await ask(`Combien de « ${itemName(a)} » dans ce set ?`, "", String(a.quantity || 1), { num: true, min: 1, max: 999 }); if (v == null) return;
+    const n = parseInt(v, 10); if (!(n >= 1)) return toast("Nombre non valable");
+    if (n === (a.quantity || 1)) return;
+    try { await api("/api/items/" + a.id, { method: "PUT", body: { quantity: n, _force: true } }); await load();
+      const f = state.items.find(i => i.id === it.id); if (f && state.draft?.item?.id === it.id) { state.draft.item = f; drawFigExtra(); updateEstimate(); }
+      toast(`« ${itemName(a)} » : ${n} exemplaire${n > 1 ? "s" : ""}`); } catch (e) { toast(e.message); }
+  }
+  $$("[data-feqty]", box).forEach(b => b.onclick = e => { e.stopPropagation(); const a = att.find(x => x.id === b.dataset.feqty); if (a) feQty(a); });
   $$("[data-feopen]", box).forEach(b => b.onclick = () => {   // MOC : sa fiche ; minifig du catalogue : la fiche de la minifig
     const a = att.find(x => x.id === b.dataset.feopen); if (!a) return;
     openEdit(a.id);   /* sa fiche à elle, toujours (une autre fiche peut porter la même référence : copie renommée, modifiée…) */
@@ -8691,7 +8781,8 @@ function drawOwnedSets(box, number, before, onPick) {
         if (dr?.item?.id && state.items.some(x => x.id === dr.item.id)) return openEdit(dr.item.id);
         drawOwnedSets(box, number, before, onPick); updateEstimate(); };
       if (d < 0) {
-        const add = state.items.find(i => same(i) && i.attached_to === st.id && !i.set_orig), orig = state.items.find(i => same(i) && i.attached_to === st.id && i.set_orig);
+        const mine = i => !lead || i === lead || i._merged === lead || (it && (i === it || i._merged === it));   // (exemplaire compté sur CETTE ligne : celui de cette fiche)
+        const add = state.items.find(i => same(i) && i.attached_to === st.id && !i.set_orig && mine(i)), orig = state.items.find(i => same(i) && i.attached_to === st.id && i.set_orig);
         if (add || orig) {
           b.disabled = true;
           try {
@@ -9055,7 +9146,7 @@ function pendingEstimate(fig) {
   $("#estLabel").textContent = si ? (fig ? "Estimation de ma figurine" : "Estimation de mon set") : "Valeur estimée";
   if (on && mi?.priced) {
     $("#estValue").innerHTML = moneyA(si.total_value, si.approx);
-    $("#estDetail").textContent = `Estimé par ses pièces (BrickOwl) : ${nf.format(mi.priced - (mi.approx || 0))} / ${nf.format(mi.lots)} références${mi.done ? "." : " (chiffrage en cours…)"}`;
+    $("#estDetail").textContent = `Estimé par ses pièces : ${nf.format(mi.priced - (mi.approx || 0))} / ${nf.format(mi.lots)} références${mi.done ? "." : " (chiffrage en cours…)"}`;
   } else if (on && mi) {
     $("#estValue").innerHTML = `<span class="muted small">Chiffrage des pièces…</span>`;
     $("#estDetail").textContent = "Le prix de chaque pièce est recherché ; l'estimation s'affiche dans un instant.";
@@ -9145,7 +9236,7 @@ function updateEstimateBase() {
     else if (info?.pending_prices && !it.wish) {   // ajoutée sans cote (catalogue des prix injoignable) : reprise automatique
       $("#partsEstRow").hidden = true;
       if (!(state.draft.item?.total_value > 0)) $("#estValue").innerHTML = `<span class="muted small">Sans cote</span>`;
-      $("#estDetail").textContent = (state.draft.item?.total_value > 0 ? "Prix d'occasion relevé (BrickOwl) · " : "")
+      $("#estDetail").textContent = (state.draft.item?.total_value > 0 ? "Prix d'occasion relevé · " : "")
         + (state.draft.offline || net.off ? "hors ligne : la cote s'affichera au retour de la connexion."   // (pas une panne de BrickEconomy)
           : "le catalogue des prix (BrickEconomy) ne répond pas : la cote sera récupérée automatiquement dès que possible.");
     }
@@ -9363,7 +9454,7 @@ function pickPhoto({ title, number, current = "", fallback = "", crop = {}, cuto
   });
 }
 
-/* liens vers les fiches LEGO.com et BrickLink (jamais Rebrickable : tout s'ouvre sur BrickLink) */
+/* liens vers les fiches LEGO.com, BrickLink et Rebrickable (toujours les deux : BrickLink et Rebrickable côte à côte) */
 const rbUrl = (n, fig) => /^fig-\d+$/.test(n) ? `https://rebrickable.com/minifigs/${encodeURIComponent(n)}/` : fig ? `https://rebrickable.com/search/?q=${encodeURIComponent(n)}`
   : `https://rebrickable.com/sets/${encodeURIComponent(/-\d+$/.test(n) ? n : n + "-1")}/`;   // lien « Voir sur Rebrickable »
 function extLinks(info, fig, cond = "") {   // cond : état cherché (souhait) — "N" neuf, "U" occasion, "" les deux / sans objet
@@ -9913,14 +10004,14 @@ async function openFigParts(itemId, figId = "", opts = {}) {
         <button type="button" class="btn primary" data-savesw ${draft ? "" : "disabled"}>Enregistrer</button></div>
       <div class="est-box"><div class="muted">Ajustement de la valeur</div>
         <div class="est-value">${!swaps.length ? "—" : draft ? "à l'enregistrement" : sp.done ? `${sp.delta >= 0 ? "+" : "−"}${money(Math.abs(sp.delta))}` : "chiffrage…"}</div>
-        <div class="muted small">${swaps.length ? `Pièces d'origine retirées, pièces de remplacement ou ajoutées comptées (BrickOwl)${sp.unpriced ? ` · ${sp.unpriced} pièce(s) sans prix non comptée(s)` : ""} · valeur actuelle : <b>${money(it.unit_value)}</b>` : "Aucune pièce remplacée : la valeur reste celle du catalogue."}</div></div>
+        <div class="muted small">${swaps.length ? `Pièces d'origine retirées, pièces de remplacement ou ajoutées comptées${sp.unpriced ? ` · ${sp.unpriced} pièce(s) sans prix non comptée(s)` : ""} · valeur actuelle : <b>${money(it.unit_value)}</b>` : "Aucune pièce remplacée : la valeur reste celle du catalogue."}</div></div>
       <div class="moc-lots">${parts.map((p, k) => { const s = swapOf(k), gone = s && !s.new, n = s?.new;
         const out = s?.orig ? Math.min(p.qty, s.orig.qty || p.qty) : p.qty, kept = s ? p.qty - out : 0;   // (une partie seulement changée : ex. 1 torse sur 9)
         const vk = mlObjs.push(n ? { ...n, qty: out } : s ? { ...p, qty: out } : p) - 1;   // (prix constaté de la ligne : la remplaçante si la pièce est échangée)
-        const keptRow = kept > 0 ? `<div class="moc-lot" data-txt="${esc(`${p.name} ${p.part} ${p.color_fr}`.toLowerCase())}"><img src="${img(p.image)}" alt="" loading="lazy"><span class="ml-txt"><span><b>${esc(p.name)}</b>${qtyTag(kept)}</span>
+        const keptRow = kept > 0 ? `<div class="moc-lot" data-txt="${esc(`${p.name} ${p.part} ${p.color_fr}`.toLowerCase())}"><img src="${img(p.image)}" alt="" loading="lazy" class="tap" data-zpart="${esc(img(p.image))}" data-zalt="${esc(p.name || p.part || "")}" title="Agrandir la photo"><span class="ml-txt"><span><b>${esc(p.name)}</b>${qtyTag(kept)}</span>
           <small>${esc(p.part)} · ${esc(p.color_fr || "")}</small><small class="muted">gardée${kept > 1 ? "s" : ""} (d'origine)</small></span><span class="ml-val"></span></div>` : "";
         const was = keptRow + (n ? `<div class="moc-lot removed replaced-orig" data-txt="${esc(`${p.name} ${p.part} ${p.color_fr}`.toLowerCase())}">
-          <img src="${img(p.image)}" alt="" loading="lazy"><span class="ml-txt"><span><b>${esc(p.name)}</b>${qtyTag(out)}</span>
+          <img src="${img(p.image)}" alt="" loading="lazy" class="tap" data-zpart="${esc(img(p.image))}" data-zalt="${esc(p.name || p.part || "")}" title="Agrandir la photo"><span class="ml-txt"><span><b>${esc(p.name)}</b>${qtyTag(out)}</span>
           <small>${esc(p.part)} · ${esc(p.color_fr || "")}</small><small class="sw-from">remplacée par ${esc(n.name || n.part)}</small></span>
           <span class="ml-val"></span><button type="button" class="btn small-btn ml-back" data-undo="${k}" title="Remettre la pièce d'origine">↩ Remettre</button></div>` : "");
         return was + `<div class="moc-lot ${gone ? "removed" : s ? "swapped" : ""}" data-txt="${esc(`${p.name} ${p.part} ${p.part_num} ${p.color_fr} ${n ? n.name + " " + n.part : ""}`.toLowerCase())}"><img src="${img(n ? n.image || p.image : p.image)}" alt="" loading="lazy" class="tap" data-pinfo="${k}" title="Détails de la pièce">
@@ -9972,6 +10063,7 @@ async function openFigParts(itemId, figId = "", opts = {}) {
       pieceMenu(b, n ? { ...n, qty: p.qty } : p, { from: itemId, remove: gone ? null : saveNow([...cur.filter(x => x.k !== k), { k, orig, new: null }]),
         extra: $$(".ml-btns [data-rc], .ml-btns [data-rp], .ml-btns [data-rm], .ml-btns [data-undo]", b.closest(".moc-lot")).map(x => [x.title, () => x.click()]) });
     });
+    $$("[data-zpart]", body).forEach(b => b.onclick = () => openZoom(b.dataset.zpart, b.dataset.zalt || ""));   /* (pièce gardée / retirée : sa photo en grand) */
     $$("[data-addinfo]", body).forEach(b => b.onclick = () => {
       const x = swapOf(+b.dataset.addinfo); if (!x?.new) return;
       const cur = draft || swaps;
@@ -10450,7 +10542,7 @@ async function openPartInfo(p) {
         <div class="pi-name">${esc(r.name || p.name || "")}</div>
         <div class="pi-meta">${col ? `${swatch(c?.rgb)} ${esc(c?.color_fr || col)}` : ""}${p.qty > 1 ? ` · ×${p.qty}` : ""}${yrs ? ` · produite ${esc(yrs)}` : ""}${p.unit != null ? ` · ${money(p.unit)} pièce` : ""}</div>
         <div class="pi-meta pi-bl" data-pibl hidden></div>
-        <div class="pi-meta">${(r.elements || []).length ? `Élément${r.elements.length > 1 ? "s" : ""} ${r.elements.slice(0, 3).map(esc).join(", ")} · ` : ""}<a class="ext" data-bllink href="${esc(blSale("P", r.bricklink || p.part || r.part_num || ""))}" target="_blank" rel="noopener">BrickLink ↗</a></div></div></div>
+        <div class="pi-meta">${(r.elements || []).length ? `Élément${r.elements.length > 1 ? "s" : ""} ${r.elements.slice(0, 3).map(esc).join(", ")} · ` : ""}<a class="ext" data-bllink href="${esc(blSale("P", r.bricklink || p.part || r.part_num || ""))}" target="_blank" rel="noopener">BrickLink ↗</a>${(p.part_num || r.part_num) ? ` <a class="ext" href="${esc(rbPartUrl(p.part_num || r.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div></div></div>
     ${r.no_color ? `<p class="hint">Cette pièce n'existe dans aucun set officiel en <b>${esc(col)}</b>.${r.colors.length ? ` Couleurs existantes : ${r.colors.slice(0, 12).map(x => `${swatch(x.rgb)} ${esc(x.color_fr)}`).join(", ")}.` : ""}</p>`
       : r.color_id == null ? `<p class="hint">Couleur inconnue : impossible de lister les sets.</p>`
       : `<h3 class="pi-h">Apparaît dans ${nf.format(r.count)} set${r.count > 1 ? "s" : ""}${mine ? ` <span class="muted small">· dont ${mine} dans ma collection</span>` : ""}</h3>
@@ -10826,10 +10918,38 @@ $("#btnDeleteItem").onclick = async () => {
     await api("/api/items/" + it.id, { method: "DELETE" });
     modal.hidden = true; await load(); toast(`« ${itemName(it)} » sans set supprimée${q > 1 ? "s" : ""}`); return;
   }
+  if ((it._att || []).some(isFigLike)) {   // set avec des figurines rattachées : on demande quoi en faire
+    const extra = await askHostFigs([it]); if (extra === null) return;
+    await api("/api/items/delete", { method: "POST", body: { ids: [it.id, ...extra] } });
+    modal.hidden = true; await load(); toast(`« ${itemName(it)} » supprimé${extra.length ? ` avec ${extra.length} fiche${extra.length > 1 ? "s" : ""} de figurine` : " — ses figurines restent"}`); return;
+  }
   if (!await confirmBox(`Retirer « ${itemName(it)} » ${fromWhere(it.list_id)} ?`)) return;
   await api("/api/items/" + it.id, { method: "DELETE" });
   modal.hidden = true; await load(); toast(`« ${itemName(it)} » retiré ${fromWhere(it.list_id)}`);
 };
+
+/* suppression d'un ou plusieurs sets qui ont des figurines rattachées : une case par figurine (cochée = gardée, seule et indépendante).
+   Rend les fiches de figurines à supprimer AVEC le set ([] : toutes gardées), ou null (annulé). « skip » : déjà choisies pour suppression. */
+function askHostFigs(hosts, skip = new Set()) {
+  const figs = hosts.flatMap(h => (h._att || []).filter(x => isFigLike(x) && !skip.has(x.id)).map(x => ({ x, h })));
+  if (!figs.length) return confirmBox(`Supprimer ${hosts.length > 1 ? `ces ${hosts.length} sets` : `« ${itemName(hosts[0])} »`} ?`).then(ok => ok ? [] : null);
+  return new Promise(res => {
+    const d = document.createElement("div"); d.className = "modal top";
+    d.innerHTML = `<div class="modal-box" style="width:min(560px,100%)"><div class="modal-head"><h2>🗑️ Supprimer ${hosts.length > 1 ? `${hosts.length} sets` : `« ${esc(itemName(hosts[0]))} »`}</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
+      <p class="hint" style="margin-top:0">${figs.length > 1 ? `${figs.length} fiches de figurines y sont rattachées` : "Une fiche de figurine y est rattachée"}. Cochées : gardées (seules, indépendantes, avec leurs photos et leurs réglages). Décochées : supprimées avec le set.</p>
+      <label class="todo-chk hf-all"><input type="checkbox" data-all checked> <b>Tout cocher / décocher</b></label>
+      <div class="hf-list">${figs.map(({ x, h }, k) => `<label class="todo-chk hf-row"><input type="checkbox" data-k="${k}" checked><img class="hf-pic" src="${thumb(itemImage(x))}" alt="" loading="lazy">
+        <span><b>${esc(itemName(x))}</b> <span class="muted small">${esc(x.number || "")}${(x.quantity || 1) > 1 ? ` · ×${x.quantity}` : ""}${hosts.length > 1 ? ` · ${esc(itemName(h))}` : ""}</span></span></label>`).join("")}</div>
+      <div class="est-actions hf-acts"><button type="button" class="btn ghost" data-cancel>Annuler</button><button type="button" class="btn danger-ghost" data-allx>Supprimer tout</button><button type="button" class="btn primary" data-keep>Garder la sélection</button></div></div>`;
+    document.body.append(d);
+    const boxes = [...d.querySelectorAll("[data-k]")], done = v => { d.remove(); res(v); };
+    d.querySelector("[data-all]").onchange = e => boxes.forEach(b => { b.checked = e.target.checked; });
+    boxes.forEach(b => b.onchange = () => { d.querySelector("[data-all]").checked = boxes.every(x => x.checked); });
+    d.querySelector("[data-x]").onclick = d.querySelector("[data-cancel]").onclick = () => done(null);
+    d.querySelector("[data-keep]").onclick = () => done(boxes.filter(b => !b.checked).map(b => figs[+b.dataset.k].x.id));
+    d.querySelector("[data-allx]").onclick = async () => { if (await confirmBox(`Supprimer aussi les ${figs.length} fiche${figs.length > 1 ? "s" : ""} de figurines ?`, { ok: "Supprimer tout" })) done(figs.map(f => f.x.id)); };
+  });
+}
 
 /* ------------------------------------------------------------ rester où l'on est après un rechargement de la page
    Liste et défilement, plus TOUT ce qui est ouvert : la fiche (ou la recherche) et chaque fenêtre par-dessus, dans l'ordre.
@@ -11055,3 +11175,28 @@ api("/api/refresh").then(r => { if (r.running) priceRefresh.watch(); }).catch(()
       if (tb.classList.contains("is-stuck") !== st) tb.classList.toggle("is-stuck", st); };
     const later = () => { if (!q) { q = true; requestAnimationFrame(chk); } };
     addEventListener("scroll", later, { passive: true }); addEventListener("resize", later); later(); } }
+
+/* PC : barre du haut réduite dès qu'on fait défiler (classe « hdr-mini » ; seuils 60 / 10 px : pas de clignotement) — 20/11 */
+{ let q = false; const chk = () => { q = false; const on = document.documentElement.classList.contains("hdr-mini"), y = scrollY;
+    if (!on && y > 60) document.documentElement.classList.add("hdr-mini"); else if (on && y < 10) document.documentElement.classList.remove("hdr-mini"); };
+  addEventListener("scroll", () => { if (!q) { q = true; requestAnimationFrame(chk); } }, { passive: true }); chk(); }
+
+/* bloc des sous-listes et des onglets (#topViews2) collé en haut : classe « is-stuck » (fond de verre seulement à ce moment-là — 20/11) */
+{ let q = false; const chk = () => { q = false; const el = document.getElementById("topViews2"); if (!el) return;
+    const top = parseFloat(getComputedStyle(el).top) || 0, st = scrollY > 0 && el.offsetHeight > 0 && el.getBoundingClientRect().top <= top + 1;
+    if (el.classList.contains("is-stuck") !== st) el.classList.toggle("is-stuck", st); };
+  const later = () => { if (!q) { q = true; requestAnimationFrame(chk); } };
+  addEventListener("scroll", later, { passive: true }); addEventListener("resize", later); later(); }
+
+/* figurine sans photo à moi : MA photo de la même figurine (une autre de ses fiches, ou gardée par un set) en secours, si l'image du
+   catalogue ne vient pas (carte : data-fb ; fiche : posée à chaque changement de photo) — 20/11 */
+function figSibPhoto(number) {
+  if (!number || !Array.isArray(state.items)) return "";
+  const own = state.items.find(i => i.kind === "fig" && i.number === number && i.photo_url); if (own) return own.photo_url;
+  const h = state.items.find(i => i.fig_mods?.[number]?.photo_url); return h ? h.fig_mods[number].photo_url : "";
+}
+{ const im = document.getElementById("cfgImg");
+  if (im) new MutationObserver(() => { const dr = state.draft; if (!dr || dr.kind !== "fig") return;
+    const fb = figSibPhoto(dr.item?.number || dr.info?.number || dr.adjust?.fid || ""), want = fb ? img(fb) : "";
+    if (want && im.getAttribute("src") !== want && im.dataset.fb !== want) { im.dataset.fb = want; delete im.dataset.fbDone; } })
+    .observe(im, { attributes: true, attributeFilter: ["src"] }); }

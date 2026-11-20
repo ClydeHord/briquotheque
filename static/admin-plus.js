@@ -183,7 +183,8 @@ VIEW.calculs = () => {
 };
 
 /* ------------------------------------------------------------------ Règles « si… alors » */
-const ACTS = [["tag", "Étiquette sous le nom (carte)"], ["badge", "Pastille sur la photo (carte)"], ["card", "Couleur de la carte"], ["msg", "Message en haut de la fiche"], ["hide", "Masquer un bloc de la fiche"]];
+const ACTS = [["tag", "Étiquette sous le nom (carte)"], ["badge", "Pastille sur la photo (carte)"], ["card", "Couleur de la carte"], ["msg", "Message en haut de la fiche"], ["hide", "Masquer un bloc de la fiche"], ["todo", "📝 Tâche à faire (ajoutée à la fiche)"]];
+const TODO_CATS = ["Photo", "Pièces", "Accessoires", "Figurine", "Livret", "Boîte", "Autres"];   // (catégories proposées ; une autre peut être écrite)
 const blockOpts = () => [...Object.entries(BLOCKS), ["x-_", "Bloc « " + secName("_") + " »"], ...(cfg.secs || []).map(s => ["x-" + s.id, "Bloc « " + s.label + " »"])];
 function actEd(r, a, i) {
   const set = (fn, rd) => upd("auto", r.id, x => fn(x.acts[i]), { key: "act" + r.id + i, redraw: !!rd });
@@ -191,12 +192,17 @@ function actEd(r, a, i) {
     ["tag", "badge", "msg"].includes(a.k) ? [txt(a.text, v => set(x => { x.text = v; }), a.k === "msg" ? "Texte du message ({variables} possibles)" : "Texte — ex. : 💎 Précieux"), colorIn(a.color, v => set(x => { x.color = v; }))] : null,
     a.k === "card" ? [el("span", { class: "hint" }, "fond"), colorIn(a.bg, v => set(x => { x.bg = v; })), el("span", { class: "hint" }, "bordure"), colorIn(a.border, v => set(x => { x.border = v; })), el("span", { class: "grow" })] : null,
     a.k === "hide" ? sel(a.block || "", [["", "— quel bloc ? —"], ...blockOpts()], v => set(x => { x.block = v; }, true)) : null,
+    a.k === "todo" ? [el("input", { type: "text", value: a.cat || "Autres", list: "boTodoCats", placeholder: "Catégorie", style: "width:9em", title: "Catégorie de la tâche (Photo, Pièces, Accessoires…)",
+        oninput: e => set(x => { x.cat = e.target.value.trim(); }) }),
+      el("datalist", { id: "boTodoCats" }, TODO_CATS.map(c => el("option", { value: c }))),
+      txt(a.text, v => set(x => { x.text = v; }), "Texte de la tâche ({variables} possibles) — ex. : Trouver le livret de {nom}")] : null,
     xbtn("Retirer cette action", () => upd("auto", r.id, x => { x.acts.splice(i, 1); })));
 }
 const RULE_PRESETS = [
   ["💎 Valeur de plus de 100 €", { label: "Fiches précieuses", cond: { rows: [{ v: "valeur", op: ">", val: "100" }] }, acts: [{ k: "tag", text: "💎 Précieux", color: "#7c3aed" }] }],
   ["⚠ Prix d'achat manquant", { label: "Prix d'achat à remplir", cond: { rows: [{ v: "prix_achat", op: "vide", val: "" }] }, acts: [{ k: "msg", text: "Prix d'achat non renseigné pour {nom}.", color: "#f59e0b" }] }],
   ["🟢 Bonne affaire (+50 %)", { label: "Bonnes affaires", cond: { expr: "{valeur} > {prix_achat} * 1,5" }, acts: [{ k: "badge", text: "+50 %", color: "#15803d" }] }],
+  ["📝 Tâche : prix d'achat à noter", { label: "Tâche : prix d'achat", cond: { rows: [{ v: "prix_achat", op: "vide", val: "" }] }, acts: [{ k: "todo", cat: "Autres", text: "Noter le prix d'achat de {nom}" }] }],
 ];
 VIEW.regles = () => [head("Règles « si… alors »", "Quand une fiche remplit une condition, le site réagit : une étiquette ou une pastille sur sa carte, une couleur, un message sur sa fiche, un bloc masqué."),
   P() ? null : needPreview(),
@@ -208,7 +214,7 @@ VIEW.regles = () => [head("Règles « si… alors »", "Quand une fiche remplit 
     el("div", { style: "height:8px" }), typesRow("auto", r), foot("auto", r))),
   card((cfg.auto || []).length ? "" : "Ajouter une règle", el("div", { class: "btns" }, btn("+ Nouvelle règle", () => add("auto", { label: "", cond: { rows: [{ v: "", op: "=", val: "" }] }, acts: [{ k: "tag", text: "", color: "#2563eb" }] }), "primary"),
     RULE_PRESETS.map(([n, o]) => btn(n, () => add("auto", clone(o)), "small"))),
-    hint("Les règles ne changent jamais vos données : seulement ce qui s'affiche. Dans un texte, <code>{nom}</code>, <code>{valeur}</code>… sont remplacés par ceux de la fiche.")),
+    hint("Les règles ne changent que ce qui s'affiche — sauf <b>📝 Tâche à faire</b> : une vraie tâche est ajoutée à chaque fiche qui remplit la condition (elle apparaît dans « À faire »), et retirée d'elle-même quand la fiche ne la remplit plus ou que la règle est coupée ; vos tâches écrites à la main ne sont jamais touchées. Après « Publier », les tâches suivent à la prochaine ouverture de l'appli. Dans un texte, <code>{nom}</code>, <code>{valeur}</code>… sont remplacés par ceux de la fiche.")),
 ];
 
 /* ------------------------------------------------------------------ Tuiles et totaux */

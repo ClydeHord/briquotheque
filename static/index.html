@@ -24,7 +24,7 @@
   </div>
   <div class="top-views" id="topViews" hidden></div>
   <div class="top-total" id="topTotal"></div>
-  <button class="btn primary" id="btnAdd">+ Nouveau</button>
+  <button class="btn primary" id="btnAdd" title="Nouveau" aria-label="Nouveau">+</button>
 </header>
 
 <div class="backdrop" id="backdrop" hidden></div>
@@ -50,13 +50,12 @@
     <button type="button" class="nav-item new-inv" id="btnNewInv" title="Nouvel inventaire" aria-label="Nouvel inventaire"><span class="nm">+ Nouvel inventaire</span></button>
     <div class="side-sep"></div>
     <nav id="statsNav"></nav>
-    <div class="side-bottom"><!-- petit espace avant Réglages / déconnexion -->
-      <div class="side-sep"></div>
+    <div class="side-bottom"><!-- petit espace avant Réglages / déconnexion (sans traits autour, 20/11) -->
       <button class="btn ghost full" id="btnSettings">⚙️ Réglages</button>
       <button class="btn ghost full" id="btnPassword" hidden>🔑 Changer le mot de passe</button>
       <button class="btn ghost full" id="btnLogout">↩ Se déconnecter</button>
     </div>
-    <div class="side-sep" id="pubSep"></div>
+    <div class="side-sep" id="pubSep" hidden></div>
     <nav id="pubNav"><!-- la démo (les pages publiques : 📤 à côté du titre de leur page ; GitHub : en bas, à côté des mentions légales) -->
       <button type="button" class="nav-item pub-row" data-pub="/demo" title="Copier le lien"><span class="nm">🧪 Mode Démo</span></button>
     </nav>

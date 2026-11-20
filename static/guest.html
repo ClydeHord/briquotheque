@@ -844,7 +844,7 @@ function render() {
         ${PRICES() && i._cat != null ? `<div class="foot">${valueFoot(i._cat, i._cat, false, i.quantity || 1)}${numLogo(i._sets[0]?.i.list_id)}</div>` : numLogo(i._sets[0]?.i.list_id) ? `<div class="foot foot-logo">${numLogo(i._sets[0]?.i.list_id)}</div>` : ""}</div></article>`;
     const w = isWishId(i.list_id);
     return `<article class="card ${w ? "wishcard" : ""}" data-i="${data.items.indexOf(i)}" tabindex="0" role="button" aria-label="Voir le détail">
-      <div class="pic"><img src="${thumb(i.image || (i.kind === "set" ? setPhoto(i) : i.photo_url || i.info?.image))}" alt="" loading="lazy">
+      <div class="pic"><img src="${thumb(i.photo_url || i.image || (i.kind === "set" ? setPhoto(i) : i.info?.image))}" alt="" loading="lazy">
         <div class="badges">${isCustom(i) ? (i.partial_set ? `<span class="badge partial-set">🧩 Set partiel</span>` : `<span class="badge moc">MOC</span>`) : w
           ? (retired(i) ? `<span class="badge retired">Retiré</span>` : upcoming(i) ? `<span class="badge upcoming">Bientôt disponible</span>` : soon(i) ? `<span class="badge soon">Bientôt retiré</span>` : "")
           : `${i.in && isFigLike(i) ? `<span class="badge in-set" title="Dans ${esc(hostOf(i) ? itemName(hostOf(i)) : "un set")}">Dans un set</span>` : ""}
@@ -992,7 +992,7 @@ function openDetail(i, altK = null) {
   const own = mine.filter(f => !f.mod), modi = mine.filter(f => f.mod);   // figurine du set dont des pièces ont été changées : « modifiée », plus « originale »
   const added = figs.filter(f => !f.added && f.base != null && (f.qty || 1) > f.base).map(f => ({ ...f, qty: f.qty - f.base, same: true })).concat(figs.filter(f => f.added));
   const nOwn = own.reduce((a, f) => a + (f.qty || 1), 0), nAdd = added.reduce((a, f) => a + (f.qty || 1), 0), nMod = modi.reduce((a, f) => a + (f.qty || 1), 0);
-  const photo = img(i.image || (i.kind === "set" ? setPhoto(i) : i.photo_url || inf.image));
+  const photo = img(i.photo_url || i.image || (i.kind === "set" ? setPhoto(i) : inf.image));
   const num = i.kind === "custom" ? (i.number && i.number !== "custom" ? esc(i.number) : "") : esc(n);
   const kindTxt = i.kind === "custom" ? (i.catalog_set ? "" : i.partial_set ? "Set partiel" : "MOC") : "";
   const est = !wishItem && PRICES() && inf.estimate != null;
@@ -1078,9 +1078,9 @@ function openFigDetail(v) {
       </div>
     </div>
     <fieldset><legend>Dans ${v._sets.length > 1 ? "les sets" : "le set"}</legend><div class="gs-figs">${v._sets.map(x => `<button type="button" class="fig figq gs-set" data-set="${data.items.indexOf(x.i)}">
-      <span class="fq-pic"><img src="${thumb(x.i.image || setPhoto(x.i))}" alt="" loading="lazy"></span>
+      <span class="fq-pic"><img src="${thumb(x.i.photo_url || x.i.image || setPhoto(x.i))}" alt="" loading="lazy"></span>
       <span class="fq-txt"><span class="fn">${esc(itemName(x.i))}</span><span class="fv">${esc(x.i.number)}${x.n > 1 ? ` · ×${x.n}` : ""}</span></span></button>`).join("")}</div></fieldset>
-    ${/^[a-z]+\d+[a-z]?$/i.test(v.number) ? `<div class="ext-links ext-bottom"><a class="btn small-btn" href="${esc(blSale("M", v.number, ""))}" target="_blank" rel="noopener">BrickLink ↗</a></div>` : ""}`);
+    ${/^[a-z]+\d+[a-z]?$/i.test(v.number) ? `<div class="ext-links ext-bottom"><a class="btn small-btn" href="${esc(blSale("M", v.number, ""))}" target="_blank" rel="noopener">BrickLink ↗</a><a class="btn small-btn" href="${esc(rbUrl(v.number, true))}" target="_blank" rel="noopener">Rebrickable ↗</a></div>` : ""}`);
   d.querySelector(".gd-img").onclick = () => v.quantity > 1   // plusieurs exemplaires : chacun, avec son set
     ? openParade(v.info.name || v.number, v._sets.flatMap(x => Array.from({ length: x.n }, () => ({ src: img(v._img), label: v.info.name || v.number, sub: x.i.number })))) : zoomOne(img(v._img));
   d.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { d.remove(); openDetail(data.items[+b.dataset.set]); });

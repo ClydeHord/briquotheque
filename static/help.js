@@ -9,7 +9,7 @@
       ["#btnMenu", "Menu", "Vos listes, À faire, inventaires, statistiques, réglages."],
       ["#topTotal", "Valeur totale", "La valeur estimée de toute la collection."],
       ["#topViews", "Raccourcis", "Tout, Sets, Figurines, Pièces… : changer de vue d'un appui."],
-      ["#btnAdd", "+ Nouveau", "Ajouter un set, une figurine ou un MOC : numéro, nom, photo, code-barres, ou un post Instagram."],
+      ["#btnAdd", "+ (ajouter)", "Ajouter un set, une figurine ou un MOC : numéro, nom, photo, code-barres, ou un post Instagram."],
       ["#stats", "Tuiles", "Valeur, nombre de sets, de figurines, de pièces de cette liste."],
       ["#filter", "Filtre", "Ne montrer que ce qui contient ce texte : nom, numéro, thème."],
       ["#mocChkRow", "MOC uniquement", "Ne montrer que les MOC."],
@@ -22,7 +22,7 @@
       ["#lnkPublic", "Version publique", "La page publique (lecture seule) de cette liste."],
     ]],
     souhaits: ["Liste de souhaits", [
-      ["#btnAdd", "+ Nouveau", "Ajouter un set ou une figurine souhaité."],
+      ["#btnAdd", "+ (ajouter)", "Ajouter un set ou une figurine souhaité."],
       ["#btnNovelties", "✨ Nouveautés", "Les sets à venir et les sorties récentes de LEGO.com."],
       ["#btnGiftList", "👀 À surveiller", "Les sets que vous surveillez (prix, retrait prévu)."],
       ["#btnGiftLink", "Lien public", "Copier le lien de la page publique « À surveiller »."],
