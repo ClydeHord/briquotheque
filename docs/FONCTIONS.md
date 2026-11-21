@@ -233,19 +233,25 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
 
 - Ouvrez l'inventaire d'un set : chaque pièce est **OK**, **à commander** ou **exclue**, avec sa quantité.
 - **Remplacer une couleur** (pièce de rechange d'une autre couleur) ; **scanner des pièces** en photo pour les cocher.
-- L'avancement (pièces vérifiées / total) s'affiche dans le menu ; une pièce « à commander » part dans **À commander**.
+- L'avancement (pièces vérifiées / total) s'affiche dans le menu ; ordre : non vérifiées, à commander, commandées, OK, exclues.
+- Les pièces à commander **restent dans l'inventaire** : **🧾 Exporter en XML** les copie au format BrickLink ; une fois commandées
+  (lues dans vos commandes, ou « 📦 Commandée » à la main), elles affichent « Commandée le … » et le montant payé ; **✔ OK** à la réception.
 
 ---
 
 ## À commander
 
-**À quoi ça sert** : la liste d'achats — pièces et figurines — avec ce qu'elle coûtera, prête à envoyer sur BrickLink.
+**À quoi ça sert** : la liste d'achats — pièces et figurines achetées quand l'occasion se présente — avec ce qu'elle coûtera.
 
 - Chaque ligne : la pièce (dans sa couleur) ou la figurine, **quantité** (− / +), **état voulu** (n'importe, neuf, occasion), les deux
   prix (**neuf** et **occasion**, total et à l'unité ; celui retenu en gras), et **« Pour … »** (la fiche d'où elle vient, cliquable).
 - **N'importe** : le neuf trouvé en France d'abord, même un peu plus cher, sinon le moins cher.
 - Le lien **BrickLink** ouvre les annonces de la zone et de l'état du prix retenu.
-- **🧾 Passer commande** : export direct vers une **wanted list** BrickLink (état et quantités compris) ; **✔ OK** quand c'est reçu,
+- Même présentation que l'inventaire : résumé (à commander, commandées et montant payé, reçues), barre d'avancement, filtres.
+- **🧾 Exporter en XML** : copie au format BrickLink (état et quantités compris) des pièces encore à commander.
+- **Mes commandes** (BrickLink et BrickOwl, API officielles) : « 📦 Commandée le … » tout seul ; « 📦 Commandée » à la main sinon ;
+  jamais de « ✔ OK » automatique.
+- **✔ OK** à la réception : figurine → créer sa fiche ; pièce → la remettre où elle manquait (ou décider quoi en faire) ;
   **🧹 Nettoyer** retire ce qui est reçu.
 
 ---

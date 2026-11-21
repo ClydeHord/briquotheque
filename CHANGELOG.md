@@ -2,6 +2,30 @@
 
 Les nouveautés de Briquothèque, version par version (la plus récente en haut).
 
+## 20 au 22 novembre 2026
+
+**Commandes et pièces à commander**
+- **Mes commandes lues automatiquement** (API officielles BrickLink et BrickOwl ; clé BrickOwl dans Réglages › 🦉 BrickOwl) : une pièce ou une figurine à commander trouvée dans une commande passe « 📦 Commandée le … » — jamais « ✔ OK » automatique (vous vérifiez à la réception). Relu à l'ouverture de « À commander » (une fois par heure au plus) et chaque jour ; commandes annulées écartées.
+- **Rapprochement** : pièce = référence (aussi celles du nom) + couleur, règles de couleur de l'inventaire comprises ; figurine = sa référence BrickLink, ou son nom exact (BrickOwl). Une même pièce dans plusieurs inventaires : la quantité commandée est partagée, du plus ancien au plus récent ; une ligne n'est « Commandée » que si toute sa quantité l'est. **Surplus → vrac** : une commande ne sert qu'aux lignes déjà « à commander » quand elle a été passée, jamais à un inventaire créé après.
+- **« 📦 Commandée » à la main** (commande passée ailleurs), avec « Annuler » ; **« ↩ À commander »** si erreur (cette commande ne la reprend plus).
+- **Montant réellement payé** : « 📦 N commandées · X € payés » (prix payé dans la commande, seulement pour les pièces attribuées ; port non compté).
+- **Inventaire** : les pièces à commander y restent ; ordre non vérifiées → à commander → commandées → OK → exclues ; pièces identiques rassemblées (ex. ×2 + ×2 → ×4) ; le nombre nécessaire (×N) en gros à droite ; boutons sous les infos sur tablette et ordinateur.
+- **« À commander » a l'aspect de l'inventaire** : résumé ligne par ligne (à commander, commandées et payé, reçues), barre d'avancement, filtres Toutes / À commander / Commandées / OK ; lignes neutres tant qu'elles ne sont pas commandées (achats « si l'occasion se présente ») ; liens BrickLink / Rebrickable sur une ligne.
+- **✔ OK à la réception** : figurine → « créer sa fiche ? » ; pièce → remise dans le set ou la figurine où elle manquait, sinon « qu'en faire ? » (la garder à part / l'ajouter au set).
+- **« 🧾 Exporter en XML »** (inventaire et « À commander ») : copie dans le presse-papier les pièces encore à commander, au format BrickLink — aucun site ouvert, aucune question ; bouton discret.
+
+**Prix et graphiques**
+- **BrickLink, médiane partout** : prix = médiane des ventes des 6 derniers mois (France, puis Europe, puis monde) ; « À commander » : médiane des annonces, sinon des ventes. Liens et exports : toujours BrickLink.
+- **Secours BrickOwl** : si BrickLink ne répond plus depuis 24 h, les prix viennent de BrickOwl (fiches ouvertes et actualisation du jour) — message court « BrickLink ne répond pas : BrickOwl en secours » ; arrêt tout seul à son retour.
+- **Brickset** (Réglages › 🗓️ Brickset) : dates de mise en vente et de retrait, prix magasin, pièces, figurines, code-barres. **Pages des thèmes LEGO.com** : prix public et lien des sets encore vendus.
+- **Graphique « 📈 Évolution » : du vrai uniquement** (un trou s'il n'y a pas de donnée) — 🟩 Neuf (magasin), 🟨 Neuf (après retrait), 🟧 Occasion dans l'état de mon set, 🟥 Mon exemplaire s'il est modifié ; relevés farfelus écartés. Écarts de prix calculés sur mon exemplaire.
+- **« Valeur de la liste »** quand une liste est ouverte (appli et pages publiques).
+- **Pages publiques** : la flèche de variation et le tri « Écart de prix » calculés exactement comme dans l'appli (sur l'exemplaire, d'après l'historique réel du marché).
+- **Images** : une fausse image « introuvable » n'est plus gardée ; l'image de la pièce dans sa couleur la remplace.
+
+**Aide**
+- **📌 Aide-mémoire** (`/aide-memoire`, Réglages › Aide et le « ? » de chaque écran) : pour chaque fonction et chaque tâche automatique (⚙️), la suite des étapes. Depuis un inventaire ou « À commander » : **« 📍 Vous en êtes là »** (étapes faites ✓, étape en cours encadrée).
+
 ## 17 au 19 novembre 2026
 
 - **Pages publiques à jour avec l'appli** : mêmes tris (Écart de prix (%) et (€), tris retirés), plus de bouton 📈, écart en euros pour les tris en €, ligne du tri en cours avec la date de comparaison, et prix en bulles au-dessus des liens dans les fiches (si les prix sont publics).

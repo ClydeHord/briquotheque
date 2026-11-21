@@ -355,6 +355,9 @@ function pubLinksHtml(page, owner) {
   return links.map(([u, t]) => `<a class="pub-link" href="${u}">${esc_(t)}</a>`).join("");
 }
 let data = { lists: [], items: [] }, current = ALL;
+/* site de référence des prix (Réglages du propriétaire) : liens BrickLink, BrickOwl ou les deux (21/11) */
+const gBoSearch = q => `https://www.brickowl.com/search/catalog?query=${encodeURIComponent(q || "")}`;
+const gSiteLinks = (bl, bo) => [data.ref_site === "brickowl" ? ["BrickOwl", bo] : bl];   // (BrickLink d'office ; plan de secours : BrickOwl — 21/11 soir)
 const gv = { sets: true, figs: true };   // à chaque visite : sets ET figurines affichés, du dernier modifié au plus ancien
 
 const kindOf = id => data.lists.find(l => l.id === id)?.kind;
@@ -675,7 +678,7 @@ function render() {
     ? `<div class="stat main-stat wish-stat"><div class="lbl">Sets souhaités</div><div class="val">${nf.format(items.reduce((a, i) => a + i.quantity, 0))}</div></div>
        <div class="stat"><div class="lbl">Encore en vente</div><div class="val">${nf.format(items.filter(i => !retired(i)).length)}</div></div>
        <div class="stat"><div class="lbl">Retirés</div><div class="val">${nf.format(items.filter(retired).length)}</div></div>`
-    : (PRICES() ? `<div class="stat main-stat stat-link" id="gValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">Valeur de la collection</div><div class="val">${moneyA(s.value, s.apx)}</div>
+    : (PRICES() ? `<div class="stat main-stat stat-link" id="gValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">${current === ALL ? "Valeur de la collection" : "Valeur de la liste"}</div><div class="val">${moneyA(s.value, s.apx)}</div>
         ${s.allNew ? `<div class="sub sub-ref">Si c'était neuf : ${money(s.allNew)}</div>` : ""}</div>` : "")
       + `<button type="button" class="stat stat-btn view-tg ${gv.sets && !gv.figs ? "on" : ""}" id="gSets" title="Afficher / masquer les sets" aria-pressed="${gv.sets}"><div class="lbl">Sets</div><div class="val">${nf.format(s.sets)}</div></button>
        <button type="button" class="stat stat-btn view-tg ${gv.figs && !gv.sets ? "on" : ""}" id="gFigs" title="Afficher / masquer les figurines" aria-pressed="${gv.figs}"><div class="lbl">Figurines</div><div class="val">${nf.format(s.figs)}</div></button>
@@ -995,7 +998,7 @@ function openDetail(i, altK = null) {
   const links = [
     i.kind === "set" && (i.lego_url || (!retired(i) && inf.availability)) ? ["LEGO.com" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
       i.lego_url || `https://www.lego.com/fr-fr/search?q=${q(n.replace(/-1$/, ""))}`] : null,   // page produit connue, sinon la recherche (= extLinks, app.js)
-    isMoc(i) ? null : ["BrickLink", blSale(i.kind === "fig" ? "M" : "S", n, i.bl_zone)],   // les annonces (MOC : rien à acheter sur BrickLink)
+    ...(isMoc(i) ? [] : gSiteLinks(["BrickLink", blSale(i.kind === "fig" ? "M" : "S", n, i.bl_zone)], gBoSearch(i.kind === "fig" ? n : String(n).replace(/-1$/, "")))),   // les annonces du site de référence (MOC : rien à acheter — 21/11)
     isMoc(i) || !n ? null : ["Rebrickable", rbUrl(n, i.kind === "fig")],
   ].filter(Boolean);
   const figs = inf.minifigs || [];
@@ -1101,7 +1104,7 @@ function openFigDetail(v) {
     <fieldset><legend>Dans ${v._sets.length > 1 ? "les sets" : "le set"}</legend><div class="gs-figs">${v._sets.map(x => `<button type="button" class="fig figq gs-set" data-set="${data.items.indexOf(x.i)}">
       <span class="fq-pic"><img src="${thumb(x.i.photo_url || x.i.image || setPhoto(x.i))}" alt="" loading="lazy"></span>
       <span class="fq-txt"><span class="fn">${esc(itemName(x.i))}</span><span class="fv">${esc(x.i.number)}${x.n > 1 ? ` · ×${x.n}` : ""}</span></span></button>`).join("")}</div></fieldset>
-    ${/^[a-z]+\d+[a-z]?$/i.test(v.number) ? `<div class="ext-links ext-bottom"><a class="btn small-btn" href="${esc(blSale("M", v.number, ""))}" target="_blank" rel="noopener">BrickLink ↗</a><a class="btn small-btn" href="${esc(rbUrl(v.number, true))}" target="_blank" rel="noopener">Rebrickable ↗</a></div>` : ""}`);
+    ${/^[a-z]+\d+[a-z]?$/i.test(v.number) ? `<div class="ext-links ext-bottom">${gSiteLinks(["BrickLink", blSale("M", v.number, "")], gBoSearch(v.number)).map(([t, u]) => `<a class="btn small-btn" href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join("")}<a class="btn small-btn" href="${esc(rbUrl(v.number, true))}" target="_blank" rel="noopener">Rebrickable ↗</a></div>` : ""}`);
   d.querySelector(".gd-img").onclick = () => v.quantity > 1   // plusieurs exemplaires : chacun, avec son set
     ? openParade(v.info.name || v.number, v._sets.flatMap(x => Array.from({ length: x.n }, () => ({ src: img(v._img), label: v.info.name || v.number, sub: x.i.number })))) : zoomOne(img(v._img));
   d.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { d.remove(); openDetail(data.items[+b.dataset.set]); });

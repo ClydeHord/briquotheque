@@ -3368,3 +3368,94 @@ html[data-ui="verre"] #topViews2.is-stuck, html[data-ui="pastel"] #topViews2.is-
 .lp-opt:hover { background: rgba(127, 127, 127, .12); }
 .lp-opt.on { background: color-mix(in srgb, var(--red) 18%, transparent); font-weight: 700; }
 #modal.ro .list-pick-btn { pointer-events: none; }
+
+/* (vérification des pièces : les boutons SOUS les infos, sur tablette et ordinateur — 21/11) */
+@media (min-width: 601px) {
+  .inv-row:not(.bl-row) { grid-template-columns: 150px minmax(0, 1fr) auto; grid-template-areas: "pic info need" "pic act act"; align-items: start; gap: 8px 12px; }
+  .inv-row:not(.bl-row) .inv-pic { grid-area: pic; align-self: center; }
+  .inv-row:not(.bl-row) .inv-info { grid-area: info; }
+  .inv-row:not(.bl-row) .inv-need { grid-area: need; }
+  .inv-row:not(.bl-row) .inv-act { grid-area: act; justify-content: flex-start; align-self: end; }
+}
+
+/* (inventaire : le nombre de pièces sous la couleur, en gros ; à commander : son nombre un peu plus grand — 21/11) */
+.inv-info .inv-need { font-size: 26px; font-weight: 800; line-height: 1.1; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--ink, inherit); }
+.inv-row.order .inv-info .inv-need, .inv-row.cmd .inv-info .inv-need { font-size: 28px; }
+.inv-q.stepper b { font-size: 22px; min-width: 34px; }
+.inv-info .inv-need .inv-seen { font-size: 12px; font-weight: 600; }
+@media (min-width: 601px) { .inv-row:not(.bl-row) { grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "pic info" "pic act"; } }
+@media (max-width: 600px) { .inv-row:not(.bl-row) { grid-template-areas: "pic info" "act act"; } .inv-row:not(.bl-row) .inv-info { align-self: center; } }
+
+/* (inventaire : le nombre de pièces nécessaires tout à droite, plus grand — 21/11) */
+.inv-row:not(.bl-row) .inv-need { grid-area: need; align-self: center; justify-self: end; text-align: right; font-size: 36px; font-weight: 800; line-height: 1;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin: 0; color: var(--ink, inherit); }
+.inv-row.order:not(.bl-row) .inv-need, .inv-row.cmd:not(.bl-row) .inv-need { font-size: 40px; }
+.inv-row:not(.bl-row) .inv-need .inv-seen { font-size: 12px; font-weight: 600; }
+@media (min-width: 601px) { .inv-row:not(.bl-row) { grid-template-columns: 150px minmax(0, 1fr) auto; grid-template-areas: "pic info need" "pic act need"; } }
+@media (max-width: 600px) { .inv-row:not(.bl-row) { grid-template-columns: minmax(0, 42%) minmax(0, 1fr) auto; grid-template-areas: "pic info need" "act act act"; }
+  .inv-row:not(.bl-row) .inv-need { font-size: 30px; } .inv-row.order:not(.bl-row) .inv-need, .inv-row.cmd:not(.bl-row) .inv-need { font-size: 34px; } }
+
+/* (site de référence des prix : petit logo d'origine d'un prix ; « les deux » : chaque prix avec son logo — 21/11) */
+.site-mark { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; border-radius: 2px; object-fit: contain; margin: 0 1px; }
+.site-mark-t { width: auto; height: auto; font-size: 9px; font-weight: 800; line-height: 1; padding: 1px 3px; border: 1px solid var(--line); color: var(--muted); font-style: normal; }
+.site-both { font-size: .85em; color: var(--muted); font-weight: 400; white-space: nowrap; }
+.site-both b { font-weight: 600; }
+
+/* (« À commander » : liens BrickLink / BrickOwl comme le lien Rebrickable — même police, même taille — 21/11) */
+.bl-cond-row .ext, .bl-cond-row .ext.bl-go { font-size: 12px; font-weight: 600; }
+
+/* (graphique d'une fiche de ma collection : cases à cocher, couleurs fixes — 🟦 le set en bleu, 🟩 mon exemplaire en vert — 21/11 soir) */
+.evo2 h3 { margin: 0 0 8px; }
+.evo2-checks { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 8px; }
+.evo2-chk { font-weight: 600; }
+.evo2-per { margin-bottom: 8px; flex-wrap: wrap; }
+.evo2-kpis { display: grid; gap: 4px; margin-bottom: 6px; min-height: 48px; }
+.evo2-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14px; }
+.evo2 .hist-chart { min-height: 238px; }   /* (place de la légende gardée : une ou deux courbes, même hauteur) */
+.evo2-row.off { opacity: .35; }   /* (courbe décochée : sa ligne reste, grisée — la fenêtre ne change pas de hauteur) */
+.evo2-row .up { color: var(--green, #16a34a); font-weight: 700; } .evo2-row .down { color: var(--red); font-weight: 700; }
+.ch-line.ch-orig { stroke: #3b82f6; stroke-width: 5; opacity: .75; }   /* (plus épaisse, dessous : visible même quand mon exemplaire suit le set) */ .ch-area.ch-orig { fill: #3b82f6; } .ch-dot.ch-orig { fill: #3b82f6; } .ch-key.ch-orig { border-color: #3b82f6; }
+.ch-line.ch-mine { stroke: #22c55e; } .ch-area.ch-mine { fill: #22c55e; } .ch-dot.ch-mine { fill: #22c55e; } .ch-key.ch-mine { border-color: #22c55e; }
+
+/* (graphique : petites cases des autres états — 🟨 neuf en orangé, ⬜ occasion en gris — 21/11 soir) */
+.evo2-opts { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: -2px 0 8px; font-size: 12.5px; color: var(--muted); }
+.evo2-opt { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.evo2-opt input { width: 14px; height: 14px; margin: 0; }
+.ch-line.ch-neuf { stroke: #f59e0b; } .ch-area.ch-neuf { fill: #f59e0b; } .ch-dot.ch-neuf { fill: #f59e0b; } .ch-key.ch-neuf { border-color: #f59e0b; }
+.ch-line.ch-occ { stroke: #94a3b8; stroke-dasharray: 5 4; } .ch-area.ch-occ { fill: #94a3b8; } .ch-dot.ch-occ { fill: #94a3b8; } .ch-key.ch-occ { border-color: #94a3b8; }
+
+/* (courbes : 🟩 neuf magasin vert, 🟨 neuf après retrait jaune, 🟧 occasion orange, 🟥 mon exemplaire rouge — 21/11 soir) */
+.ch-line.ch-nmag { stroke: #22c55e; } .ch-area.ch-nmag { fill: #22c55e; } .ch-dot.ch-nmag { fill: #22c55e; } .ch-key.ch-nmag { border-color: #22c55e; }
+.ch-line.ch-nret { stroke: #eab308; } .ch-area.ch-nret { fill: #eab308; } .ch-dot.ch-nret { fill: #eab308; } .ch-key.ch-nret { border-color: #eab308; }
+.ch-line.ch-occ2 { stroke: #f97316; } .ch-area.ch-occ2 { fill: #f97316; } .ch-dot.ch-occ2 { fill: #f97316; } .ch-key.ch-occ2 { border-color: #f97316; }
+.ch-line.ch-mine2 { stroke: #ef4444; } .ch-area.ch-mine2 { fill: #ef4444; } .ch-dot.ch-mine2 { fill: #ef4444; } .ch-key.ch-mine2 { border-color: #ef4444; }
+
+/* (« À commander » : commandée d'après mes commandes — 21/11 soir) */
+.bl-ordered { color: #2f6fa8; font-weight: 600; }
+
+/* (inventaire : « Commandée le … » sur toute la largeur, à la ligne si besoin — 21/11 soir) */
+.inv-act .inv-cmd { flex: 1 1 100%; white-space: normal; line-height: 1.35; overflow-wrap: anywhere; }
+
+/* (« À commander » : boutons Commandée / ↩ À commander — la rangée passe à la ligne sur téléphone, comme les autres boutons — 21/11 nuit) */
+.bl-foot { flex-wrap: wrap; }
+.bl-foot .inv-order { height: 30px; padding: 0 10px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; width: auto; }
+.bl-foot .inv-ok { white-space: nowrap; }
+
+/* (« À commander » : aspect de l'inventaire — résumé en lignes, filtres, lignes de l'inventaire — 21/11 nuit) */
+#stats .bl-sum-box { display: block; }
+#stats .bl-sum-box .inv-sum { display: flex; flex-direction: column; gap: 2px; }
+.inv-row.blc .bl-name { -webkit-line-clamp: 3; }
+.inv-row.blc .bl-cond-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.inv-row.blc .bl-go { margin-left: 0; }
+.inv-row.blc .bl-cond { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.inv-row.blc .bl-cond select { min-width: 0; max-width: 120px; }
+.inv-row.blc .inv-ok.on { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* (lien « 📌 Aide-mémoire : où j'en suis » des résumés — 21/11 nuit) */
+.memo-link { font-weight: 700; text-decoration: none; margin-top: 4px; }
+
+/* (« À commander » : liens BrickLink / Rebrickable sur une seule ligne, en liens texte ; photo un peu plus petite sur téléphone — 22/11) */
+.inv-row.blc .bl-links { display: flex; flex-wrap: nowrap; gap: 8px; white-space: nowrap; }
+.inv-row.blc .bl-links a { padding: 0; margin: 0; background: none; border: 0; box-shadow: none; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 600px) { .inv-row.blc { grid-template-columns: minmax(0, 28%) minmax(0, 1fr) auto; } }
+@media (max-width: 380px) { .inv-row.blc { grid-template-columns: minmax(0, 22%) minmax(0, 1fr) auto; } .inv-row.blc .bl-links a { font-size: 11.5px; } .inv-row.blc .inv-need { font-size: 26px; } }

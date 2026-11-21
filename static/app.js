@@ -976,11 +976,19 @@ async function load() {
   state.demoOn = !!d.demo_on; state.sidePubHide = d.side_pub_hide || []; sidePubDraw();   // démo publique désactivée : pas de lien ; liens masqués (Réglages)
   if (!DEMO) loadNovCount();
   if (d.bl_zones) state.blz = d.bl_zones;   // zones BrickLink réglées : drapeaux, noms, liens
-  state.legoUrls = d.lego_urls || {};   // pages produits LEGO.com connues (liens « Voir sur » des fiches)
+  state.legoUrls = d.lego_urls || {};
+  state.refSite = d.ref_site || "bricklink"; state.siteLogos = d.site_logos || {};
+  if (d.bl_back && !state.blBackShown) { let seen = 0; try { seen = +localStorage.getItem("bq-bl-back") || 0; } catch {}   // (secours désactivé tout seul : dit une fois)
+    if (seen < d.bl_back) { state.blBackShown = true; try { localStorage.setItem("bq-bl-back", String(d.bl_back)); } catch {}
+      setTimeout(() => toast("✔ BrickLink est revenu"), 1500); } }
+  if (d.bl_down && !state.blDownShown) { state.blDownShown = true;   // (BrickLink muet depuis 24 h : BrickOwl en attendant — 21/11 soir)
+    setTimeout(() => toast("BrickLink ne répond pas : BrickOwl en secours"), 1500); }   // (site de référence des prix, petits logos — 21/11)   // pages produits LEGO.com connues (liens « Voir sur » des fiches)
   offlinePack.refresh();   // fiches hors ligne : paquet relu une fois par jour
   state.appColor = d.app_color || null;   // (thème de l'application)
   state.hnData = d; try { window.PERSO?.load?.(d); } catch {}   /* (extensions locales, facultatives) */
   state.lists = d.lists; state.items = d.items; state.trend = d.trend || { on: true, up: 3, down: 3, stable: true, pct: false, size: 100 }; state.trendLists = d.trend_lists || {}; state.trendRef = d.trend_ref || null;
+  for (const i of state.items || []) i._chgMine = i.chg;   // (variations : mon exemplaire / le marché seul — 21/11)
+  chgApply();
   state.modDiscount = d.mod_discount ?? 5; state.boxBonus = d.box_bonus ?? 6; state.planCut = d.plan_cut ?? 5;   // (réglages des estimations : décote, boîte, livret)
   trendSync();   // taille des flèches, bouton 📈
   linkAttached();
@@ -1113,10 +1121,12 @@ function drawTarifsMini() {
   const dr = state.draft, t = dr?.tarifs;
   if (!t || dr.kind === "custom") { box.hidden = true; box.innerHTML = ""; return; }
   const p = v => `<b>${money(v)}</b>`, rows = [];
+  const mk = k => { const m = t.market || {}, rec = t.fig ? (k === "used" ? m.used : null) : m[k], sites = t.fig ? (k === "used" ? m.used?.sites : null) : m.sites;
+    const val = s => t.fig ? sites?.[s]?.used : sites?.[s]?.[k]; return siteNote(rec?.fb, val("BrickLink"), val("BrickOwl")); };   // (logo du site de secours ; les deux : chaque prix — 21/11)
   if (!t.fig && t.retail != null) rows.push(`${t.upcoming ? "Prix public annoncé" : "Prix magasin"} : ${p(t.retail)}${t.retired && !t.upcoming ? " (retiré)" : ""}`);
   const nv = t.new_now ?? (t.retired ? null : t.retail);
-  if (nv != null || t.sf?.neuf != null) rows.push([nv != null ? `Neuf : ${p(nv)}` : "", t.sf?.neuf != null ? `<span class="tf-sf">sans figurines : ${p(t.sf.neuf)}</span>` : ""].filter(Boolean).join(" · "));
-  if (t.used != null || t.sf?.occasion != null) rows.push([t.used != null ? `Occasion : ${p(t.used)}` : "", t.sf?.occasion != null ? `<span class="tf-sf">sans figurines : ${p(t.sf.occasion)}</span>` : ""].filter(Boolean).join(" · "));
+  if (nv != null || t.sf?.neuf != null) rows.push([nv != null ? `Neuf : ${p(nv)}${nv === t.new_now ? mk("new") : ""}` : "", t.sf?.neuf != null ? `<span class="tf-sf">sans figurines : ${p(t.sf.neuf)}</span>` : ""].filter(Boolean).join(" · "));
+  if (t.used != null || t.sf?.occasion != null) rows.push([t.used != null ? `Occasion : ${p(t.used)}${mk("used")}` : "", t.sf?.occasion != null ? `<span class="tf-sf">sans figurines : ${p(t.sf.occasion)}</span>` : ""].filter(Boolean).join(" · "));
   box.hidden = !rows.length;
   box.classList.toggle("tf-fig", !!t.fig);   // (figurine : toutes les bulles sur une ligne ; set : une par ligne)
   box.innerHTML = rows.map(r => `<span class="ext tf-bulle">${r}</span>`).join("");   // (même allure que les liens BrickLink / Rebrickable)
@@ -1166,6 +1176,18 @@ const blFigNo = n => String(n ?? "").replace(/^adp(?=\d)/i, "bdp");   // figurin
 /* une pièce sur Rebrickable (son n° Rebrickable) ; une figurine par son nom (recherche) — à côté de chaque lien BrickLink, 20/11 */
 const rbPartUrl = n => n ? `https://rebrickable.com/parts/${encodeURIComponent(n)}/` : "";
 const rbFigSearch = name => `https://rebrickable.com/search/?q=${encodeURIComponent(name || "")}&search_type=minifig`;
+/* site de référence des prix (Réglages › Estimations) : BrickLink, BrickOwl ou les deux — liens, prix, exports (21/11) */
+const refSite = () => state.refSite === "brickowl" ? "brickowl" : "bricklink";   // (BrickLink d'office ; BrickOwl : plan de secours des Réglages — 21/11 soir)
+const refSites = () => ["BrickLink"];   // liens : TOUJOURS BrickLink, même avec le secours BrickOwl (prix seulement, en coulisse — 22/11)
+const boSearch = q => `https://www.brickowl.com/search/catalog?query=${encodeURIComponent(q || "")}`;
+const BO_UPLOAD = "https://www.brickowl.com/wishlist/import";   // (BrickOwl lit le même fichier XML que BrickLink)
+/* petit logo d'un site (marque d'origine d'un prix) ; sans logo connu : « BL » / « BO » */
+const siteMark = (s, title = "") => { const u = (state.siteLogos || {})[s === "BrickOwl" ? "brickowl" : "bricklink"], t = esc(title || "Prix " + s);
+  return u ? `<img class="site-mark" src="${u}" alt="${s}" title="${t}">` : `<span class="site-mark site-mark-t" title="${t}">${s === "BrickOwl" ? "BO" : "BL"}</span>`; };
+/* à côté d'un prix : le logo du site de secours (fb) ; « les deux » : chaque prix avec son logo (bl, bo) */
+const siteNote = () => "";   // (BrickLink seul : plus de marque d'origine — 21/11 soir)
+/* liens « Voir sur » : celui (ou ceux) du site de référence — bl : [libellé, adresse] BrickLink ; bo : adresse BrickOwl */
+const siteLinksOf = (bl, bo) => refSites().map(s => s === "BrickLink" ? bl : ["BrickOwl", bo]).filter(x => x && x[1]);
 function blSale(type, no, { zone = "", cond = "", color = null } = {}) {
   if (type === "M") no = blFigNo(no);
   const o = { iconly: 0, ...(cond ? { cond } : {}), ...zoneOpts(zone) };
@@ -1183,14 +1205,14 @@ const blShopUrl = (url, cond, zone) => {
 /* la case des prix d'une fiche : neuf et occasion (moyenne des annonces, min – max, zone), puis magasin, figurines seules… */
 function priceBox(m, extra = [], fallback = {}, chg = {}) {   // chg : variation de la cote {new, used} (toujours affichée)
   const cm = k => trendMark(k === "Neuf" ? chg?.new : chg?.used, true);
-  const src = m?.src || "BrickOwl";
+  const src = "BrickLink";   // (BrickLink seul — 21/11 soir)
   const zone = s => `${zoneFlag(s.zone)} ${zoneName(s.zone)}`.trim();   // (chez moi : sans drapeau)
   const noun = s => s.kind === "ventes" ? "ventes" : "annonces";   // ventes réelles (6 mois) ; annonces : seulement si aucune vente nulle part
   const thinTxt = s => `prix gardé : seulement ${s.thin.offers} ${s.thin.kind === "ventes" ? "vente" : "annonce"}${s.thin.offers > 1 ? "s" : ""} (${money(s.thin.unit)})`;   // moins de 3 ventes : on ne s'y fie pas
   const why = s => { if (s.thin) return thinTxt(s); const k = blz().order.indexOf(s.zone); return s.kind !== "ventes" ? "annonces en cours"
     : k > 0 ? `pas assez de ventes : ${blz().order.slice(0, k).map(zoneName).join(", ")}` : ""; };
   const row = (k, s, fb) => s && s.min != null
-    ? `<div class="pb-row"><span class="pb-k">${k}</span>${m?.url ? `<a class="pb-avg pb-link" href="${esc(blShopUrl(m.url, k === "Neuf" ? "N" : "U", s.zone))}" target="_blank" rel="noopener" title="Voir sur ${esc(src)}">${money(s.unit ?? s.avg)} ↗</a>${cm(k)}` : `<b class="pb-avg">${money(s.unit ?? s.avg)}${cm(k)}</b>`}<span class="pb-mm">${money(s.min)} – ${money(s.max)}</span><span class="pb-z" title="${s.zone === "France" ? `${noun(s)} en France` : why(s)}">${zone(s)} <small>(${s.thin ? "ancien prix" : s.offers + " " + noun(s)})</small></span>${why(s) ? `<span class="pb-why">${why(s)}</span>` : ""}</div>`
+    ? `<div class="pb-row"><span class="pb-k">${k}</span>${/bricklink\.com/.test(m?.url || "") ? `<a class="pb-avg pb-link" href="${esc(blShopUrl(m.url, k === "Neuf" ? "N" : "U", s.zone))}" target="_blank" rel="noopener" title="Voir sur ${esc(src)}">${money(s.unit ?? s.avg)} ↗</a>${cm(k)}` : `<b class="pb-avg">${money(s.unit ?? s.avg)}${cm(k)}</b>`}<span class="pb-mm">${money(s.min)} – ${money(s.max)}</span><span class="pb-z" title="${s.zone === "France" ? `${noun(s)} en France` : why(s)}">${zone(s)} <small>(${s.thin ? "ancien prix" : s.offers + " " + noun(s)})</small></span>${why(s) ? `<span class="pb-why">${why(s)}</span>` : ""}</div>`
     : fb != null ? `<div class="pb-row"><span class="pb-k">${k}</span><b class="pb-avg">${money(fb)}${cm(k)}</b><span class="pb-mm muted">—</span><span class="pb-z muted">cote</span>${s?.thin ? `<span class="pb-why">${thinTxt(s)}</span>` : ""}</div>`
     : `<div class="pb-row"><span class="pb-k">${k}</span><span class="pb-none muted">aucune vente ni annonce</span></div>`;
   const ex = extra.filter(x => x && x[1] != null);
@@ -1423,7 +1445,7 @@ function syncSortMenu() {
     const dir = so.value === "random" ? "" : (up !== rev) ? `<span class="tri-sens" title="Croissant">↗</span>` : `<span class="tri-sens" title="Décroissant">↘</span>`;   // (le sens en flèche — 21/11)
     if (rl) { rl.hidden = [STATS, NOV].includes(state.current);   /* (toujours visible : le tri en cours et son sens — 21/11) */
       rl.innerHTML = `<b>${esc(so.selectedOptions[0]?.textContent || "")}</b>${dir ? " " + dir : ""}`   /* (sans le mot « Tri » ; la période : bouton 📅 de la barre — 21/11) */
-        + (tr ? ` · par rapport au <b>${esc(rf.day.split("-").reverse().join("/"))}</b> <span class="muted">(${esc(trendDaysLbl(+state.trend?.period || 1))})</span>` : ""); } }   // (ordinateur : le tri en cours est rappelé sur le bouton)
+        + (tr ? ` · par rapport au <b>${esc(rf.day.split("-").reverse().join("/"))}</b> <span class="muted">(${esc(trendDaysLbl(+state.trend?.period || 1))})</span>` : ""); } }   /* (plus de bouton : les écarts sont toujours ceux de MON EXEMPLAIRE — 21/11 soir) */   // (ordinateur : le tri en cours est rappelé sur le bouton)
   { const tp = $("#trPeriod"); if (tp) tp.hidden = isWish(state.current) || isPartsList(state.current); }   /* (période : pas pour les souhaits ni les pièces) */
   const rb = $("#sortRev"); if (rb) { const ico = so.value === "random" ? `<svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h3.5c4.5 0 6.5 10 11 10H21M3 17h3.5c1.8 0 3.1-1.6 4.3-3.5M13.2 9.5C14.4 8 15.7 7 17.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>` : `<svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`; if (rb._ico !== ico) { rb._ico = ico; rb.innerHTML = ico; } }   /* (Aléatoire : remélanger ; sinon : inverser — 21/11) */
   if (rb) { rb.setAttribute("aria-pressed", rev); rb.title = so.value === "random" ? "Remélanger" : rev ? "Tri inversé : remettre l'ordre habituel" : "Renverser le tri (ordre inverse)"; rb.setAttribute("aria-label", so.value === "random" ? "Remélanger" : "Renverser le tri"); }   // (aucun aspect « actif » : demande du 17/11)
@@ -1692,12 +1714,13 @@ function photoMenu(e, zoom, actions) {
 
 /* ------------------------------------------------------------ courbes d'évolution (SVG, sans bibliothèque)
    series : [{ name, pts: [["AAAA-MM-JJ", valeur], …], cls: "a" | "b", dash, dots }] — un seul axe des valeurs. */
-function lineChart(box, series, { height = 210 } = {}) {
+function lineChart(box, series, { height = 210, from = "" } = {}) {   // from : début de l'axe (période choisie) — avant la 1re donnée : un trou
   series = series.filter(sr => sr.pts?.length);
   const all = series.flatMap(sr => sr.pts);
   if (all.length < 2) { box.innerHTML = `<p class="muted small">Pas encore assez de données pour une courbe.</p>`; return; }
   const t = d => Date.parse(d + "T00:00:00");
   let x0 = Math.min(...all.map(p => t(p[0]))), x1 = Math.max(...all.map(p => t(p[0])));
+  if (from && t(from) < x0) x0 = t(from);   // (rien n'est inventé pour combler)
   if (x1 === x0) x1 = x0 + 864e5;
   let y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
   const pad = (y1 - y0) * 0.1 || y1 * 0.1 || 1; y0 = Math.max(0, y0 - pad); y1 += pad;
@@ -1765,7 +1788,7 @@ function historyBlock(box, { title, sub, modes, defMode, defPeriod = "all" }) {
   if (!keys.length) { box.hidden = true; box.innerHTML = ""; return; }
   box.hidden = false;
   let mode = keys.includes(defMode) ? defMode : keys[0], period = defPeriod;
-  const LABEL = { used: "Occasion", new: "Neuf", value: "Valeur" };
+  const LABEL = { used: "Occasion", new: "Neuf", value: "Valeur", mine: "Mon exemplaire", set: "Le set", both: "Les deux" };
   const fmtD = d => new Date(Date.parse(d)).toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
   const draw = () => {
     const M = modes[mode], all = M.pts, last = all.at(-1)[1];
@@ -1785,10 +1808,89 @@ function historyBlock(box, { title, sub, modes, defMode, defPeriod = "all" }) {
         <div><span class="muted small">Maximum</span><b>${money(mx[1])}</b><small class="muted">${fmtD(mx[0])}</small></div>
         <div><span class="muted small">Moyenne</span><b>${money(avg)}</b><small class="muted">sur la période</small></div></div>
       <div class="hist-chart"></div>`;
-    lineChart($(".hist-chart", box), [{ name: LABEL[mode] || "Valeur", pts, cls: "a" }]);
+    const cut = s => from ? (s.findIndex(p => p[0] >= from) < 0 ? s.slice(-1) : s.slice(Math.max(0, s.findIndex(p => p[0] >= from) - 1))) : s;   // (même période pour les courbes en plus)
+    lineChart($(".hist-chart", box), [{ name: mode === "both" ? "Mon exemplaire" : LABEL[mode] || "Valeur", pts, cls: "a" }, ...(M.extra || []).map(x => ({ ...x, pts: cut(x.pts) }))]);   // (« Les deux » : superposées — 21/11)
     $$("[data-p]", box).forEach(b => b.onclick = () => { period = b.dataset.p; draw(); });
     $$("[data-m]", box).forEach(b => b.onclick = () => { mode = b.dataset.m; draw(); });
   };
+  draw();
+}
+/* graphique d'une fiche de MA collection : « 🟦 Le set » (le marché, même état) et « 🟩 Mon exemplaire » (sa vraie valeur, relevée chaque jour :
+   mes modifs comptent quand je les ai faites ; avant son premier relevé : le marché avec le même écart). Cases à cocher, disposition fixe,
+   période d'office celle des Réglages ; les boutons de période ne changent que ce graphique (21/11 soir) */
+async function mineHistory(box, info, fig, it) {
+  if (info) info.own_hist = ownHistToday(info);
+  const today = isoDays(0), be = !!info?.history?.length, retired = fig || isRetired(info), neuf = it.condition === "neuf";
+  /* relevés farfelus écartés (ex. une seule annonce à 100 € un jour, entre deux relevés à 30-40 €) : plus de 1,8 fois ses deux voisins, ou moins */
+  const clean = pts => (pts || []).filter(p => p && p[1] != null && p[1] > 0).filter((p, k, a) => { const a0 = a[k - 1]?.[1], a1 = a[k + 1]?.[1];
+    if (a0 == null && a1 == null) return true;
+    if (a0 == null || a1 == null) { const nb = a0 ?? a1; return !(p[1] > nb * 3 || p[1] < nb / 3); }   // (premier / dernier point : plus de 3 fois son voisin, ou moins)
+    const hi = Math.max(a0, a1), lo = Math.min(a0, a1); return !(p[1] > hi * 1.8 || p[1] < lo / 1.8); });
+  const ext = pts => pts.length && pts.at(-1)[0] < today ? [...pts, [today, pts.at(-1)[1]]] : pts;
+  const ownNew = (info?.own_hist || []).filter(r => r[1] != null).map(r => [r[0], r[1]]);
+  const usedMk = ext(clean((info?.own_hist || []).filter(r => r[2] != null).map(r => [r[0], r[2]])));   // (relevés seulement — 21/11 soir)
+  const newMk = clean(ownNew);
+  /* NEUF : une seule courbe — le prix magasin tant que le set est vendu, puis (retiré) le prix du marché */
+  const rd = (String(info?.retirement || "").match(/\d{4}-\d{2}(-\d{2})?/) || [])[0];
+  const neufPts = ext(!fig && info?.retail && !retired ? (newMk[0] ? [[newMk[0][0], info.retail], [today, info.retail]] : [])
+    : !fig && info?.retail && rd ? [...newMk.filter(p => p[0] < rd).map(p => [p[0], info.retail]), ...newMk.filter(p => p[0] >= rd)] : newMk);
+  /* LE SET : dans l'état du mien (sans figurines, figurines manquantes, partiel), SANS mes ajouts — le marché ramené à cet état */
+  const mkNow = neuf ? (fig ? info?.value : info?.new_value) : (fig ? info?.used : info?.used_value);
+  let base = mkNow, why = [];
+  if (!fig && it.with_minifigs === false && mkNow) { base = (neuf ? info?.sf?.neuf : info?.sf?.occasion) ?? mkNow; why.push("sans figurines"); }
+  else if (!fig && (it.missing_minifigs || []).length && mkNow) { const mf = info?.minifigs || [];
+    base -= it.missing_minifigs.reduce((a, x) => a + (usedOf(mf.find(f => f.id === (x?.id ?? x))) || 0), 0); why.push("figurines manquantes"); }
+  if (it.portion != null && +it.portion > 0 && +it.portion < 100) { base = (base || 0) * +it.portion / 100; why.push(`partiel ${it.portion} %`); }
+  const k = mkNow ? Math.max(0, base || 0) / mkNow : 1;
+  let setPts = (neuf ? neufPts : usedMk).map(([t, v]) => [t, Math.round(v * k * 100) / 100]);
+  if (!fig && (it.with_minifigs === false || (it.missing_minifigs || []).length)) {   // sans figurines / manquantes : le set MOINS leurs vrais prix, date par date (21/11 soir)
+    try { setPts = ext(clean((await api("/api/state-hist/" + encodeURIComponent(it.id))).rows || [])); } catch { setPts = []; } }
+  /* MON EXEMPLAIRE (seulement s'il a des modifs) : sa vraie valeur, relevée chaque jour ; avant son premier relevé : le set avec le même écart */
+  const modded = (() => { try { return itemStatus0(it).status !== "complet"; } catch { return true; } })();
+  const q = Math.max(1, it.quantity || 1), now = it.total_value != null ? it.total_value / q : null;
+  let mine = [];
+  if (modded) {
+    let vl = []; try { vl = (await api("/api/vlog/" + encodeURIComponent(it.id))).rows || []; } catch {}
+    mine = clean(vl.filter(r => r[0] <= today));
+    if (now != null && (!mine.length || mine.at(-1)[0] < today)) mine.push([today, Math.round(now * 100) / 100]);
+  }
+  /* toutes les courbes, chacune sa couleur (21/11 soir) : neuf magasin (vert), neuf après retrait (jaune), occasion (orange), mon exemplaire (rouge) */
+  /* date de retrait : exacte (AAAA-MM-JJ) ou annoncée (« Early / Mid / End of AAAA ») ; sortie : l'année du catalogue */
+  const rdTxt = String(info?.retirement || ""), rdY = (rdTxt.match(/\b(20\d\d)\b/) || [])[1];
+  const rd10 = info?.bs?.exit ? info.bs.exit : rd ? (rd.length === 7 ? rd + "-28" : rd.slice(0, 10)) : rdY ? `${rdY}-${/early/i.test(rdTxt) ? "03-31" : /mid/i.test(rdTxt) ? "06-30" : "12-31"}` : "";
+  const rel = info?.bs?.launch ? info.bs.launch : /^\d{4}$/.test(String(info?.year || "").slice(0, 4)) ? `${String(info.year).slice(0, 4)}-01-01` : newMk[0]?.[0] || "";
+  const retailPts = !fig && info?.retail && rel ? (retired ? (rd10 && rel < rd10 ? [[rel, info.retail], [rd10, info.retail]] : [])
+    : [[rel, info.retail], [today, info.retail]]) : [];   // (le prix magasin, de sa sortie à son retrait — encore vendu : jusqu'à aujourd'hui ; retiré sans date connue : rien — 21/11 soir)
+  const afterPts = retired ? ext(newMk.filter(p => !rd10 || p[0] >= rd10)) : [];   // (après la date de retrait)
+  const occPts = neuf ? usedMk : setPts;   // (occasion : dans l'état de mon set — sans figurines, manquantes… — sans mes ajouts)
+  const S = [
+    ["nmag", "🟩", "Neuf (magasin)", retailPts, "Neuf, magasin : le prix LEGO tant que le set est vendu", true],
+    ["nret", "🟨", "Neuf (après retrait)", afterPts, "Neuf, après retrait : le prix du marché", true],
+    ["occ2", "🟧", "Occasion", occPts, `Occasion${!neuf && why.length ? " dans l'état du mien (" + why.join(", ") + ")" : ""}, sans mes ajouts : le prix du marché`, true],
+    ...(modded ? [["mine2", "🟥", "Mon exemplaire", mine, "Mon exemplaire : sa vraie valeur (mes ajouts, retraits, boîte… comptent)", true]] : [])].filter(x => x[3].length);
+  const per = Math.max(7, +state.trend?.period || 15);   // (d'office : la période des Réglages)
+  const P = [...new Set([per, 30, 90, 180, 365, 1095, 0])];
+  const plbl = n => !n ? "Tout" : n === 365 ? "1 an" : n === 1095 ? "3 ans" : n % 30 === 0 ? `${n / 30} mois` : `${n} j`;
+  let days = per; const on = Object.fromEntries(S.map(([k2, , , , , main]) => [k2, main]));
+  const draw = () => {
+    const from = days ? isoDays(-days) : "";
+    const cut = s => !from ? s : (j => j < 0 ? [] : s.slice(Math.max(0, j - 1)))(s.findIndex(p => p[0] >= from)).map(p => p[0] < from ? [from, p[1]] : p);   // (le relevé d'avant la période : son prix au 1er jour ; une courbe finie avant la période : rien — 21/11 soir)
+    const shown = S.filter(([k2, , , pts]) => on[k2] && pts.length);
+    const opt = S.filter(x => !x[5] && x[3].length);
+    box.innerHTML = `<div class="evo2"><h3>📈 Évolution du prix</h3>
+      <div class="chips evo2-per">${P.map(n => `<button type="button" data-ed="${n}" class="${n === days ? "on" : ""}">${plbl(n)}</button>`).join("")}</div>
+      <div class="evo2-kpis">${S.filter(x => x[5] || x[3].length).map(([k2, emo, lbl, pts]) => { const c = cut(pts), inP = from ? c.filter(p => p[0] >= from) : c, vals = inP.length ? inP : c;
+        if (!vals.length) return `<div class="evo2-row off">${emo} ${lbl} : —</div>`;
+        const last = c.at(-1)[1], first = c[0][1], mn = vals.reduce((a, p) => p[1] < a[1] ? p : a), mx = vals.reduce((a, p) => p[1] > a[1] ? p : a);
+        return `<div class="evo2-row ${on[k2] ? "" : "off"}"><b>${emo} ${lbl}</b> <b>${money(last)}</b> <span class="${last >= first ? "up" : "down"}">${pctTxt(first, last)}</span>
+          <span class="muted small">min ${money(mn[1])} · max ${money(mx[1])}</span></div>`; }).join("")}</div>
+      <div class="hist-chart"></div><p class="muted small">${S.filter(([k2]) => on[k2]).map(([, emo, , , note]) => `${emo} ${esc(note)}`).join(" · ")}</p></div>`;
+    if (shown.length) lineChart($(".hist-chart", box), shown.map(([k2, , lbl, pts]) => ({ name: lbl, pts: cut(pts), cls: k2 })), { from });   // (avant la 1re donnée : un trou)
+    else $(".hist-chart", box).innerHTML = `<p class="muted small">Pas encore de courbe.</p>`;
+    $$("[data-ev]", box).forEach(c => c.onchange = () => { on[c.dataset.ev] = c.checked; draw(); });
+    $$("[data-ed]", box).forEach(b => b.onclick = () => { days = +b.dataset.ed; draw(); });
+  };
+  if (!S.some(x => x[3].length)) { box.innerHTML = `<p class="muted">Pas encore d'historique : il se construit jour après jour.</p>`; return; }
   draw();
 }
 /* courbe d'occasion : celle du neuf ramenée au prix d'occasion d'aujourd'hui (BrickEconomy ne publie pas l'historique
@@ -1803,7 +1905,7 @@ function usedCurve(newPts, usedNow, own = [], col = 2) {
 }
 
 /* « Voir l'évolution » d'un set ou d'une minifig (même sans l'avoir) */
-async function openEvolution(type, number, name = "") {
+async function openEvolution(type, number, name = "", it = null) {   // it : ma fiche (courbe « Mon exemplaire » — 21/11)
   const d = document.createElement("div");
   d.className = "modal over";
   d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>${esc(name || number)} <span class="muted small">${esc(number)}</span></h2>
@@ -1815,6 +1917,7 @@ async function openEvolution(type, number, name = "") {
   try {
     const info = await api(`/api/${type}/${encodeURIComponent(number)}`);
     if (!d.isConnected) return;
+    info.history = [];   // (courbes : du VRAI uniquement — plus l'historique BrickEconomy, 21/11 soir)
     if (info.name && !name) $("h2", d).firstChild.textContent = info.name + " ";
     const own = info.own_hist = ownHistToday(info);   // relevés de l'appli, prolongés jusqu'à aujourd'hui
     if (!info.history?.length && own.length < 2) {   // pas d'historique publié, et moins de deux relevés de l'appli : pas encore de courbe
@@ -1827,7 +1930,8 @@ async function openEvolution(type, number, name = "") {
         : `<p class="muted">Pas encore d'historique pour ${ce} : son prix sera relevé chaque jour dès qu'il sera dans vos listes.</p>`;
       return;
     }
-    itemHistory($("[data-h]", d), info, type === "fig");
+    if (it) await mineHistory($("[data-h]", d), info, type === "fig", it);   // (ma fiche : cases « Le set » / « Mon exemplaire » — 21/11 soir)
+    else itemHistory($("[data-h]", d), info, type === "fig", it);
   } catch (e) { $("[data-h]", d).innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
 }
 /* MOC : valeur de ses pièces à chaque chiffrage (un par semaine) */
@@ -1857,16 +1961,27 @@ function ownHistToday(info) {
   return own.length && own.at(-1)[0] < today ? [...own, [today, ...own.at(-1).slice(1)]] : own;
 }
 /* fiche d'un set / d'une figurine */
-function itemHistory(box, info, fig) {
+function itemHistory(box, info, fig, it = null) {   // it : ma fiche → courbe « Mon exemplaire » (le prix réel + ce que j'ai en plus ou en moins)
   if (info) info.own_hist = ownHistToday(info);   // (sans effet si déjà prolongé : la dernière ligne est à la date du jour)
   const since = info?.own_hist?.[0] ? ` depuis le ${new Date(info.own_hist[0][0]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : "";
   const used = usedCurve(info?.history, fig ? info?.used : info?.used_value, info?.own_hist);
   const ownNew = (info?.own_hist || []).filter(r => r[1] != null).map(r => [r[0], r[1]]);   // relevés de l'appli : [date, neuf, occasion]
   const be = !!info?.history?.length;
-  historyBlock(box, { title: "📈 Évolution du prix", defMode: "used", modes: {
-    used: used && { pts: used, note: be ? "Occasion : courbe du neuf ramenée au prix d'occasion actuel (BrickEconomy ne publie pas l'historique de l'occasion) ; remplacée par les relevés de l'application au fil des jours."
+  const mine = (() => {   /* mon exemplaire : la courbe du marché (neuf s'il est neuf, sinon occasion), décalée de ce qu'il a en plus ou en moins aujourd'hui */
+    if (!it || it.total_value == null) return null;
+    const neuf = it.condition === "neuf", base = neuf ? (be ? info.history : ownNew) : used, q = Math.max(1, it.quantity || 1);
+    if (!base?.length) return null;
+    const u = it.total_value / q, m0 = base.at(-1)[1] || 1, d = u - m0;   // (mes ajouts : en plus ; exemplaire incomplet / décoté : en proportion — 21/11 soir)
+    return base.map(([t, v]) => [t, Math.max(0, Math.round((d >= 0 ? v + d : v * u / m0) * 100) / 100)]);
+  })();
+  const setPts = it ? (it.condition === "neuf" ? (be ? info.history : ownNew) : used) : null;   // (le set, au même état que mon exemplaire)
+  historyBlock(box, { title: "📈 Évolution du prix", defMode: mine ? "mine" : "used", modes: {
+    mine: mine && { pts: mine, note: "Mon exemplaire : le prix réel du marché, plus ce que mon exemplaire a en plus (pièces, figurines, boîte…) ou en moins aujourd'hui." },
+    set: mine && setPts?.length && { pts: setPts, note: `Le set seul, ${it.condition === "neuf" ? "neuf" : "d'occasion"} : le prix du marché.` },
+    both: mine && setPts?.length && { pts: mine, extra: [{ name: "Le set", pts: setPts, cls: "b" }], note: "Mon exemplaire et le set seul, superposés." },
+    used: !(mine && it?.condition !== "neuf") && used && { pts: used, note: be ? "Occasion : courbe du neuf ramenée au prix d'occasion actuel (BrickEconomy ne publie pas l'historique de l'occasion) ; remplacée par les relevés de l'application au fil des jours."
       : `Occasion : relevés quotidiens de l'application${since} (prix des annonces ; ligne plate = prix inchangé).` },
-    new: be ? { pts: info.history, note: fig ? "Neuve / détachée : historique BrickEconomy." : "Neuf / scellé : historique BrickEconomy." }
+    new: mine && it?.condition === "neuf" ? null : be ? { pts: info.history, note: fig ? "Neuve / détachée : historique BrickEconomy." : "Neuf / scellé : historique BrickEconomy." }
       : ownNew.length && { pts: ownNew, note: `Neuf : relevés quotidiens de l'application${since} (prix des annonces ; ligne plate = prix inchangé).` },
   } });
 }
@@ -2211,6 +2326,12 @@ function trendSync() {   // taille des flèches (--trend-k) et état du bouton �
 }
 /* « Comparer les variations à » (Réglages) : crans du curseur, en jours — 30 / 90 / 180 / 365 : même jour, 1 / 3 / 6 / 12 mois avant (20/11) */
 const TREND_DAYS = [1, 7, 15, 30, 90, 180, 365];
+/* écarts de prix : le MARCHÉ seul (d'office) ou MON EXEMPLAIRE (mes ajouts, retraits, boîte comptent) — choisi à la volée (21/11) */
+const chgMineOn = () => true;   // (toujours MON EXEMPLAIRE : choix du propriétaire, 21/11 soir — plus de bouton)
+function chgApply() { const mine = chgMineOn(); for (const i of state.items || []) i.chg = mine ? i._chgMine : (i.chg_mkt ?? i._chgMine); }
+document.addEventListener("click", e => { if (!e.target.closest?.("[data-chgmine]")) return;
+  try { localStorage.setItem("bq-chg-mine", chgMineOn() ? "0" : "1"); } catch {}
+  chgApply(); render(); toast(chgMineOn() ? "Écarts : mon exemplaire (mes ajouts comptent)" : "Écarts : le marché seul"); });
 const trendDaysLbl = n => n === 1 ? "la veille" : n === 30 ? "il y a 1 mois" : n === 90 ? "il y a 3 mois" : n === 180 ? "il y a 6 mois" : n === 365 ? "il y a 1 an" : `il y a ${n} jours`;
 const trendMark = (pct, force = false, eur = null) => {   // force : dans une fiche, la variation est toujours affichée ; eur : écart en € à montrer (tri « Variation de prix (€) »)
   const t = trendCfg();
@@ -2393,8 +2514,8 @@ function render() {
   $("#btnEditList").hidden = !list;
   $("#btnOrderBL").hidden = !isPartsList(state.current) || DEMO || !itemsOf(state.current).length;   // « À commander » → wanted list BrickLink
   renderCleanBtn();
-  { const n = isPartsList(state.current) ? itemsOf(state.current).reduce((a, i) => a + Math.max(0, (i.quantity || 1) - (i.bl_qty || 0)), 0) : 0;
-    $("#btnOrderBL").textContent = `🧾 Exporter vers BrickLink${n ? ` (${nf.format(n)})` : ""}`; }
+  { const n = isPartsList(state.current) ? itemsOf(state.current).filter(i => !i.got && !(i.ordered || []).length && !i.cmd_m).reduce((a, i) => a + (i.quantity || 1), 0) : 0;   /* (à commander : ni commandé ni reçu — 22/11) */
+    $("#btnOrderBL").textContent = `🧾 Exporter en XML${n ? ` (${nf.format(n)})` : ""}`; }   /* (toujours BrickLink — 22/11) */   // (site de référence — 21/11)
   $("#btnGiftList").hidden = list?.kind !== "wishlist" || !!list?.gift || !giftList();   // 🎁 : la sous-liste « À offrir »
   $("#btnGiftLink").hidden = true;   // plus de lien à part : « À surveiller » est sur la page publique
   const pub = pubKeyOf();   // compteur et 📤 : liste de souhaits, À surveiller, Nouveautés, Toute la collection
@@ -2439,7 +2560,7 @@ function render() {
       <div class="stat"><div class="lbl">Pièces</div><div class="val">${approx(s.pieces)}</div></div>`;
   } else {
   $("#stats").innerHTML = `
-    <div class="stat main-stat stat-link" id="statValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">Valeur de la collection${subIds.length ? " (sous-listes comprises)" : ""}</div><div class="val" title="Selon ce que vous avez renseigné : figurines, sets partiels, pièces échangées, MOC…">${moneyA(tree.value, tree.apx)}${trendTot(state.current === ALL ? state.lists.filter(l => (l.kind || "collection") === "collection").map(l => l.id) : [state.current, ...subIds])}</div>
+    <div class="stat main-stat stat-link" id="statValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">${state.current === ALL ? "Valeur de la collection" : "Valeur de la liste"}${subIds.length ? " (sous-listes comprises)" : ""}</div><div class="val" title="Selon ce que vous avez renseigné : figurines, sets partiels, pièces échangées, MOC…">${moneyA(tree.value, tree.apx)}${trendTot(state.current === ALL ? state.lists.filter(l => (l.kind || "collection") === "collection").map(l => l.id) : [state.current, ...subIds])}</div>
       ${subIds.length ? `<div class="sub">Cette liste : ${moneyA(s.value, s.apx)} · sous-listes : ${moneyA(tree.value - s.value, tree.apx)}</div>` : ""}
       <div class="sub sub-ref" title="Valeur neuve (scellée) de ces sets et figurines selon BrickEconomy ; les MOC à leur valeur chiffrée">Si c'était neuf : ${money(tree.allNew)}</div></div>
     <button class="stat stat-btn view-tg ${views.sets && !views.figs ? "on" : ""}" id="statSets" title="Afficher / masquer les sets" aria-pressed="${views.sets}"><div class="lbl">Sets</div><div class="val">${nf.format(vs.sets)}</div></button>
@@ -3265,6 +3386,8 @@ $("#sidebar").addEventListener("click", e => {
   if (e.target.closest("button.btn, .nav-item") && window.innerWidth <= 820) setMenu(false);
 });
 /* date lisible : « 8 nov. 2026 à 07:50 » */
+/* « 📦 Commandée le 21 nov. 2026 » : seulement la ou les dates (ni site ni quantité) — inventaires et « À commander » (21/11 nuit) */
+const cmdText = ts => { const d = [...new Set((ts || []).filter(Boolean).map(t => fmtDate(t).replace(/ à .*/, "")))]; return "📦 Commandée" + (d.length ? " le " + d.join(" et le ") : ""); };
 const fmtDate = t => t ? new Date(t * 1000).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(/,? (\d\d:\d\d)$/, " à $1") : "";
 
 /* ------------------------------------------------------------ copies locales (sur l'appareil)
@@ -4193,6 +4316,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       const blFig = async () => {
         const r = blRes || await blReq || {};
         if (r.no && !r.zone) return toast(`Pas d'annonces sur BrickLink pour « ${r.name || f.name} » (${r.no})`);   // trouvée, mais rien en vente
+        /* (figurine : toujours BrickLink, même en secours — 22/11) */
         window.open(r.no ? blSale("M", r.no, { zone: r.zone }) : search, "_blank", "noopener");
       };
       openZoom.actions = [["⭐ La figurine dans la liste de souhaits", () => addFig(f, x, c.querySelector("[data-addfig]"))], ...(x.kind === "new" ? [["🔎 La figurine sur BrickLink", blFig], ["🔎 La figurine sur Rebrickable", () => window.open(rbFigSearch(f.name), "_blank", "noopener")]] : []), ["🔗 Le set sur lego.com", () => window.open(legoUrl(x), "_blank", "noopener")], ["⭐ Ajouter le set à la liste de souhaits", () => add(x, c.querySelector("[data-add]"))], [x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher", () => hide(x, !x.hidden)]];
@@ -4343,20 +4467,23 @@ $("#btnCleanParts").onclick = async () => {
 $("#btnOrderBL").onclick = async function blExport(full = false) {   // un appui : liste copiée, puis BrickLink ouvert sur l'import des wanted lists
   if (full instanceof Event) full = false;
   let r;
-  try { r = await api("/api/parts/bl-xml", { method: "POST", body: { list_id: state.current, full } }); } catch (e) { return toast(e.message); }
-  if (!r.refs) {   // rien de nouveau depuis le dernier export
-    if (await confirmBox(`Rien de nouveau : les ${nf.format(r.already.pieces)} pièce${r.already.pieces > 1 ? "s" : ""} de « À commander » sont déjà dans votre wanted list BrickLink.`
+  try { r = await api("/api/parts/bl-xml", { method: "POST", body: { list_id: state.current, full: true } }); } catch (e) { return toast(e.message); }   /* (toujours tout ce qui reste à commander — 22/11) */
+  if (!r.refs) return toast("Rien à exporter : tout est commandé ou reçu");
+  if (false) {   // (ancien : « rien de nouveau depuis le dernier export » — retiré 22/11)
+    if (await confirmBox(`Rien de nouveau : les ${nf.format(r.already.pieces)} pièce${r.already.pieces > 1 ? "s" : ""} de « À commander » sont déjà exportées en XML (${{ brickowl: "BrickOwl", both: "BrickLink / BrickOwl" }[refSite()] || "BrickLink"}).`
       + " Tout réexporter (si vous avez vidé la wanted list) ?", { ok: "Tout réexporter" })) blExport(true);
     return;
   }
+  const tgt = "bl";   // (exports : toujours BrickLink — 22/11)
+  if (!tgt) return;
   const file = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([r.xml], { type: "text/xml" }));
     a.download = `wanted-list-briquotheque-${new Date().toISOString().slice(0, 10)}.xml`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
   let copied = true;
   try { await navigator.clipboard.writeText(r.xml); } catch { copied = false; file(); }   // copie refusée : le fichier à la place
-  window.open(BL_UPLOAD, "_blank", "noopener");
+  /* (export « À commander » : copie seulement, aucun site ouvert — 22/11) */
   try { await api("/api/parts/bl-sent", { method: "POST", body: { ids: r.ids } }); load(); } catch (e) { toast(e.message); return; }   // exportées : quantité + date sur chaque pièce
   const n = `${nf.format(r.pieces)} pièce${r.pieces > 1 ? "s" : ""}`;
-  toast(`${copied ? "📋 " + n + " copiées" : "⬇ " + n + " dans le fichier XML"} · BrickLink : onglet « Upload BrickLink XML format », ${copied ? "collez" : "importez le fichier"}, puis Upload`
+  toast(`${copied ? "📋 " + n + " copiées (XML)" : "⬇ " + n + " dans le fichier XML"}`   /* (copie seulement : aucun site ouvert — 22/11) */
     + (r.skipped.length ? ` · ⚠ ${r.skipped.length} sans référence BrickLink, non exportée${r.skipped.length > 1 ? "s" : ""}` : ""), copied ? { label: "⬇ Fichier", run: file } : null);
 };
 
@@ -4491,6 +4618,11 @@ async function openInventory(itemId, setName, opts = {}) {
     } catch (e) { toast("Non renommé : " + e.message); }
   };
   let filter = "", query = "";
+  const orderNow = new Set();   // mises « à commander » depuis l'ouverture : restent à leur place jusqu'à la prochaine ouverture (21/11)
+  let shownMap = new Map();   // clé de la 1re ligne → ligne rassemblée (plusieurs lignes du set devenues la même pièce, même couleur — 21/11)
+  const rowOf = k => shownMap.get(k) || rows.find(x => x.key === k);
+  const grpKeys = r => r._grp || [r.key];
+  const qOf = r => grpKeys(r).reduce((a, k) => a + (st[k]?.q || rows.find(x => x.key === k)?.need || 0), 0);
   /* couleur effective : choix sur la pièce, sinon règle « remplacer X par Y », sinon couleur du set */
   const effColor = r => {
     const c = st[r.key]?.c ?? swaps[String(r.color_id)];
@@ -4523,7 +4655,7 @@ async function openInventory(itemId, setName, opts = {}) {
       const p = pending.values().next().value; pending.delete(p);
       try { partColors[p] = (await cachedApi(`/api/part/${encodeURIComponent(p)}/colors`)).colors; }
       catch { partColors[p] = { error: true }; }
-      $$(`.inv-row`, d).forEach(row => { const r = rows.find(x => x.key === row.dataset.k); if (r && (r.part_num === p || st[r.key]?.p === p)) row.outerHTML = rowHtml(r); });
+      $$(`.inv-row`, d).forEach(row => { const r = rowOf(row.dataset.k); if (r && (r.part_num === p || st[r.key]?.p === p)) row.outerHTML = rowHtml(r); });
       try { drawSum(); } catch {}   // (le résumé compte les pièces introuvables dans la couleur demandée)
     }
     colorsBusy = false;
@@ -4545,14 +4677,15 @@ async function openInventory(itemId, setName, opts = {}) {
       const [part, color] = key.split("|");
       try { repl[key] = (await api(`/api/part/${encodeURIComponent(part)}/remplacement?color=${color}`)).replacement; }
       catch { repl[key] = null; }
-      $$(`.inv-row`, d).forEach(row => { const r = rows.find(x => x.key === row.dataset.k); if (r?.part_num === part) row.outerHTML = rowHtml(r); });
+      $$(`.inv-row`, d).forEach(row => { const r = rowOf(row.dataset.k); if (r?.part_num === part) row.outerHTML = rowHtml(r); });
       drawSwaps();
     }
     replBusy = false;
   }
   const useReplacement = (r, rep, quiet) => {
-    st[r.key] = { ...(st[r.key] || {}), c: rep.color_id, ...(rep.image ? { ci: rep.image } : {}), p: rep.part_num, pn: rep.name };
-    save({ [r.key]: st[r.key] });
+    const patch = {};
+    for (const k of (r._grp || [r.key])) { st[k] = { ...(st[k] || {}), c: rep.color_id, ...(rep.image ? { ci: rep.image } : {}), p: rep.part_num, pn: rep.name }; patch[k] = st[k]; }   // (ligne rassemblée : toutes — 21/11)
+    save(patch);
     if (!quiet) { drawList(); toast(`Remplacée par ${rep.part_num}`); }
   };
   /* pièces recolorées par une règle, absentes dans cette couleur, avec une pièce de même forme proposée */
@@ -4583,7 +4716,7 @@ async function openInventory(itemId, setName, opts = {}) {
     </div>
     <div class="inv-sum" data-sum></div>
     <div class="progress" style="margin:8px 0 12px"><i data-bar style="width:0"></i></div>
-    <button type="button" class="btn primary inv-ready" data-ready hidden>🛒 Prêt pour la commande ?</button>
+    <button type="button" class="btn inv-ready" data-ready hidden>🧾 Exporter en XML</button>
     <div class="toolbar inv-tools">
       <input type="search" data-q placeholder="Filtrer : nom, référence, couleur…">
       <div class="chips" data-filters>
@@ -4638,7 +4771,7 @@ async function openInventory(itemId, setName, opts = {}) {
   const ipKey = r => { const s0 = st[r.key] || {}; return `${s0.p || r.bricklink || r.part_num}|${effColor(r).id}`; };
   const ipRule = x => {
     if (!x) return null;
-    if (x.src !== "BrickLink") return x.unit != null ? { unit: x.unit, how: "" } : null;
+    if (x.src !== "BrickLink") return x.unit != null ? { unit: x.unit, how: "", fb: x.fb || (refSite() === "bricklink" && x.src !== "both" ? "BrickOwl" : ""), sites: x.sites } : null;   // (marque d'origine — 21/11)
     const n = x.new, u = x.used;
     if (n && n.zone === homeZone()) return { unit: n.unit, how: "neuf" };
     if (u) return { unit: u.unit, how: `occasion ${ZONE_FLAG[u.zone] || ""}` };
@@ -4647,7 +4780,7 @@ async function openInventory(itemId, setName, opts = {}) {
   };
   const ipTxt = r => { const v = ip[ipKey(r)]; const q = st[r.key]?.q || r.need;
     return v === undefined || v === "…" ? `<span class="muted">prix…</span>` : !v ? `<span class="muted">prix inconnu</span>`
-      : `≈ <b>${money(v.unit * q)}</b> <small class="muted">(${money(v.unit)} / pièce${v.how ? ", " + esc(v.how) : ""})</small>`; };
+      : `≈ <b>${money(v.unit * q)}</b>${siteNote(v.fb, v.sites?.BrickLink, v.sites?.BrickOwl)} <small class="muted">(${money(v.unit)} / pièce${v.how ? ", " + esc(v.how) : ""})</small>`; };
   const isRest = r => !["ok", "x", "order", "cmd"].includes(st[r.key]?.s);   // pièce sans statut (« à vérifier ») : pas encore triée
   const fetchIp = async () => {   // une à la fois, 3 en parallèle : d'abord les pièces à commander ou commandées, puis les pièces restantes (pour leur estimation)
     if (ipBusy) return; ipBusy = true;
@@ -4665,11 +4798,21 @@ async function openInventory(itemId, setName, opts = {}) {
       for (let k = 0; k < todo.length; k += 3) { if (!d.isConnected) break; await Promise.all(todo.slice(k, k + 3).map(one)); }
     } finally { ipBusy = false; }
   };
+  const paidSum = () => {   /* commandées : le montant RÉEL payé (mes commandes ; seulement les pièces attribuées à la ligne) — 21/11 nuit */
+    const rs = rows.filter(r => st[r.key]?.s === "cmd");
+    const real = rs.filter(r => (st[r.key].o || []).length && st[r.key].o.every(o => typeof o.paid === "number"));
+    if (!real.length) return null;   /* (aucun prix payé connu : l'estimation, comme avant) */
+    const paid = real.reduce((a, r) => a + st[r.key].o.reduce((b, o) => b + o.paid, 0), 0);
+    const rest = rs.filter(r => !real.includes(r)), kn = rest.filter(r => ip[ipKey(r)] && ip[ipKey(r)] !== "…");
+    const est = kn.reduce((a, r) => a + ip[ipKey(r)].unit * (st[r.key]?.q || r.need), 0);
+    return ` · <b class="inv-total" title="Prix payé dans mes commandes, pour les seules pièces de cet inventaire (port non compté)">${money(paid)} payés</b>`
+      + (rest.length ? ` <small class="muted" title="Commandées à la main ou sans prix connu : médiane BrickLink">+ ${kn.length ? "≈ " + money(est) : "?"} estimés (${rest.length} réf.)</small>` : "");
+  };
   const ipSum = state0 => {   // total estimé des pièces à commander (ou commandées)
     const rs = rows.filter(r => st[r.key]?.s === state0); if (!rs.length) return "";
     const known = rs.filter(r => ip[ipKey(r)] && ip[ipKey(r)] !== "…");
     const tot = known.reduce((a, r) => a + ip[ipKey(r)].unit * (st[r.key]?.q || r.need), 0);
-    return known.length ? ` <b class="inv-total" title="Moyenne des annonces neuves en France (BrickLink), sinon prix d'occasion">≈ ${money(tot)}</b>${known.length < rs.length ? ` <small class="muted">(${known.length}/${rs.length} réf.)</small>` : ""}` : ` <small class="muted">(chiffrage…)</small>`;
+    return known.length ? ` <b class="inv-total" title="Médiane BrickLink (neuf en France, sinon occasion)">≈ ${money(tot)}</b>${known.length < rs.length ? ` <small class="muted">(${known.length}/${rs.length} réf.)</small>` : ""}` : ` <small class="muted">(chiffrage…)</small>`;
   };
   const sumOf = (pick, qty) => {   // total estimé d'un groupe de pièces : { n: références, known: références chiffrées, tot }
     const rs = rows.filter(pick), known = rs.filter(r => ip[ipKey(r)] && ip[ipKey(r)] !== "…");
@@ -4683,16 +4826,20 @@ async function openInventory(itemId, setName, opts = {}) {
     $("[data-sum]", d).innerHTML = `<span class="sum-l"><b>${nf.format(c.total)}</b> pièces <span class="muted">(${rows.length - c.excl} réf.)</span></span>
       <span class="sum-l ok-txt">✔ ${nf.format(c.okPcs)} OK</span>
       <span class="sum-l order-txt">🛒 ${nf.format(c.orderPcs)} à commander${ipSum("order")}</span>
-      ${c.cmd ? `<span class="sum-l cmd-txt">📦 ${nf.format(c.cmdPcs)} commandée${c.cmdPcs > 1 ? "s" : ""}${ipSum("cmd")}</span>` : ""}
+      ${c.cmd ? `<span class="sum-l cmd-txt">📦 ${nf.format(c.cmdPcs)} commandée${c.cmdPcs > 1 ? "s" : ""}${paidSum() ?? ipSum("cmd")}</span>` : ""}
       <span class="sum-l">❔ ${nf.format(c.todoPcs)} à vérifier${sumTxt(gRest, "Les pièces pas encore triées, au prix où il faudrait les commander")}</span>
       ${gOrder.n + gRest.n && gOrder.known + gRest.known ? `<span class="sum-l sum-tot" title="Ce que coûteraient les pièces à commander et celles qui restent à vérifier">Total 🛒 + ❔ : <b class="inv-total">≈ ${money(gOrder.tot + gRest.tot)}</b>${
         gOrder.known + gRest.known < gOrder.n + gRest.n ? ` <small class="muted">(chiffrage en cours)</small>` : ""}</span>` : ""}
       ${c.excl ? `<span class="sum-l x-txt">✕ ${nf.format(c.exclPcs)} exclue${c.exclPcs > 1 ? "s" : ""}</span>` : ""}
       ${nMiss ? `<span class="sum-l nocolor" title="Ces pièces sont marquées ⚠ dans la liste : changez leur couleur (🎨) ou remplacez-les (🔁)">⚠ ${nMiss} référence${nMiss > 1 ? "s" : ""} n'existe${nMiss > 1 ? "nt" : ""} pas dans la couleur demandée</span>` : ""}`;   // une information par ligne
     $("[data-bar]", d).style.width = (c.total ? Math.round(c.done / c.total * 100) : 0) + "%";
+    {   /* aide-mémoire « 📍 Vous en êtes là » : 2 pointer, 3 exporter, 5 réception, 6 tout est OK (21/11 nuit) */
+      const ici = c.todo > 0 ? 2 : c.order > 0 ? 3 : c.cmd > 0 ? 5 : c.total ? 6 : 1;
+      d.dataset.memo = `/aide-memoire?ici=${ici}&nom=${encodeURIComponent(data.name || "")}#/inventaire`;
+      $("[data-sum]", d).insertAdjacentHTML("beforeend", `<a class="sum-l memo-link" href="${esc(d.dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire : où j'en suis (étape ${ici})</a>`); }
     const rb = $("[data-ready]", d);   // tout est trié (OK / à commander) : on peut passer commande
-    rb.hidden = !(c.todo === 0 && c.order > 0);
-    rb.textContent = `🛒 Prêt pour la commande ? (${nf.format(c.orderPcs)} pièce${c.orderPcs > 1 ? "s" : ""})`;
+    rb.hidden = !(c.order > 0);   // (les pièces à commander restent dans l'inventaire : export XML — 21/11 soir)
+    rb.textContent = `🧾 Exporter en XML (${nf.format(c.orderPcs)} pièce${c.orderPcs > 1 ? "s" : ""})`;
   };
   const replText = (r, col) => {
     const rep = replacementFor(r.part_num, col.id);
@@ -4719,10 +4866,11 @@ async function openInventory(itemId, setName, opts = {}) {
       ${["order", "cmd"].includes(s) ? `<div class="inv-meta inv-ip" data-ip="${esc(r.key)}">${ipTxt(r)}</div>` : ""}</div>
       <div class="inv-need">×${r.need}${seen[r.key] ? `<span class="inv-seen ${seen[r.key] >= r.need ? "full" : ""}" title="Pièces repérées par le scan">📷 ${seen[r.key]}/${r.need}</span>` : ""}</div>
       <div class="inv-act">
-        ${s === "cmd" ? `<span class="inv-cmd" title="Dans la liste À commander : à la réception, passez-la en OK (ou remettez-la à commander)">📦 Commandée ×${st[r.key]?.q || r.need}</span>` : ""}
+        ${s === "cmd" ? `<span class="inv-cmd" title="À la réception, passez-la en OK (ou remettez-la à commander si c'est une erreur)">${cmdText(st[r.key]?.o?.length ? st[r.key].o.map(o => o.date) : [st[r.key]?.m])}</span>` : ""}
         <button type="button" class="inv-ok ${s === "ok" ? "on" : ""}" data-s="ok">✔ OK</button>
-        ${s === "cmd" ? "" : `<button type="button" class="inv-order ${s === "order" ? "on" : ""}" data-s="order">🛒 À commander</button>`}
-        <span class="stepper inv-q" ${s === "order" ? "" : "hidden"}><button type="button" data-qd="-1" aria-label="Une de moins">−</button><b>${st[r.key]?.q || r.need}</b><button type="button" data-qd="1" aria-label="Une de plus">+</button></span>
+        ${s === "cmd" ? (st[r.key]?.o?.length || st[r.key]?.m ? `<button type="button" class="inv-order" data-s="order" title="Erreur : la remettre à commander">↩ À commander</button>` : "") : `<button type="button" class="inv-order ${s === "order" ? "on" : ""}" data-s="order">🛒 À commander</button>`}
+        ${s === "order" ? `<button type="button" class="inv-order" data-s="cmd" title="Commandée par un autre moyen : la marquer commandée (aujourd'hui)">📦 Commandée</button>` : ""}
+        <span class="stepper inv-q" ${s === "order" ? "" : "hidden"}><button type="button" data-qd="-1" aria-label="Une de moins">−</button><b>${qOf(r)}</b><button type="button" data-qd="1" aria-label="Une de plus">+</button></span>
         <button type="button" class="inv-mini" data-color title="Changer la couleur de cette pièce">🎨</button>
         <button type="button" class="inv-mini" data-otherpart title="Remplacer par une autre pièce (équivalents, recherche, photo)">🔁</button>
         <button type="button" class="inv-mini inv-x ${s === "x" ? "on" : ""}" data-s="x" title="${s === "x" ? "Réintégrer cette pièce" : "Exclure cette pièce"}">${s === "x" ? "↩" : "✕"}</button>
@@ -4746,9 +4894,14 @@ async function openInventory(itemId, setName, opts = {}) {
       const s = st[r.key]?.s || "todo";
       if (filter && s !== filter) return false;
       return !q || [r.name, r.part_num, r.color_fr, r.color_name, r.element_id, effColor(r).fr].join(" ").toLowerCase().includes(q);
-    }).sort((a, b) => ({ ok: 1, x: 2 }[st[a.key]?.s] || 0) - ({ ok: 1, x: 2 }[st[b.key]?.s] || 0) || invCmp(a, b));   // en bas : les OK, puis les exclues ; sinon le tri choisi
+    }).sort((a, b) => (orderNow.has(a.key) ? 0 : { order: 1, cmd: 2, ok: 3, x: 4 }[st[a.key]?.s] || 0) - (orderNow.has(b.key) ? 0 : { order: 1, cmd: 2, ok: 3, x: 4 }[st[b.key]?.s] || 0) || invCmp(a, b));   // non vérifiées, à commander, OK, exclues (21/11) ; sinon le tri choisi
     drawSwaps();
-    $("[data-list]", d).innerHTML = shown.length ? shown.map(rowHtml).join("") : `<div class="loading">Aucune pièce.</div>`;
+    const byG = new Map(), merged = [];   /* même pièce, même couleur, même état : une seule ligne (21/11) */
+    for (const r of shown) { const g = (st[r.key]?.p || r.part_num) + "|" + effColor(r).id + "|" + (st[r.key]?.s || "");
+      const m = byG.get(g); if (m) { m._grp.push(r.key); m.need += r.need; } else { const c = { ...r, _grp: [r.key] }; byG.set(g, c); merged.push(c); } }
+    shownMap = new Map(merged.filter(c => c._grp.length > 1).map(c => [c.key, c]));
+    const list = merged.map(c => c._grp.length > 1 ? c : rows.find(x => x.key === c.key));
+    $("[data-list]", d).innerHTML = list.length ? list.map(rowHtml).join("") : `<div class="loading">Aucune pièce.</div>`;
     setTimeout(fetchIp, 0);   // prix des pièces à commander, tout de suite
   };
   // un seul gestionnaire pour toute la liste
@@ -4756,7 +4909,7 @@ async function openInventory(itemId, setName, opts = {}) {
     const z = e.target.closest("[data-zoom]"); if (z) return openZoom(z.dataset.zoom ? img(z.dataset.zoom) : "");
     const nm = e.target.closest(".inv-name");
     if (nm) {   // nom de la pièce → sa fiche
-      const r = rows.find(x => x.key === nm.closest(".inv-row").dataset.k);
+      const r = rowOf(nm.closest(".inv-row").dataset.k);
       if (r) {   // la fiche de la pièce TELLE QU'ELLE EST AFFICHÉE : couleur de remplacement (règle ou choix) et pièce de remplacement comprises
         const col = effColor(r), s0 = st[r.key] || {}, alt = s0.p;
         const avail = col.changed && col.byRule ? colorAvail(r.part_num, col.id) : null;
@@ -4769,34 +4922,36 @@ async function openInventory(itemId, setName, opts = {}) {
     if (qd) {   // quantité à commander : − / +
       const row = qd.closest(".inv-row"), k = row.dataset.k;
       const v = Math.max(1, Math.min(999, (st[k]?.q || 1) + +qd.dataset.qd));
-      st[k] = { s: "order", q: v }; qd.parentElement.querySelector("b").textContent = v; drawSum();
+      st[k] = { ...(st[k] || {}), s: "order", q: v }; qd.parentElement.querySelector("b").textContent = qOf(rowOf(k)); drawSum();   // (ligne rassemblée : la 1re porte le + / −, la somme s'affiche)
       clearTimeout(qTimers[k]); qTimers[k] = setTimeout(() => { delete qTimers[k]; save({ [k]: st[k] }); }, 400);
       return;
     }
     const rr = e.target.closest("[data-rowreset]");
     if (rr) {   // ↺ : la pièce revient à « à vérifier », dans la couleur du set (même si une règle de couleur existe)
-      const r = rows.find(x => x.key === rr.closest(".inv-row").dataset.k);
-      if (swaps[String(r.color_id)] != null) st[r.key] = { c: r.color_id }; else delete st[r.key];
-      save({ [r.key]: st[r.key] || { s: "" } }); drawList(); drawSum(); toast("Pièce réinitialisée");
+      const patch = {};
+      for (const k of grpKeys(rowOf(rr.closest(".inv-row").dataset.k))) { const r = rows.find(x => x.key === k);   // (ligne rassemblée : toutes)
+        if (swaps[String(r.color_id)] != null) st[r.key] = { c: r.color_id }; else delete st[r.key];
+        patch[r.key] = st[r.key] || { s: "" }; }
+      save(patch); drawList(); drawSum(); toast("Pièce réinitialisée");
       return;
     }
     const ur = e.target.closest("[data-userep]");
     if (ur) {
-      const r = rows.find(x => x.key === ur.closest(".inv-row").dataset.k), col = effColor(r);
+      const r = rowOf(ur.closest(".inv-row").dataset.k), col = effColor(r);
       const rep = repl[r.part_num + "|" + col.id];
       if (rep) useReplacement(r, rep);
       return;
     }
     const cb = e.target.closest("[data-color]");
-    if (cb) return pickColor(rows.find(x => x.key === cb.closest(".inv-row").dataset.k));
+    if (cb) return pickColor(rowOf(cb.closest(".inv-row").dataset.k));
     const ob = e.target.closest("[data-otherpart]");
-    if (ob) { const r = rows.find(x => x.key === ob.closest(".inv-row").dataset.k);
+    if (ob) { const r = rowOf(ob.closest(".inv-row").dataset.k);
       return openPart({ pickTitle: `Remplacer « ${r.name || r.part_num} »`, similarTo: { ...r, part: r.bricklink || r.part_num }, pick: n => {
         setPiece(r, n.color_id, n.image || "", { part_num: n.part_num || n.part, name: n.name || n.part });
         toast(`${r.name || r.part_num} remplacée par ${n.name || n.part}`);
       } }); }
     const b = e.target.closest("[data-s]"); if (!b) return;
-    let row = b.closest(".inv-row"); const k = row.dataset.k, r = rows.find(x => x.key === k);
+    let row = b.closest(".inv-row"); const k = row.dataset.k, r = rowOf(k);
     const cur = st[k]?.s, s = cur === b.dataset.s ? "" : b.dataset.s;   // un 2e clic annule
     if (s === "order" && needCheck(r)) {   // jamais « à commander » dans une couleur qui n'existe pas pour cette pièce
       const part = st[k]?.p || r.part_num;
@@ -4805,11 +4960,17 @@ async function openInventory(itemId, setName, opts = {}) {
       if (rowAvail(r)?.exists === false) { if (row.isConnected) row.outerHTML = rowHtml(r); drawSum();
         return toast(`⚠ ${part} n'existe pas en ${effColor(r).fr} : changez sa couleur (🎨) ou remplacez la pièce (🔁)`); }
     }
-    const keep = {};   // couleur et pièce de remplacement choisies : gardées quand on coche OK / à commander
-    for (const f of ["c", "ci", "p", "pn"]) if (st[k]?.[f] != null && st[k][f] !== "") keep[f] = st[k][f];
-    if (s) st[k] = { s, q: st[k]?.q || r.need, ...keep }; else if (Object.keys(keep).length) st[k] = keep; else delete st[k];
-    if (b.dataset.s === "x" || b.dataset.s === "ok" || cur === "ok") drawList(); else { row.outerHTML = rowHtml(r); fetchIp(); }   // OK / exclue : change de place ; à commander : son prix
-    drawSum(); save({ [k]: st[k] || { s: "" } });
+    const patchS = {};
+    for (const kk of grpKeys(r)) { const rk = rows.find(x => x.key === kk) || r;   // (ligne rassemblée : toutes — 21/11)
+      const keep = {};   // couleur et pièce de remplacement choisies : gardées quand on coche OK / à commander
+      for (const f of ["c", "ci", "p", "pn"]) if (st[kk]?.[f] != null && st[kk][f] !== "") keep[f] = st[kk][f];
+      if (s === "cmd") keep.m = Math.floor(Date.now() / 1000);   /* « Commandée » à la main : la date du jour */
+      else if (s === "ok" && st[kk]?.m) keep.m = st[kk].m;
+      if (s) st[kk] = { s, q: st[kk]?.q || rk.need, ...keep }; else if (Object.keys(keep).length) st[kk] = keep; else delete st[kk];
+      patchS[kk] = st[kk] || { s: "" };
+      if (s === "order") orderNow.add(kk); else orderNow.delete(kk); }   // (à commander : reste à sa place pour l'instant)
+    drawList(); fetchIp();   // (tout changement d'état : la pièce va tout de suite à sa place — à commander compris, 21/11)   // (ligne rassemblée : redessinée)   // OK / exclue : change de place ; à commander : son prix
+    drawSum(); save(patchS);
   });
   $("[data-ready]", d).onclick = async e => {
     const btn = e.currentTarget, c = counts();
@@ -4820,18 +4981,18 @@ async function openInventory(itemId, setName, opts = {}) {
       if (bad.length) { drawList(); drawSum();
         return toast(`⚠ ${bad.length} pièce${bad.length > 1 ? "s" : ""} à commander n'existe${bad.length > 1 ? "nt" : ""} pas dans la couleur demandée (${bad.slice(0, 3).map(r => st[r.key]?.p || r.part_num).join(", ")}${bad.length > 3 ? "…" : ""}) : corrigez-les d'abord (🎨 ou 🔁)`); }
     }
-    if (!await confirmBox(`Copier les ${nf.format(c.orderPcs)} pièces à commander (${c.order} référence${c.order > 1 ? "s" : ""}) dans la liste « À commander » ? Dans l'inventaire, elles passeront en « Commandées ».`, { ok: "Copier" })) return;
     await flush();
     const parts = rows.filter(r => st[r.key]?.s === "order").map(r => { const col = effColor(r), s0 = st[r.key] || {};
-      return { row: r.key, part_num: s0.p || r.part_num, part_name: s0.pn || r.name || "", bricklink: s0.p ? "" : r.bricklink || "", color_id: col.id,
-        color_name: COLORS[String(col.id)]?.name || r.color_name || "", color_rgb: col.rgb || "", element_id: col.changed || s0.p ? "" : r.element_id || "",
-        image: s0.ci || r.image || "", quantity: s0.q || r.need }; });
-    btn.disabled = true;
+      return { part_num: s0.p || r.part_num, bricklink: s0.p ? "" : r.bricklink || "", color_id: col.id, quantity: s0.q || r.need }; });
+    btn.disabled = true;   /* XML des pièces à commander — elles restent dans l'inventaire ; « Commandée » viendra de mes commandes (21/11 soir) */
     try {
-      const res = await api(`/api/inventory/${encodeURIComponent(itemId)}/commande`, { method: "POST", body: { parts, set_number: data.xml ? "" : data.set } });
-      for (const p of parts) if (st[p.row]?.s === "order") st[p.row] = { ...st[p.row], s: "cmd" };
-      drawList(); drawSum(); load();
-      toast(`${res.rows} référence${res.rows > 1 ? "s" : ""} copiée${res.rows > 1 ? "s" : ""} dans « ${res.list} »`);
+      const res = await api(`/api/inventory/${encodeURIComponent(itemId)}/xml`, { method: "POST", body: { parts } });
+      const file = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([res.xml], { type: "text/xml" }));
+        a.download = `inventaire-${new Date().toISOString().slice(0, 10)}.xml`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+      let copied = true; try { await navigator.clipboard.writeText(res.xml); } catch { copied = false; file(); }
+      const bo = false;   /* (exports : toujours BrickLink — 22/11) */
+      toast(`${copied ? "📋 " + nf.format(res.refs) + " références copiées (XML)" : "⬇ Fichier XML enregistré"}`   /* (copie seulement : aucun site ouvert — 22/11) */
+        + (res.skipped?.length ? ` · ⚠ ${res.skipped.length} sans référence BrickLink` : ""), copied ? { label: "⬇ Fichier", run: file } : null);
     } catch (err) { toast(err.message); }
     btn.disabled = false;
   };
@@ -4909,12 +5070,15 @@ async function openInventory(itemId, setName, opts = {}) {
   drawScanbar();
 
   /* couleur et/ou pièce choisie à la place de celle du set (c, ci : couleur et sa photo ; alt : autre pièce) */
-  const setPiece = (r, c, ci, alt) => {
-    const cur = st[r.key] || {};
-    delete cur.p; delete cur.pn;
-    if ((c == null || +c === r.color_id) && !alt) { delete cur.c; delete cur.ci; if (cur.s) st[r.key] = cur; else delete st[r.key]; }
-    else st[r.key] = { ...cur, c: +c, ...(ci ? { ci } : {}), ...(alt ? { p: alt.part_num, pn: alt.name } : {}) };
-    save({ [r.key]: st[r.key] || { s: "" } }); drawList();
+  const setPiece = (r0, c, ci, alt) => {
+    const patch = {};
+    for (const k of (r0._grp || [r0.key])) { const r = rows.find(x => x.key === k) || r0;   // (ligne rassemblée : toutes — 21/11)
+      const cur = st[r.key] || {};
+      delete cur.p; delete cur.pn;
+      if ((c == null || +c === r.color_id) && !alt) { delete cur.c; delete cur.ci; if (cur.s) st[r.key] = cur; else delete st[r.key]; }
+      else st[r.key] = { ...cur, c: +c, ...(ci ? { ci } : {}), ...(alt ? { p: alt.part_num, pn: alt.name } : {}) };
+      patch[r.key] = st[r.key] || { s: "" }; }
+    save(patch); drawList();
   };
   /* 🎨 couleur d'une pièce : les couleurs qui existent pour cette pièce */
   async function pickColor(r) {
@@ -5065,7 +5229,7 @@ async function fetchPartPrices(items) {
       if (k in state.partPrices) continue;
       state.partPrices[k] = { loading: true };
       try {
-        state.partPrices[k] = await api(`/api/part-price?element=${encodeURIComponent(i.element_id || "")}&part=${encodeURIComponent(i.part_num || "")}&color=${encodeURIComponent(i.color_name || "")}&bl=${encodeURIComponent(i.bricklink || "")}&cid=${encodeURIComponent(i.color_id ?? "")}`);
+        state.partPrices[k] = await api(`/api/part-price?ann=1&element=${encodeURIComponent(i.element_id || "")}&part=${encodeURIComponent(i.part_num || "")}&color=${encodeURIComponent(i.color_name || "")}&bl=${encodeURIComponent(i.bricklink || "")}&cid=${encodeURIComponent(i.color_id ?? "")}`);
       } catch { state.partPrices[k] = { unit: null }; }
       if (isPartsList(state.current)) render();
     }
@@ -5084,6 +5248,8 @@ function condPick(n, u, cond) {   // (3e valeur : "n" prix neuf retenu, "u" prix
 }
 function buyPrice(p, cond = "N") {
   if (!p || p.loading) return null;
+  if (p.src !== "BrickLink" && p.cond) { const c = p.cond[cond]?.unit != null ? p.cond[cond] : p.cond.X;   // (BrickOwl, les deux : le prix de l'état voulu — 21/11)
+    return c?.unit != null ? { unit: c.unit, how: c === p.cond[cond] ? "" : "toutes annonces", src: p.src, fb: c.fb, sites: c.sites, which: cond === "U" ? "u" : "n" } : null; }
   if (p.src !== "BrickLink") return p.unit != null ? { unit: p.unit, how: "", src: "BrickOwl" } : null;
   const ok = s => s?.unit != null ? s : null, pk = condPick(ok(p.new), ok(p.used), cond);
   return pk ? { unit: pk[0].unit, how: `${pk[1]} ${pk[0].kind === "ventes" ? "(ventes 6 mois)" : "(annonces)"} ${ZONE_FLAG[pk[0].zone] || ""}`, src: "BrickLink", which: pk[2] } : null;
@@ -5103,7 +5269,9 @@ const priceText = i => {
   else {
     const p = partPrice(i);
     if (!p || p.loading) return `<span class="muted">prix en cours…</span>`;
-    if (p.src !== "BrickLink") return p.unit != null ? line("Prix", p.unit, true) : `<span class="muted">prix inconnu</span>`;   // (BrickLink indisponible : le prix de secours)
+    if (p.src !== "BrickLink" && p.cond) { const b = buyPrice(p, condOf(i));   // (l'état voulu, aussi pour BrickOwl — 21/11)
+      return b ? line("Prix", b.unit, true) + siteNote(b.fb || (refSite() === "bricklink" ? "BrickOwl" : ""), b.sites?.BrickLink, b.sites?.BrickOwl) + (b.how ? ` <small class="muted">(${esc(b.how)})</small>` : "") : `<span class="muted">prix inconnu</span>`; }
+    if (p.src !== "BrickLink") return p.unit != null ? line("Prix", p.unit, true) + siteNote(p.fb || (refSite() === "bricklink" && p.src !== "both" ? "BrickOwl" : ""), p.sites?.BrickLink, p.sites?.BrickOwl) : `<span class="muted">prix inconnu</span>`;   // (le prix de secours : son logo — 21/11)
     n = p.new?.unit; u = p.used?.unit; which = buyPrice(p, condOf(i))?.which; zn = zoneTxt(p.new, n); zu = zoneTxt(p.used, u);
   }
   if (n == null && u == null) return `<span class="muted">prix inconnu</span>`;
@@ -5124,17 +5292,80 @@ const orderZone = i => {
 const orderLink = i => { const cond = { N: "N", U: "U" }[condOf(i)] || "", zone = orderZone(i);
   return i.kind === "fig" ? blSale("M", i.number, { zone, cond })
     : blSale("P", i.bricklink || i.part_num, { zone, cond, color: partPrice(i)?.bl_color ?? null }); };
+/* « À commander » ouvert : mes commandes BrickOwl relues (au plus une fois par heure, côté serveur) — « Commandée », jamais OK (21/11 soir) */
+function ordersCheck() {
+  if (DEMO || ordersCheck.on) return; ordersCheck.on = true;
+  api("/api/orders/sync", { method: "POST", body: {} }).then(r => { if (r?.changed) { load(); toast(`📦 ${r.changed} pièce${r.changed > 1 ? "s" : ""} « Commandée${r.changed > 1 ? "s" : ""} » d'après vos commandes`); } })
+    .catch(() => {}).finally(() => setTimeout(() => { ordersCheck.on = false; }, 600000));
+}
+/* ✔ OK dans « À commander » (21/11 nuit) — figurine : créer sa fiche ? ; pièce (hors inventaire) : remise là où elle manquait
+   (le set de la pièce d'abord, puis mes autres sets et figurines) ; rien n'y manque mais elle est pour un de mes sets : qu'en faire ? */
+async function receivedAsk(it) {
+  if (it.kind === "fig") {
+    if (await confirmBox(`« ${itemName(it)} » reçue : créer sa fiche ?`, { ok: "Créer la fiche", no: "Plus tard" })) {
+      state.addToList = null; openAdd(); pickFig(it.number, { name: itemName(it), image: itemImage(it) || "", again: true }); }
+    return;
+  }
+  if (it.kind !== "part" || (it.inv_links || []).length) return;   // (pièce d'un inventaire : la ligne de l'inventaire passe OK)
+  const same = o => o && (o.part_num === it.part_num || o.part === it.part_num || (it.bricklink && o.part === it.bricklink)) && +o.color_id === +it.color_id;
+  const mine = state.items.filter(x => kindOf(x.list_id) === "collection" && ["set", "fig"].includes(x.kind || "set") && !(x.kind === "fig" && x.set_orig && x.attached_to));   /* (figurine d'origine d'un set : vue par son set) */
+  const spots = [];
+  for (const x of mine) {
+    const tg = (x.kind || "set") === "set" ? [["#set", x.set_mod?.fig_swaps], ...Object.entries(x.fig_mods || {}).map(([f, m]) => [f, m?.fig_swaps])] : [["", x.fig_swaps]];
+    for (const [fid, sw] of tg) for (const e of sw || []) if (!e.new && same(e.orig)) spots.push({ x, fid, e, list: sw });
+  }
+  spots.sort((a, b) => (b.x.number === it.set_number) - (a.x.number === it.set_number));
+  const where = sp => `« ${itemName(sp.x)} »` + (sp.fid && sp.fid !== "#set" ? ` (figurine ${(sp.x.info?.minifigs || []).find(m => m.id === sp.fid)?.name || sp.fid})` : "");
+  const post = (x, fid, swaps) => api(`/api/items/${x.id}/fig-swaps`, { method: "POST", body: { swaps: swaps.map(({ k, orig, new: n, fix }) => ({ k, orig: orig || null, new: n || null, ...(fix ? { fix: true } : {}) })), ...(fid ? { fig: fid } : {}), _solo: true } });
+  const nm = it.part_name || it.part_num;
+  try {
+    if (spots.length) {
+      const pick = spots.length === 1 ? (await confirmBox(`« ${nm} » reçue : elle manquait dans ${where(spots[0])}. L'y remettre ?`, { ok: "La remettre", no: "Non" }) ? 0 : null)
+        : await choiceBox(`« ${nm} » reçue : elle manque dans plusieurs fiches. Où la remettre ?`, spots.slice(0, 4).map((sp, k) => [k, where(sp)]));
+      if (pick == null) return;
+      const sp = spots[pick], n = it.quantity || 1, oq = sp.e.orig.qty || 1;
+      const swaps = oq > n ? sp.list.map(e => e === sp.e ? { ...e, orig: { ...e.orig, qty: oq - n } } : e) : sp.list.filter(e => e !== sp.e);
+      await post(sp.x, sp.fid, swaps); await load(); return toast(`✔ « ${nm} » remise dans ${where(sp)}`);
+    }
+    const host = it.set_number && mine.find(x => (x.kind || "set") === "set" && x.number === it.set_number);
+    if (!host) return;
+    const a = await choiceBox(`« ${nm} » reçue pour « ${itemName(host)} » : aucune pièce de ce type n'y manque. Qu'en faire ?`,
+      [["keep", "Rien, je la garde à part"], ["add", "L'ajouter au set (pièce en plus)"]]);
+    if (a !== "add") return;
+    await addPartTo(host, { part: it.bricklink || it.part_num, part_num: it.part_num, color_id: it.color_id, color_fr: it.color_fr || it.color_name || "", qty: it.quantity || 1, name: it.part_name || "", image: it.image || "" });
+    await load(); toast(`✔ « ${nm} » ajoutée à « ${itemName(host)} »`);
+  } catch (err) { toast(err.message); }
+}
 function renderPartsView(items) {
+  ordersCheck();
   const n = items.reduce((a, i) => a + (i.quantity || 1), 0);
   const sets = new Set(items.map(i => i.set_number).filter(Boolean));
   const known = items.filter(i => partBuy(i)?.unit != null);
   const cost = known.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0);
   setTimeout(() => fetchPartPrices(items), 0);
-  $("#stats").innerHTML = `
-    <div class="stat main-stat parts-stat"><div class="lbl">Coût estimé</div><div class="val">≈ ${money(cost)}</div><div class="sub">${known.length < items.length ? `${known.length}/${items.length} références chiffrées` : ""}</div></div>
-    <div class="stat"><div class="lbl">À commander</div><div class="val">${nf.format(n)} élément${n > 1 ? "s" : ""}</div></div>
-    <div class="stat"><div class="lbl">Références</div><div class="val">${nf.format(items.length)}</div><div class="sub">pièce + couleur</div></div>
-    <div class="stat"><div class="lbl">Sets concernés</div><div class="val">${nf.format(sets.size)}</div></div>`;
+  /* (« À commander » : aspect de l'inventaire — 21/11 nuit) */
+  {   // le résumé de l'inventaire : une information par ligne, la barre, les filtres
+    const isCmd = i => !i.got && ((i.ordered || []).length || i.cmd_m), pcs = l => l.reduce((a, i) => a + (i.quantity || 1), 0);
+    const gOrd = items.filter(i => !i.got && !isCmd(i)), gCmd = items.filter(isCmd), gOk = items.filter(i => i.got);
+    const est = l => { const k = l.filter(i => partBuy(i)?.unit != null); return k.length ? ` <b class="inv-total">≈ ${money(k.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0))}</b>${k.length < l.length ? ` <small class="muted">(${k.length}/${l.length} réf.)</small>` : ""}` : ""; };
+    const real = gCmd.filter(i => (i.ordered || []).length && i.ordered.every(o => typeof o.paid === "number")), rest = gCmd.filter(i => !real.includes(i));
+    const paid = real.length ? ` · <b class="inv-total" title="Prix payé dans mes commandes (port non compté)">${money(real.reduce((a, i) => a + i.ordered.reduce((b, o) => b + o.paid, 0), 0))} payés</b>${rest.length ? ` <small class="muted">+${est(rest) || " ?"} estimés</small>` : ""}` : est(gCmd);
+    const tot = pcs(items), done = pcs(gCmd) + pcs(gOk);
+    const F = state.blF || "";
+    $("#stats").innerHTML = `<div class="bl-sum-box" style="grid-column:1/-1"><div class="inv-sum">
+      <span class="sum-l"><b>${nf.format(tot)}</b> élément${tot > 1 ? "s" : ""} <span class="muted">(${nf.format(items.length)} réf.)</span></span>
+      <span class="sum-l">🛒 ${nf.format(pcs(gOrd))} à commander${est(gOrd)}</span>
+      ${gCmd.length ? `<span class="sum-l cmd-txt">📦 ${nf.format(pcs(gCmd))} commandée${pcs(gCmd) > 1 ? "s" : ""}${paid}</span>` : ""}
+      <span class="sum-l ok-txt">✔ ${nf.format(pcs(gOk))} reçue${pcs(gOk) > 1 ? "s" : ""}</span>
+      ${sets.size ? `<span class="sum-l">🧱 Pour ${nf.format(sets.size)} set${sets.size > 1 ? "s" : ""}</span>` : ""}
+      ${(() => { /* aide-mémoire « 📍 Vous en êtes là » : 1 ajouter, 2 exporter, 3 commander, 4-5 réception, 6 nettoyer (21/11 nuit) */
+        const ici = !items.length ? "1" : gOrd.length ? "2" : gCmd.length ? "4,5" : "6";   /* (l'export XML ne compte pas : achat quand l'occasion se présente — 22/11) */
+        $("#stats").dataset.memo = `/aide-memoire?ici=${ici}&nom=${encodeURIComponent("À commander")}#/commander`;
+        return `<a class="sum-l memo-link" href="${esc($("#stats").dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire : où j'en suis (étape ${ici.replace(",", " et ")})</a>`; })()}</div>
+      <div class="progress" style="margin:8px 0 12px"><i style="width:${tot ? Math.round(done / tot * 100) : 0}%"></i></div>
+      <div class="chips" data-blf>${[["", "Toutes"], ["order", "À commander"], ["cmd", "Commandées"], ["ok", "OK"]].map(([v, t]) => `<button type="button" data-f="${v}" class="${F === v ? "on" : ""}">${t}</button>`).join("")}</div></div>`;
+    $$("[data-blf] [data-f]", $("#stats")).forEach(b => b.onclick = () => { state.blF = b.dataset.f; renderPartsView(itemsOf(state.current)); });
+  }
   const f = $("#filter").value.trim().toLowerCase();
   let shown = items.filter(i => !f || [i.part_num, i.part_name, i.color_name, i.element_id, i.set_number, setLabel(i.set_number), i.notes]
     .join(" ").toLowerCase().includes(f) || (i.kind === "fig" && `${i.number} ${itemName(i)}`.toLowerCase().includes(f)));   // (figurines : n° et nom)
@@ -5166,23 +5397,32 @@ function renderPartsView(items) {
     shown = [...groups.values()].flatMap(g => g.length > 1 ? [...g.filter(exp), ...g.filter(i => !exp(i))] : g);
   }
   const again = i => !exp(i) && state.items.some(o => o !== i && o.kind === "part" && o.list_id === i.list_id && exp(o) && o.part_num === i.part_num && String(o.color_id) === String(i.color_id));
-  shown = [...shown.filter(i => !i.got), ...shown.filter(i => i.got)];   // ✔ OK : en bas
-  box.innerHTML = `<div class="bl-rows">${shown.map(i => `<div class="inv-row bl-row ${exp(i) ? "exp" : ""} ${i.got ? "ok" : ""}" data-id="${i.id}">
+  const cmdOf = i => !i.got && ((i.ordered || []).length || i.cmd_m);   // commandée (d'après mes commandes, ou à la main)
+  shown = [...shown.filter(i => !i.got && !cmdOf(i)), ...shown.filter(cmdOf), ...shown.filter(i => i.got)];   // non commandées, commandées, ✔ OK (21/11 nuit)
+  { const F = state.blF || ""; if (F) shown = shown.filter(i => F === "ok" ? i.got : F === "cmd" ? cmdOf(i) : !i.got && !cmdOf(i)); }   // (filtres du résumé)
+  box.innerHTML = `<div class="bl-rows">${shown.map(i => `<div class="inv-row blc ${i.got ? "ok" : cmdOf(i) ? "cmd" : ""} ${exp(i) ? "exp" : ""}" data-id="${i.id}">
       <button type="button" class="inv-pic" data-zoom="${esc(i.kind === "fig" ? itemImage(i) || "" : i.image || "")}" aria-label="Agrandir"><img src="${img(i.kind === "fig" ? itemImage(i) : i.image)}" alt="" loading="lazy"></button>
       <div class="inv-info"><div class="inv-name fig-link bl-name" data-open title="${esc(i.kind === "fig" ? itemName(i) : i.part_name || i.part_num)}">${esc(i.kind === "fig" ? itemName(i) : i.part_name || i.part_num)}</div>
         <div class="inv-meta">${i.kind === "fig" ? `🟡 Figurine · <b>${esc(i.number)}</b>` : `${color(i)} · <b>${esc(i.part_num)}</b>${i.element_id ? ` · élément ${esc(i.element_id)}` : ""}`}</div>
-        <div class="inv-meta bl-cond-row"><label class="bl-cond">État <select data-cond aria-label="État voulu">${BL_CONDS.map(([v, t]) => `<option value="${v}" ${condOf(i) === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-          <a class="ext bl-go" href="${esc(orderLink(i))}" target="_blank" rel="noopener" title="Les annonces BrickLink de cet élément, dans la zone d'où vient le prix, à l'état voulu">BrickLink ↗</a>${i.kind === "fig" ? `<a class="ext" href="${esc(rbUrl(i.number, true))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : i.part_num ? `<a class="ext" href="${esc(rbPartUrl(i.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div>
+        <div class="inv-meta bl-cond-row"><label class="bl-cond">État <select data-cond aria-label="État voulu">${BL_CONDS.map(([v, t]) => `<option value="${v}" ${condOf(i) === v ? "selected" : ""}>${t}</option>`).join("")}</select></label></div>
+        <div class="inv-meta bl-links">${siteLinksOf(["BrickLink", orderLink(i)], (/brickowl\.com/.test(partPrice(i)?.url || "") ? partPrice(i).url : "") || boSearch(i.kind === "fig" ? i.number : i.bricklink || i.part_num)).map(([t, u]) => `<a class="ext bl-go" href="${esc(u)}" target="_blank" rel="noopener" title="Les annonces ${t} de cet élément">${t} ↗</a>`).join("")}${i.kind === "fig" ? `<a class="ext" href="${esc(rbUrl(i.number, true))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : i.part_num ? `<a class="ext" href="${esc(rbPartUrl(i.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div>
         <div class="inv-meta">${priceText(i)}</div>
         ${i.set_number ? `<div class="inv-meta">🧱 Pour <button type="button" class="link bl-for" data-forset="${esc(i.set_number)}" title="Ouvrir la fiche du set">${esc(setLabel(i.set_number))}</button></div>` : ""}
         ${i.notes ? `<div class="inv-meta">📝 ${esc(i.notes)}</div>` : ""}
         ${(i.inv_links || []).length ? `<div class="inv-meta">📋 Pour l'inventaire ${[...new Set(i.inv_links.map(l => (state.inventories || []).find(v => v.key === l.inv)?.name || ""))].filter(Boolean).map(esc).join(", ")}</div>` : ""}
-        ${(() => { const st = exp(i) ? `🧾 Exportée vers BrickLink${i.bl_wanted ? ` le ${esc(fmtDate(i.bl_wanted).replace(/ à .*/, ""))}` : ""}${(i.quantity || 1) > i.bl_qty ? ` · <b>+${nf.format((i.quantity || 1) - i.bl_qty)} à exporter</b>` : ""}`
+        ${(() => { const st = exp(i) ? `🧾 Exportée en XML${i.bl_wanted ? ` le ${esc(fmtDate(i.bl_wanted).replace(/ à .*/, ""))}` : ""}${(i.quantity || 1) > i.bl_qty ? ` · <b>+${nf.format((i.quantity || 1) - i.bl_qty)} à exporter</b>` : ""}`
             : again(i) ? "🔁 À commander de nouveau" : (i.inv_links || []).length ? "🛒 À commander" : "";   // « À commander » : seulement pour une pièce venue d'un inventaire
           return st ? `<div class="inv-meta bl-state">${st}</div>` : ""; })()}
-        <div class="bl-foot"><span class="stepper inv-q bl-q"><button type="button" data-qd="-1" aria-label="Une de moins" ${(i.quantity || 1) <= 1 ? "disabled" : ""}>−</button><b>${nf.format(i.quantity || 1)}</b><button type="button" data-qd="1" aria-label="Une de plus">+</button></span>
-          ${exp(i) || i.got ? `<button type="button" class="inv-ok ${i.got ? "on" : ""}" data-ok title="${i.got ? "Reçue · touchez pour annuler" : "Reçue"}">✔ OK</button>` : ""}
-          <button type="button" class="inv-mini inv-x bl-del" data-del title="Supprimer de la liste" aria-label="Supprimer">🗑️</button></div></div>
+      </div>
+      <div class="inv-need">×${nf.format(i.quantity || 1)}</div>
+      <div class="inv-act">
+        ${cmdOf(i) ? `<span class="inv-cmd" title="À la réception, passez-la en OK (ou remettez-la à commander si c'est une erreur)">${esc(cmdText([...(i.ordered || []).map(o => o.date), i.cmd_m]))}</span>` : ""}
+        <button type="button" class="inv-ok ${i.got ? "on" : ""}" data-ok title="${i.got ? "Reçue · touchez pour annuler" : "Reçue"}">✔ OK</button>
+        ${i.got ? "" : cmdOf(i) ? `<button type="button" class="inv-order" data-uncmd title="Erreur : la remettre à commander">↩ À commander</button>`
+          : `<button type="button" class="inv-order" data-cmdm title="Commandée (par n'importe quel moyen) : la marquer commandée aujourd'hui">📦 Commandée</button>`}
+        ${i.got || cmdOf(i) ? "" : `<span class="stepper inv-q bl-q"><button type="button" data-qd="-1" aria-label="Une de moins" ${(i.quantity || 1) <= 1 ? "disabled" : ""}>−</button><b>${nf.format(i.quantity || 1)}</b><button type="button" data-qd="1" aria-label="Une de plus">+</button></span>`}
+        <button type="button" class="inv-mini inv-x bl-del" data-del title="Supprimer de la liste" aria-label="Supprimer">🗑️</button>
+      </div>
     </div>`).join("")}</div>`;
   const itOf = el => state.items.find(x => x.id === el.closest("[data-id]")?.dataset.id);
   $$("[data-open]", box).forEach(b => b.onclick = () => { const it = itOf(b); if (it) openEdit(it.id); });
@@ -5195,8 +5435,20 @@ function renderPartsView(items) {
     const it = itOf(b); if (!it) return;
     const on = !it.got;
     it.got = on; renderPartsView(itemsOf(state.current)); renderCleanBtn();
-    try { await api("/api/items/" + it.id, { method: "PUT", body: { got: on } }); load(); }
-    catch (err) { it.got = !on; renderPartsView(itemsOf(state.current)); renderCleanBtn(); toast("Non enregistré : " + err.message); }
+    try { await api("/api/items/" + it.id, { method: "PUT", body: { got: on } }); await load(); }
+    catch (err) { it.got = !on; renderPartsView(itemsOf(state.current)); renderCleanBtn(); return toast("Non enregistré : " + err.message); }
+    if (on) receivedAsk(it);   /* reçue : figurine → sa fiche ; pièce → le set (ou la figurine) où elle manquait (21/11 nuit) */
+  });
+  $$("[data-cmdm]", box).forEach(b => b.onclick = async () => {   // 📦 Commandée à la main (commande passée par un autre moyen)
+    const it = itOf(b); if (!it) return;
+    try { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: Math.floor(Date.now() / 1000) } }); await load();
+      toast(`📦 « ${it.part_name || itemName(it)} » marquée commandée`, { label: "Annuler", run: async () => { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: null } }).catch(e => toast(e.message)); load(); } }); }   /* (appui par erreur : Annuler — 22/11) */
+    catch (err) { toast(err.message); }
+  });
+  $$("[data-uncmd]", box).forEach(b => b.onclick = async () => {   // ↩ À commander : erreur — la commande lue ne la reprend plus
+    const it = itOf(b); if (!it) return;
+    const off = [...new Set([...(it.o_off || []), ...(it.ordered || []).map(o => o.order).filter(Boolean)])];
+    try { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: null, ordered: [], o_off: off } }); await load(); } catch (err) { toast(err.message); }
   });
   $$("[data-qd]", box).forEach(b => b.onclick = e => {   // quantité − / + : affichée tout de suite, enregistrée après une courte pause
     e.stopPropagation();
@@ -5218,7 +5470,7 @@ function renderPartsView(items) {
       const old = it.bl_cond; it.bl_cond = s.value; renderPartsView(itemsOf(state.current)); renderNav();
       try {
         await api("/api/items/" + it.id, { method: "PUT", body: { bl_cond: s.value } });
-        if (exp(it)) toast("Déjà exportée : changez aussi l'état dans votre wanted list BrickLink");
+        if (exp(it)) toast(`Déjà exportée : changez aussi l'état dans votre liste ${{ brickowl: "BrickOwl", both: "BrickLink / BrickOwl" }[refSite()] || "BrickLink"}`);
         load();
       } catch (err) { it.bl_cond = old; renderPartsView(itemsOf(state.current)); toast("Non enregistré : " + err.message); }
     };
@@ -5436,7 +5688,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     $d("[data-img]").src = img(p.image || p.photo_image);
     $d("[data-num]").textContent = p.part_num + (p.bricklink && p.bricklink !== p.part_num ? ` · BrickLink ${p.bricklink}` : "");
     $d("[data-name]").textContent = p.name || "";
-    $d("[data-links]").innerHTML = `<a href="${esc(blSale("P", p.bricklink || p.part_num))}" target="_blank" rel="noopener">BrickLink ↗</a>`   // les annonces
+    $d("[data-links]").innerHTML = siteLinksOf(["BrickLink", blSale("P", p.bricklink || p.part_num)], boSearch(p.bricklink || p.part_num)).map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join(" ")   // les annonces
       + (p.part_num ? ` · <a href="${esc(rbPartUrl(p.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : "")   /* (et Rebrickable, à côté — 20/11) */
       + ` · <a href="#" data-where title="Les sets et les figurines qui contiennent cette pièce (dans la couleur choisie)">🔎 Où la trouver</a>`;
     $d("[data-where]").onclick = e => { e.preventDefault();   // provenance, comme sur BrickLink : sets et figurines avec cette pièce
@@ -5786,7 +6038,7 @@ $("#btnSettings").onclick = async () => {
     <nav class="set-nav" data-setnav></nav>
     <fieldset data-sec="aide"><legend>❓ Aide</legend>
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-helpon ${state.helpOn !== false ? "checked" : ""}> Afficher l'aide « ? » de la page en cours</label>
-      <div class="doc-links" style="margin-top:10px"><a class="btn small-btn" href="/guide-utilisateur" target="_blank" rel="noopener" data-doc="guide">📘 Guide utilisateur</a></div></fieldset>
+      <div class="doc-links" style="margin-top:10px"><a class="btn small-btn" href="/guide-utilisateur" target="_blank" rel="noopener" data-doc="guide">📘 Guide utilisateur</a> <a class="btn small-btn" href="/aide-memoire" target="_blank" rel="noopener">📌 Aide-mémoire</a></div></fieldset>
     <fieldset data-sec="rb"><legend>🔑 Clé API Rebrickable</legend>
       <p class="ask" data-state>${st.rebrickable ? `✅ Une clé est enregistrée (se termine par <b>${esc(st.rebrickable_hint)}</b>).` : "Aucune clé enregistrée."}</p>
       <input type="password" name="key" autocomplete="off" spellcheck="false" style="width:100%" placeholder="${st.rebrickable ? "Saisir une nouvelle clé pour la remplacer" : "Collez votre clé API ici"}">
@@ -5839,7 +6091,7 @@ $("#btnSettings").onclick = async () => {
     <p class="hint" data-last style="margin:0 0 6px"></p>
     <button type="button" class="btn" data-refsets>↻ Actualiser les prix des sets et figurines</button>
     <p class="hint">Sets, figurines et éléments estimés par leurs pièces : les prix BrickLink plus vieux que le réglage « fiche consultée » sont relus maintenant (crédits du jour).</p>
-    <p class="set-sub">Pièces <span class="muted small">(BrickOwl, vue « Pièces »)</span></p>
+    <p class="set-sub">Pièces <span class="muted small">(vue « Pièces »)</span></p>
     <p class="hint" data-pstate style="margin:0 0 6px"></p>
     <button type="button" class="btn" data-refparts>🧱 Chiffrer les pièces</button>
     <p class="hint">Pièces sans prix et prix de plus de 30 jours. Long (plusieurs heures la première fois), en arrière-plan. Une fois tout chiffré, les prix sont mis à jour chaque semaine.</p>`;
@@ -5906,11 +6158,15 @@ $("#btnSettings").onclick = async () => {
   };
   const bxf = document.createElement("fieldset");   // estimations : boîte et décote des exemplaires modifiés
   bxf.innerHTML = `<legend>🧮 Estimations</legend>
-    <div class="set-row"><div><b>📦 Set d'occasion avec sa boîte</b><p class="hint">Sa cote + le prix d'une boîte vide de ce set (BrickOwl, chaque mois). Sans prix de boîte : la cote augmentée de ce pourcentage.</p></div>
+    <div class="set-row"><div><b>📦 Set d'occasion avec sa boîte</b><p class="hint">Sa cote + le prix d'une boîte vide de ce set (relevé chaque mois). Sans prix de boîte : la cote augmentée de ce pourcentage.</p></div>
       <span class="set-num"><input type="number" data-bx min="0" max="100" step="1" value="${st.box_bonus ?? 6}"> %</span></div>
     <div class="set-row"><div><b>🔧 Exemplaire modifié</b><p class="hint">Pièces retirées ou remplacées : il se revend moins bien, sa valeur baisse de ce pourcentage.</p></div>
       <span class="set-num"><input type="number" data-md min="0" max="90" step="1" value="${st.mod_discount ?? 5}"> %</span></div>
     <p class="hint">Le livret de plans n'entre pas dans la valeur de la collection.</p>
+    <div class="set-row"><div><b>🛟 Source des prix</b><p class="hint">BrickLink d'office. S'il ne répond plus depuis 24 h, BrickOwl prend le relais tout seul (fiches ouvertes et actualisation du jour), jusqu'à son retour. « BrickOwl » ici : forcé.</p></div>
+      <span class="set-num"><select data-refsite>${[["bricklink", "BrickLink"], ["brickowl", "BrickOwl (secours)"]].map(([v, t]) => `<option value="${v}" ${refSite() === v ? "selected" : ""}>${t}</option>`).join("")}</select></span></div>
+    <div class="set-row"><div><b>🏷️ Site de référence des prix</b><p class="hint">Prix, liens et exports. S'il n'a pas de prix : celui de l'autre site, marqué par son petit logo. Les deux : la moyenne, et chaque prix affiché.</p></div>
+      <span class="set-num"><select data-refsite>${[["bricklink", "BrickLink"], ["brickowl", "BrickOwl"], ["both", "Les deux"]].map(([v, t]) => `<option value="${v}" ${refSite() === v ? "selected" : ""}>${t}</option>`).join("")}</select></span></div>
     <div class="set-row"><div><b>📅 Comparer les variations à</b><p class="hint">Flèches et % de variation : par rapport à quand ? (une fiche plus récente : à son premier relevé)</p></div>
       <span class="set-num tr-period"><input type="range" data-tr-period min="0" max="6" step="1" value="${Math.max(0, TREND_DAYS.indexOf(+state.trend?.period || 1))}"><b data-tr-plbl>${trendDaysLbl(+state.trend?.period || 1)}</b></span></div>
     <div class="set-row"><div><b>↑ Variation : en hausse</b><p class="hint">À partir de quel écart, sur la période choisie, la flèche monte (sinon « ~ », stable).</p></div>
@@ -5922,12 +6178,16 @@ $("#btnSettings").onclick = async () => {
     const one = async (u, body) => { try { await api(u, { method: "POST", body }); await load(); toast("✔ Enregistré"); } catch (e) { toast(e.message); } };
     $("[data-bx]", bxf).onchange = e => one("/api/settings/box", { pct: +e.target.value });
     $("[data-md]", bxf).onchange = e => one("/api/settings/discount", { pct: +e.target.value });
+    $("[data-refsite]", bxf).onchange = async e => { await one("/api/settings/ref-site", { site: e.target.value });   // (plan de secours — 21/11 soir)
+      if (e.target.value === "brickowl") toast("✔ BrickOwl pour tout · ses prix arrivent en arrière-plan (environ 30 à 40 minutes)"); };
+    $("[data-refsite]", bxf).onchange = async e => { await one("/api/settings/ref-site", { site: e.target.value });   // (site de référence — 21/11)
+      if (e.target.value !== "bricklink") toast("✔ Enregistré · les prix BrickOwl de la collection arrivent en arrière-plan (quelques minutes)"); };
     $$("[data-tr-up], [data-tr-down], [data-tr-period]", bxf).forEach(i => i.onchange = () => one("/api/settings/trend", { up: +$("[data-tr-up]", bxf).value, down: +$("[data-tr-down]", bxf).value, period: TREND_DAYS[+$("[data-tr-period]", bxf).value] }));
     $("[data-tr-period]", bxf).oninput = e => { $("[data-tr-plbl]", bxf).textContent = trendDaysLbl(TREND_DAYS[+e.target.value]); };   /* (le libellé suit le curseur) */
   }
   const plf = document.createElement("fieldset");
   plf.innerHTML = `<legend>Sets avec leur livret de plans</legend>
-    <p class="hint" style="margin-top:0">Avec son livret de plans, un set d'occasion vaut sa cote plus le prix des plans seuls de ce set (relevé sur BrickOwl, chaque mois). Si BrickOwl n'en vend pas, la cote est augmentée de ce pourcentage. La case « 📘 Plan » est cochée par défaut dans chaque fiche.</p>
+    <p class="hint" style="margin-top:0">Avec son livret de plans, un set d'occasion vaut sa cote plus le prix des plans seuls de ce set (relevé chaque mois). S'il n'y en a pas en vente, la cote est augmentée de ce pourcentage. La case « 📘 Plan » est cochée par défaut dans chaque fiche.</p>
     <div class="qty-row"><span class="lbl-like">Plus-value</span><input type="number" data-pl min="0" max="90" step="1" value="${st.plan_cut ?? 5}" style="width:90px"> %
       <button type="button" class="btn small-btn" data-plsave>Enregistrer</button></div>`;
   $("[data-plsave]", plf).onclick = async () => {
@@ -5979,7 +6239,7 @@ $("#btnSettings").onclick = async () => {
   blf.innerHTML = `<legend>🧱 BrickLink</legend>
     ${st.bl_alert ? `<p class="bl-alert">⚠ BrickLink refuse l'accès depuis le ${esc(fmtDate(st.bl_alert.t))} : l'adresse IP du serveur a sans doute changé. Créez un nouveau jeton (Access Token) avec la nouvelle adresse, puis recollez le TokenValue et le TokenSecret ci-dessous.<br><small>${esc(st.bl_alert.msg)}</small></p>` : ""}
     <p class="ask" style="margin-top:0">${st.bricklink ? `✅ Branché (codes se terminant par <b>${esc(st.bricklink_hint || "")}</b>) · ${nf.format(st.bricklink_today || 0)} appel(s) aujourd'hui sur 4 800` : "Pas encore branché : les prix viennent de BrickOwl."}</p>
-    <p class="hint">Prix des annonces BrickLink, en France d'abord, sinon en Europe, sinon dans le monde (sets et figurines ; BrickOwl en secours).</p>
+    <p class="hint">Prix BrickLink : la médiane des ventes des 6 derniers mois, en France ; pas assez de ventes : la France et le reste de l'Europe ; puis le monde. « À commander » : la médiane des annonces en cours (sinon des ventes).</p>
     <details class="bl-help"><summary>Où trouver les 4 codes ?</summary><ol>
       <li>Connectez-vous à BrickLink, puis ouvrez <a href="https://www.bricklink.com/v2/api/register_consumer.page" target="_blank" rel="noopener">la page de l'API (« API Registration »)</a>.</li>
       <li>Acceptez les conditions : BrickLink donne la <b>ConsumerKey</b> et le <b>ConsumerSecret</b>.</li>
@@ -5997,10 +6257,42 @@ $("#btnSettings").onclick = async () => {
     catch (e) { $("[data-blmsg]", blf).textContent = e.message; }
   };
   $("[data-bldel]", blf)?.addEventListener("click", async () => {
-    if (!await confirmBox("Retirer les codes BrickLink ? Les prix viendront de BrickOwl.", { ok: "Retirer", danger: true })) return;
+    if (!await confirmBox("Retirer les codes BrickLink ? Plus aucun prix ne sera relevé (les prix connus restent).", { ok: "Retirer", danger: true })) return;
     try { await api("/api/settings/bricklink", { method: "POST", body: {} }); d.remove(); toast("Codes BrickLink retirés"); } catch (e) { toast(e.message); }
   });
   $("form > fieldset[data-sec=rb]", d).before(blf);
+  const bsf = document.createElement("fieldset");   // Brickset : dates de mise en vente et de retrait (API officielle, clé gratuite — 21/11 soir)
+  bsf.innerHTML = `<legend>🗓️ Brickset</legend>
+    <p class="hint" style="margin-top:0">Dates de mise en vente et de retrait de chaque set chez LEGO (graphiques « Évolution » : prix magasin jusqu'au retrait). Clé gratuite : brickset.com › Web services.</p>
+    ${st.brickset ? `<p class="ask">✅ Branché (clé se terminant par <b>${esc(st.brickset_hint || "")}</b>)</p>` : ""}
+    <label>Clé API Brickset<input type="text" data-bskey autocomplete="off" placeholder="${st.brickset ? "Nouvelle clé (pour la remplacer)" : "Votre clé Brickset"}"></label>
+    <div class="est-actions" style="justify-content:flex-start;margin-top:8px"><button type="button" class="btn primary" data-bssave>Vérifier et enregistrer</button>${st.brickset ? `<button type="button" class="btn danger-ghost" data-bsdel>Retirer</button>` : ""}</div>
+    <p class="hint" data-bsmsg></p>`;
+  $("[data-bssave]", bsf).onclick = async () => {
+    const key = $("[data-bskey]", bsf).value.trim(); if (!key) { $("[data-bsmsg]", bsf).textContent = "Collez votre clé Brickset."; return; }
+    $("[data-bsmsg]", bsf).textContent = "Vérification auprès de Brickset…";
+    try { await api("/api/settings/brickset", { method: "POST", body: { key } }); d.remove(); toast("Clé Brickset enregistrée ✔ · les dates de vos sets arrivent dans une minute"); }
+    catch (e) { $("[data-bsmsg]", bsf).textContent = e.message; } };
+  $("[data-bsdel]", bsf)?.addEventListener("click", async () => {
+    if (!await confirmBox("Retirer la clé Brickset ? Les dates déjà connues restent.", { ok: "Retirer", danger: true })) return;
+    try { await api("/api/settings/brickset", { method: "POST", body: { key: "" } }); d.remove(); toast("Clé Brickset retirée"); } catch (e) { toast(e.message); } });
+  blf.after(bsf);
+  const bof2 = document.createElement("fieldset");   // BrickOwl : clé API (lire mes commandes — 21/11 soir)
+  bof2.innerHTML = `<legend>🦉 BrickOwl</legend>
+    <p class="hint" style="margin-top:0">Clé de l'API BrickOwl : pour lire vos commandes (pièces de « À commander » passées en « Commandée », avec la date — jamais en OK). Votre compte BrickOwl › API : créez une clé avec l'accès aux commandes.</p>
+    ${st.brickowl ? `<p class="ask">✅ Branché (clé se terminant par <b>${esc(st.brickowl_hint || "")}</b>)</p>` : ""}
+    <label>Clé API BrickOwl<input type="text" data-bokey autocomplete="off" placeholder="${st.brickowl ? "Nouvelle clé (pour la remplacer)" : "Votre clé BrickOwl"}"></label>
+    <div class="est-actions" style="justify-content:flex-start;margin-top:8px"><button type="button" class="btn primary" data-bosave>Vérifier et enregistrer</button>${st.brickowl ? `<button type="button" class="btn danger-ghost" data-bodel>Retirer</button>` : ""}</div>
+    <p class="hint" data-bomsg></p>`;
+  $("[data-bosave]", bof2).onclick = async () => {
+    const key = $("[data-bokey]", bof2).value.trim(); if (!key) { $("[data-bomsg]", bof2).textContent = "Collez votre clé BrickOwl."; return; }
+    $("[data-bomsg]", bof2).textContent = "Vérification auprès de BrickOwl…";
+    try { await api("/api/settings/brickowl", { method: "POST", body: { key } }); d.remove(); toast("Clé BrickOwl enregistrée ✔"); }
+    catch (e) { $("[data-bomsg]", bof2).textContent = e.message; } };
+  $("[data-bodel]", bof2)?.addEventListener("click", async () => {
+    if (!await confirmBox("Retirer la clé BrickOwl ?", { ok: "Retirer", danger: true })) return;
+    try { await api("/api/settings/brickowl", { method: "POST", body: { key: "" } }); d.remove(); toast("Clé BrickOwl retirée"); } catch (e) { toast(e.message); } });
+  bsf.after(bof2);
   const igf = document.createElement("fieldset");   // Réseaux sociaux : compte Instagram, affiché seulement sur les pages publiques
   igf.innerHTML = `<legend>💬 Réseaux sociaux</legend>
     <p class="hint" style="margin-top:0">Facultatif : votre compte s'affiche (logo et lien) sur les pages publiques — pas dans l'appli.</p>
@@ -6078,7 +6370,7 @@ $("#btnSettings").onclick = async () => {
     top.innerHTML = "✔ Chaque réglage s'enregistre <b>dès qu'il est changé</b>. Seules les clés (Rebrickable, BrickLink) demandent « Vérifier et enregistrer ». Les autres boutons lancent une action.";
     $("[data-setnav]", d).after(top);
   }
-  [[thf, "🎨 Apparence"], ...wkfs.map(f => [f, f.dataset.navlabel]), [rf, "💶 Prix"], [bxf, "🧮 Estimations"], [dm, "🌐 Public"], [$("form > fieldset[data-sec=rb]", d), "🔑 Rebrickable"], [blf, "🧱 BrickLink"], [bn, "🔒 Sécurité"], [docf, "📚 Aide"], [bof, "🛠 Back office"]].forEach(([el, t], k) => {
+  [[thf, "🎨 Apparence"], ...wkfs.map(f => [f, f.dataset.navlabel]), [rf, "💶 Prix"], [bxf, "🧮 Estimations"], [dm, "🌐 Public"], [$("form > fieldset[data-sec=rb]", d), "🔑 Rebrickable"], [blf, "🧱 BrickLink"], [bsf, "🗓️ Brickset"], [bof2, "🦉 BrickOwl"], [bn, "🔒 Sécurité"], [docf, "📚 Aide"], [bof, "🛠 Back office"]].forEach(([el, t], k) => {
     if (!el) return;
     el.dataset.secid = "s" + k;
     $("[data-setnav]", d).insertAdjacentHTML("beforeend", `<button type="button" class="tv" data-goto="s${k}">${t}</button>`);
@@ -6093,7 +6385,7 @@ $("#btnSettings").onclick = async () => {
   { const b = $(`[data-goto="${bof.dataset.secid}"]`, d); if (b) b.onclick = () => { location.href = "/backoffice"; }; }   // « 🛠 Back office » : directement au back office
   if (DEMO) {   // démo : ni clé API, ni mot de passe, ni adresses bannies, ni réglages de la démo
     $$("form > fieldset", d).find(x => x.querySelector("legend")?.textContent.includes("Rebrickable"))?.remove();
-    $("form > .est-actions", d)?.remove(); pw.remove(); bn.remove(); dm.remove(); blf.remove(); igf.remove();
+    $("form > .est-actions", d)?.remove(); pw.remove(); bn.remove(); dm.remove(); blf.remove(); bsf.remove(); bof2.remove(); igf.remove();
   }
   $$("[data-goto]", d).forEach(b => { if (!$(`[data-secid="${b.dataset.goto}"]`, d)) b.remove(); });   // démo : raccourcis des sections présentes
   {   // page entière : en-tête fixe, sommaire (à gauche sur ordinateur), sections en cartes sur 2 colonnes
@@ -9422,7 +9714,7 @@ $("#btnEvo").addEventListener("click", () => {   // bouton « Évolution » (lui
   const dr = state.draft; if (!dr) return;
   if (dr.kind === "custom") { if (dr.item?.moc_info) openMocEvolution(dr.item); return; }
   if (!dr.info?.number) return;
-  openEvolution(dr.kind === "fig" ? "fig" : "set", dr.info.number, dr.item ? itemName(dr.item) : dr.info.name);
+  openEvolution(dr.kind === "fig" ? "fig" : "set", dr.info.number, dr.item ? itemName(dr.item) : dr.info.name, dr.item);
 });
 stepperize($("#cfgQty"));
 {   // une photo glissée sur la photo de la fiche (PC) : elle la remplace
@@ -9555,13 +9847,14 @@ function extLinks(info, fig, cond = "") {   // cond : état cherché (souhait) �
   const n = info.number || "", q = encodeURIComponent;
   const zone = cond === "N" ? bestZone(info.market?.new) : cond === "U" ? bestZone(info.market?.used) : bestZone(info.market?.used, info.market?.new);
   const links = fig ? [   // liens externes : LEGO.com (set encore vendu par LEGO, donc avec sa fiche produit) et BrickLink
-    /^fig-\d+$/.test(n) ? ["BrickLink", `https://www.bricklink.com/v2/search.page?q=${q(info.name_en || info.name || n)}#T=M`]   // (pas de référence BrickLink : recherche par son nom)
+    ...siteLinksOf(/^fig-\d+$/.test(n) ? ["BrickLink", `https://www.bricklink.com/v2/search.page?q=${q(info.name_en || info.name || n)}#T=M`]   // (pas de référence BrickLink : recherche par son nom)
       : ["BrickLink", blSale("M", n, { zone, cond })],   // les annonces, là où il y en a, à l'état cherché
+      info.market?.used?.sites?.BrickOwl?.url || boSearch(/^fig-\d+$/.test(n) ? info.name_en || info.name || n : n)),   // (BrickOwl : sa page si elle est connue, sinon sa recherche — 21/11)
     n ? ["Rebrickable", rbUrl(n, true)] : null,
   ] : [
     /* LEGO.com : sa page produit si elle est connue (relevée avec les nouveautés), sinon la recherche lego.com tant que le set est vendu ou à venir */
     state.legoUrls?.[n] ? ["LEGO.com", state.legoUrls[n]] : !isRetired(info) && info.availability ? ["LEGO.com", `https://www.lego.com/fr-fr/search?q=${q(n.replace(/-1$/, ""))}`] : null,
-    ["BrickLink", blSale("S", n, { zone, cond })],
+    ...siteLinksOf(["BrickLink", blSale("S", n, { zone, cond })], info.market?.sites?.BrickOwl?.url || boSearch(n.replace(/-1$/, ""))),
     n ? ["Rebrickable", rbUrl(n, false)] : null,
   ];
   return links.filter(Boolean).map(([t, u]) => `<a class="ext" href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join("");
@@ -10602,7 +10895,9 @@ async function blPartLine(p, el, link = null) {
   if (!el || p.color_id == null || DEMO) return;
   try {
     const r = await api(`/api/part-price?part=${encodeURIComponent(p.part_num || "")}&bl=${encodeURIComponent(p.part || p.bricklink || "")}&cid=${encodeURIComponent(p.color_id)}`);
-    if (r.src !== "BrickLink") return;
+    if (r.src !== "BrickLink") {   // BrickOwl, les deux, ou le prix de secours : une ligne, avec la marque d'origine (21/11)
+      if (r.unit != null) { el.innerHTML = `Prix <b>${money(r.unit)}</b>${siteNote(r.fb || (refSite() === "bricklink" && r.src !== "both" ? "BrickOwl" : ""), r.sites?.BrickLink, r.sites?.BrickOwl)}`; el.hidden = false; }
+      return; }
     const bl = p.part || p.bricklink || p.part_num || "";
     const shop = (cond, s) => blSale("P", bl, { cond, zone: s?.zone, color: r.bl_color });
     const z = (s, cond) => s ? `${ZONE_FLAG[s.zone] || ""} ${r.url ? `<a class="ext" href="${esc(shop(cond, s))}" target="_blank" rel="noopener" title="Voir sur BrickLink">${s.kind === "ventes" ? "ventes 6 mois" : "annonces"} <b>${money(s.unit)}</b> ↗</a>` : `${s.kind === "ventes" ? "ventes 6 mois" : "annonces"} <b>${money(s.unit)}</b>`} <small>(${money(s.min)} – ${money(s.max)}, ${s.offers})</small>` : "aucune annonce";
@@ -10638,7 +10933,7 @@ async function openPartInfo(p) {
         <div class="pi-name">${esc(r.name || p.name || "")}</div>
         <div class="pi-meta">${col ? `${swatch(c?.rgb)} ${esc(c?.color_fr || col)}` : ""}${p.qty > 1 ? ` · ×${p.qty}` : ""}${yrs ? ` · produite ${esc(yrs)}` : ""}${p.unit != null ? ` · ${money(p.unit)} pièce` : ""}</div>
         <div class="pi-meta pi-bl" data-pibl hidden></div>
-        <div class="pi-meta">${(r.elements || []).length ? `Élément${r.elements.length > 1 ? "s" : ""} ${r.elements.slice(0, 3).map(esc).join(", ")} · ` : ""}<a class="ext" data-bllink href="${esc(blSale("P", r.bricklink || p.part || r.part_num || ""))}" target="_blank" rel="noopener">BrickLink ↗</a>${(p.part_num || r.part_num) ? ` <a class="ext" href="${esc(rbPartUrl(p.part_num || r.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div></div></div>
+        <div class="pi-meta">${(r.elements || []).length ? `Élément${r.elements.length > 1 ? "s" : ""} ${r.elements.slice(0, 3).map(esc).join(", ")} · ` : ""}${siteLinksOf(["BrickLink", blSale("P", r.bricklink || p.part || r.part_num || "")], boSearch(r.bricklink || p.part || r.part_num || "")).map(([t, u]) => `<a class="ext" ${t === "BrickLink" ? "data-bllink" : ""} href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join(" ")}${(p.part_num || r.part_num) ? ` <a class="ext" href="${esc(rbPartUrl(p.part_num || r.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div></div></div>
     ${r.no_color ? `<p class="hint">Cette pièce n'existe dans aucun set officiel en <b>${esc(col)}</b>.${r.colors.length ? ` Couleurs existantes : ${r.colors.slice(0, 12).map(x => `${swatch(x.rgb)} ${esc(x.color_fr)}`).join(", ")}.` : ""}</p>`
       : r.color_id == null ? `<p class="hint">Couleur inconnue : impossible de lister les sets.</p>`
       : `<h3 class="pi-h">Apparaît dans ${nf.format(r.count)} set${r.count > 1 ? "s" : ""}${mine ? ` <span class="muted small">· dont ${mine} dans ma collection</span>` : ""}</h3>

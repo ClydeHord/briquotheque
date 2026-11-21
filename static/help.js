@@ -32,14 +32,14 @@
     ]],
     commander: ["À commander", [
       ["#btnAdd", "+", "Ajouter une pièce (référence, nom, photo) ou une figurine à commander."],
-      ["#btnOrderBL", "Passer commande", "Copie la liste au format BrickLink et ouvre l'import de votre wanted list (seulement ce qui n'est pas encore exporté)."],
+      ["#btnOrderBL", "Exporter en XML", "Copie la liste au format BrickLink et ouvre l'import de votre wanted list (seulement ce qui n'est pas encore exporté)."],
       ["#btnCleanParts", "🧹 Nettoyer", "Retire de la liste ce qui est marqué reçu (✔ OK)."],
       ["#stats", "Tuiles", "Coût estimé (selon l'état voulu de chaque ligne), éléments, références, sets concernés."],
       ["#items .bl-cond", "État voulu", "N'importe, Neuf ou Occasion (any / new / used de BrickLink). N'importe : le neuf de France d'abord, sinon le moins cher."],
       ["#items .bl-go", "BrickLink ↗", "Les annonces de cet élément, dans la zone d'où vient le prix, à l'état voulu."],
       ["#items .pp-line", "Prix", "Neuf et occasion ; en gras : celui retenu pour le coût. Drapeau : Europe 🇪🇺 ou monde 🇺🇳 (sans drapeau : France)."],
       ["#items .bl-for", "Pour …", "Ouvre la fiche du set pour lequel la pièce est commandée."],
-      ["#items .bl-q", "Quantité", "− / + : enregistré aussitôt."],
+      ["#items .bl-q", "Quantité", "− / + : enregistré aussitôt (tant qu'elle n'est pas commandée)."],
       ["#items .inv-ok", "✔ OK", "Reçue (après l'export). « 🧹 Nettoyer » la retire ensuite."],
       ["#items .bl-del", "🗑️", "Retirer la ligne de la liste."],
     ]],
@@ -101,11 +101,12 @@
   const TXT = {   // pages sans boutons à montrer : une explication
     stats: ["Statistiques", "Valeur et évolution de la collection, répartition par thème, année, état ; un appui sur une barre liste les sets concernés. En bas : les visites de vos pages publiques."],
     nov: ["Nouveautés", "Les sets à venir et les sorties récentes de LEGO.com, sans ceux que vous avez déjà. Un appui ouvre la fiche ; « 👀 » pour surveiller, « Je l'ai » pour l'ajouter. Les thèmes suivis se choisissent en haut."],
-    reglages: ["Réglages", "Chaque section se règle à part : prix (BrickLink, BrickOwl), estimations (boîte, plan, décote « modifié »), codes API, Instagram, pages publiques, sécurité, documentation. Les changements s'enregistrent avec le bouton de la section."],
+    reglages: ["Réglages", "Chaque section se règle à part : prix (BrickLink), estimations (boîte, plan, décote « modifié »), codes API, Instagram, pages publiques, sécurité, documentation. Les changements s'enregistrent avec le bouton de la section."],
   };
   const vis = el => { if (!el) return null; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && getComputedStyle(el).visibility !== "hidden" ? r : null; };
   const label = b => (b.getAttribute("title") || b.getAttribute("aria-label") || b.textContent || "").replace(/\s+/g, " ").trim();
 
+  const MEMO = { liste: "collection", souhaits: "souhaits", commander: "commander", fiche: "modifier", recherche: "collection", inventaire: "inventaire", stats: "prix" };   // « ? » → sa fiche de l'aide-mémoire (21/11)
   function pageOf(btn) {   // quelle aide : la fenêtre du « ? » touché, sinon la page
     const m = [...document.querySelectorAll("body > .modal")].filter(x => !x.hidden && getComputedStyle(x).display !== "none").pop();   // (fenêtre fixe : pas d'offsetParent)   // fenêtre au premier plan
     if (m) {
@@ -150,6 +151,7 @@
     ov.innerHTML = `<div class="help-marks"></div><div class="help-panel" role="dialog" aria-label="Aide">
       <div class="help-head"><b>? ${esc(title)}</b><span><button type="button" class="help-min" title="Replier / déplier les explications">▾</button><button type="button" class="help-x" aria-label="Fermer">✕</button></span></div>
       <div class="help-body">${text ? `<p>${esc(text)}</p>` : ""}${rows.length ? `<ol class="help-list">${rows.map(r => `<li data-n="${r.n}"><span class="help-k">${r.n}</span><span><b>${esc(r.name)}</b>${r.text ? ` — ${esc(r.text)}` : ""}</span></li>`).join("")}</ol>` : (!text ? "<p>Rien à expliquer ici.</p>" : "")}
+      ${MEMO[typeof pg === "string" ? pg : ""] ? `<p class="help-foot"><a href="${esc((pg === "inventaire" ? [...document.querySelectorAll("body > .modal")].filter(x => !x.hidden).pop()?.dataset.memo : pg === "commander" ? document.querySelector("#stats")?.dataset.memo : "") || "/aide-memoire#/" + MEMO[pg])}" target="_blank" rel="noopener">📌 Aide-mémoire : ${pg === "inventaire" || pg === "commander" ? "où j'en suis" : "la suite des étapes"}</a></p>` : ""}
       <p class="help-foot">Faites défiler la page : les numéros suivent. Touchez une explication pour voir son bouton ; ▾ replie ce panneau.</p></div></div>`;
     document.body.append(ov);
     const marks = ov.querySelector(".help-marks"), panel = ov.querySelector(".help-panel");

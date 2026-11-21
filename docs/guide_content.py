@@ -370,16 +370,16 @@ Il apparaît désormais dans le menu.</li></ol>"""),
 <li><b>📷 Scanner des pièces</b> : photographiez des pièces étalées (à plat, espacées, sur fond clair), elles sont reconnues et comptées. <b>📋 Coller</b> : une photo copiée.</li></ul>"""),
         ("inventaire-lignes", "Les pièces de l'inventaire", """
 <h3>Pointer chaque pièce</h3>
-<ul><li><b>✔ OK</b> : vous l'avez (en quantité). La ligne descend en bas de la liste.</li>
+<ul><li><b>✔ OK</b> : vous l'avez (en quantité). Ordre des lignes : non vérifiées, à commander, commandées, OK, exclues.</li>
 <li><b>🛒 À commander</b> : elle manque ; réglez la <b>quantité</b> avec − / +. Son prix estimé s'affiche.</li>
 <li><b>🎨</b> : changer la couleur de cette pièce seulement. <b>🔁</b> : la remplacer par une autre pièce : la recherche (nom, référence, photo, « 🖼️ À partir de la photo actuelle ») est en haut, les pièces équivalentes dessous.</li>
 <li><b>✕</b> : l'<b>exclure</b> (elle ne compte plus) ; <b>↩</b> la réintègre. <b>↺</b> : remet la pièce à zéro (état, couleur, remplacement).</li>
 <li>Touchez le <b>nom</b> d'une pièce pour sa fiche (sets où elle apparaît), sa <b>photo</b> pour l'agrandir. Toucher à nouveau un bouton actif l'annule.</li></ul>"""),
         ("inventaire-couleur", "Remplacer une couleur", """
 <h3>Passer commande depuis l'inventaire</h3>
-<ol><li>Quand toutes les pièces sont triées (OK ou à commander), le bouton <b>🛒 Prêt pour la commande ?</b> apparaît.</li>
-<li>Il copie les pièces à commander dans la liste <b>À commander</b> ; dans l'inventaire, elles passent en <b>📦 Commandées</b>.</li>
-<li>À la réception, passez-les en <b>✔ OK</b>. Quand tout est OK, Briquothèque propose d'ajouter le set à votre collection.</li></ol>
+<ol><li>Dès qu'une pièce est à commander, le bouton <b>🧾 Exporter en XML (N pièces)</b> apparaît : il copie la liste dans le presse-papier, au format XML de BrickLink (aucun site ne s'ouvre). Les pièces <b>restent dans l'inventaire</b>.</li>
+<li>Une fois la commande passée, une pièce trouvée dans vos commandes (BrickLink ou BrickOwl) passe toute seule en <b>📦 Commandée le …</b>. Commandée ailleurs ? Touchez <b>📦 Commandée</b> sur la pièce. Seule la date s'affiche (« Commandée le … »).</li>
+<li>Erreur : <b>↩ À commander</b> la remet à commander. À la réception, passez-les vous-même en <b>✔ OK</b> (jamais automatique). Quand tout est OK, Briquothèque propose d'ajouter le set à votre collection.</li></ol>
 <p><b>Supprimer cet inventaire</b> (tout en bas) le retire, après confirmation, s'il n'est pas lié à un set de votre collection.</p>"""),
     ]},
     # ------------------------------------------------------------------ 8
@@ -400,23 +400,23 @@ Elle a sa propre page publique, sans vos notes.</li></ul>"""),
     {"title": "Les pièces à commander", "intro": "", "blocks": [
         ("a-commander", "La liste À commander", """
 <h3>La liste</h3>
-<ul><li><b>Coût estimé</b> de la commande, nombre de pièces, de références et de sets concernés.</li>
-<li>Chaque pièce (ou figurine) : photo, nom, couleur, référence, prix, le set pour lequel elle est commandée, <b>quantité</b> (− / + sur la ligne,
-enregistrée aussitôt). En haut : le nombre d'<b>éléments</b> à commander (pièces et figurines).</li>
+<ul><li>Même présentation que l'inventaire. En haut, une information par ligne : les éléments (pièces et figurines), <b>🛒 à commander</b> (coût estimé), <b>📦 commandées</b> (montant réellement payé), <b>✔ reçues</b>, les sets concernés ; puis la barre d'avancement et les filtres <b>Toutes · À commander · Commandées · OK</b>.</li>
+<li>Chaque pièce (ou figurine) : photo, nom, couleur, référence, prix, le set pour lequel elle est commandée, le nombre en grand à droite ; dessous, les boutons comme dans l'inventaire (« Commandée le … », ✔ OK, 📦 Commandée / ↩ À commander, − / + tant qu'elle n'est pas commandée, 🗑).</li>
 <li><b>État</b> voulu, sur chaque ligne : <b>N'importe</b>, <b>Neuf</b> (par défaut à l'ajout) ou <b>Occasion</b> — les choix « any / new / used »
 de BrickLink. Le prix estimé suit : prix neuf, prix d'occasion, ou, pour « N'importe », le neuf s'il vient de France (prioritaire, même plus cher), sinon le moins cher des deux (prix voulu inconnu : l'autre,
 signalé). Chaque ligne affiche toujours les <b>deux prix</b> : « Neuf : total » et « Occasion : total », avec le prix à l'unité entre parenthèses
 s'il y a plus d'un exemplaire ; celui retenu pour le coût est en gras. Les noms trop longs sont coupés (nom complet au survol).
-La quantité (− / +), ✔ OK et 🗑 sont sur la même ligne ; « 🧱 Pour … » ouvre la fiche du set ; « 🛒 À commander » n'apparaît que pour une pièce
+Les boutons sont sous les informations, comme dans l'inventaire ; « 🧱 Pour … » ouvre la fiche du set ; « 🛒 À commander » n'apparaît que pour une pièce
 venue d'un inventaire. <b>BrickLink ↗</b> à côté de
 l'état : les annonces de l'élément (pièce dans sa couleur, ou figurine), à l'état voulu, <b>dans la zone d'où vient le prix retenu</b>
 (France : vendeurs en France ; Europe : vendeurs qui livrent en France ; monde : tous ; zone inconnue : la France). L'état part dans l'export BrickLink ; changé après l'export, pensez à le changer aussi dans votre wanted list.</li>
 <li>Touchez une pièce pour la modifier ; la <b>🗑</b> la retire.</li></ul>
 <h3>Commander sur BrickLink</h3>
-<ol><li>Touchez <b>🧾 Passer commande</b> : la liste est copiée au format BrickLink et la page d'import de votre <i>wanted list</i> s'ouvre
-(onglet « Upload BrickLink XML format »).</li>
-<li><b>Collez</b> et validez sur BrickLink. Les pièces exportées sont marquées : un nouvel export n'envoie que les nouvelles.</li>
-<li>Reçues ? Passez-les en ✔ OK, puis <b>🧹 Nettoyer</b> retire les pièces reçues de la liste.</li></ol>"""),
+<ol><li>Touchez <b>🧾 Exporter en XML</b> : toutes les pièces encore à commander (ni commandées ni reçues) sont copiées dans le presse-papier, au format XML de BrickLink. Aucun site ne s'ouvre ; collez-les où vous voulez.</li>
+<li>Commande passée : une pièce trouvée dans vos commandes (BrickLink ou BrickOwl) affiche <b>📦 Commandée le …</b> (seulement la date). Commandée ailleurs ? Touchez <b>📦 Commandée</b>. Erreur : <b>↩ À commander</b>.</li>
+<li>Ordre de la liste : les pièces à commander, puis les commandées, puis les ✔ OK.</li>
+<li>Reçues ? Passez-les en <b>✔ OK</b> (jamais automatique). Une <b>figurine</b> : Briquothèque propose de créer sa fiche. Une <b>pièce</b> qui manquait dans un de vos sets ou une de vos figurines : elle propose de l'y remettre (le set de la pièce d'abord) ; rien n'y manque mais elle était pour un de vos sets : elle demande quoi en faire (la garder à part, ou l'ajouter au set).</li>
+<li><b>🧹 Nettoyer</b> retire ensuite les pièces reçues de la liste.</li></ol>"""),
         ("piece-ajout", "Ajouter une pièce", """
 <h3>Ajouter une pièce à commander</h3>
 <ol><li>Dans <b>À commander</b>, touchez <b>+</b>.</li>

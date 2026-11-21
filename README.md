@@ -108,9 +108,15 @@ Une valeur réaliste, fondée sur ce qui se vend vraiment. Détails : [Estimatio
 
 ### 📋 Inventaires et 🔩 À commander
 Vérifier un set pièce par pièce, puis acheter ce qui manque. → [Détails : inventaires](docs/FONCTIONS.md#inventaires) · [à commander](docs/FONCTIONS.md#à-commander)
-- **Inventaire** : chaque pièce OK, à commander ou exclue ; remplacer une couleur ; scanner des pièces en photo.
+- **Inventaire** : chaque pièce OK, à commander ou exclue ; remplacer une couleur ; scanner des pièces en photo ; les pièces à commander
+  restent dans l'inventaire jusqu'à leur réception.
 - **À commander** : pièces et figurines à acheter, quantité, état voulu (n'importe, neuf, occasion), prix neuf et occasion, lien vers
-  les bonnes annonces BrickLink, coût total, et **export direct vers une *wanted list* BrickLink**.
+  les bonnes annonces BrickLink, coût total ; même présentation que l'inventaire.
+- **🧾 Exporter en XML** : les pièces encore à commander, copiées au format BrickLink (à coller dans votre liste d'achats).
+- **Mes commandes lues automatiquement** (API officielles BrickLink et BrickOwl) : « 📦 Commandée le … » avec le **montant réellement payé** ;
+  une même pièce dans plusieurs inventaires partage la quantité commandée, le surplus part dans le vrac ; jamais de « ✔ OK » automatique.
+  « 📦 Commandée » à la main pour une commande passée ailleurs.
+- **✔ OK à la réception** : une figurine propose de créer sa fiche ; une pièce qui manquait dans un set ou une figurine propose de l'y remettre.
 
 ### ⭐ Souhaits, 👀 À surveiller et ✨ Nouveautés
 Ce que vous voulez, et ce qui sort. → [Détails : souhaits](docs/FONCTIONS.md#liste-de-souhaits-et-à-surveiller) · [nouveautés](docs/FONCTIONS.md#nouveautés)
@@ -141,6 +147,8 @@ Ne rien oublier : une pièce à racheter, une couleur à vérifier… → [Déta
   publiques, sécurité, documentation.
 - **Thèmes** : ✨ Moderne, 🧱 Classique, 🫧 Verre, 🟥 Brique, ◻️ Minimal, 🌃 Néon, 💥 BD, 🍬 Pastel, 📐 Technique, 🌙 Nuit — l’aspect de tous les boutons, partout (aperçu en mini fiche dans les Réglages).
 - **Aide** : un « ? » discret à côté de la flèche ↑ explique les boutons de chaque page et fenêtre.
+- **📌 Aide-mémoire** (`/aide-memoire`) : la suite des étapes de chaque fonction et de chaque tâche automatique ; depuis un inventaire ou
+  « À commander », « 📍 Vous en êtes là ».
 - **Sécurité** : mot de passe pour toute modification, adresses bannies après trop d'échecs, clés API jamais réaffichées.
 - **Mentions légales** (lien en bas du menu) : le paragraphe « Éditeur » se modifie (✏️ Éditer).
 
@@ -305,6 +313,7 @@ de l'application et ne se modifie pas.
 ## Guides
 Les guides sont des wikis servis par l'application (une page par chapitre, sommaire, recherche ; imprimer une page imprime le guide entier) :
 - `/guide-utilisateur` : guide utilisateur illustré (toutes les fonctions, pas à pas) — Réglages → ❓ Aide ;
+- `/aide-memoire` : aide-mémoire — la suite des étapes de chaque fonction et des tâches automatiques (contenu : `docs/memo_content.py`) ;
 - `/backoffice/guide` : notice du back office (exemples, captures, recettes, dépannage) — bouton « ❓ Notice » du back office.
 - **🤖 Condensé pour IA** (bouton de chaque guide) : tout le guide en un texte à copier-coller dans une IA, qui répond alors « comment faire » d’après lui.
 

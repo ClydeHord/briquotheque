@@ -28,3 +28,7 @@ seed/__pycache__/
 perso.py
 static/perso*
 docs/CHANGELOG-prive.md
+
+# aide-mémoire des fonctions exclusives (privé)
+docs/memo_perso.py
+docs/wiki/aide-memoire-perso.html

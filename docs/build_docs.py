@@ -282,6 +282,46 @@ def write_wiki(name, text):
     return dst
 
 
+def wiki_memo(perso=False):
+    """Aide-mémoire → /aide-memoire (contenu : memo_content.py) : la suite des évènements de chaque fonction (21/11).
+    perso : + les fiches des fonctions exclusives (memo_perso.py, privé) → aide-memoire-perso.html, servie au propriétaire seulement."""
+    import importlib
+    import memo_content
+    import wiki
+    importlib.reload(memo_content)
+    cards = list(memo_content.MEMO)
+    if perso:
+        try:
+            import memo_perso
+            importlib.reload(memo_perso)
+        except ImportError:
+            return None
+        cards += memo_perso.MEMO
+    css = ("<style>.memo-steps{counter-reset:m;list-style:none;padding:0;margin:14px 0}.memo-steps li{position:relative;padding:10px 12px 10px 46px;"
+           "margin:0 0 8px;border:1px solid rgba(127,127,127,.3);border-radius:12px}.memo-steps li::before{counter-increment:m;content:counter(m);position:absolute;"
+           "left:12px;top:9px;width:24px;height:24px;border-radius:50%;background:#d01012;color:#fff;font-weight:700;display:grid;place-items:center;font-size:13px}"
+           ".memo-steps li:not(:last-child)::after{content:'↓';position:absolute;left:19px;bottom:-14px;opacity:.5}.memo-know{opacity:.9}"
+           ".memo-steps li.done{opacity:.5}.memo-steps li.done::before{content:'✓';background:#1f8a4c}"
+           ".memo-steps li.here{border:2px solid #d01012;box-shadow:0 0 0 4px rgba(208,16,18,.15)}"
+           ".memo-here-tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#d01012;color:#fff;font-size:12px;font-weight:700}"
+           ".memo-where{padding:10px 12px;border-radius:12px;background:rgba(208,16,18,.1);font-weight:600;margin:10px 0}</style>"
+           # « 📍 Vous en êtes là » : ?ici=2 (ou 4,5) &nom=… — l'étape en cours de l'élément d'où l'on vient (21/11 nuit)
+           "<script>addEventListener('DOMContentLoaded',()=>{const q=new URLSearchParams(location.search),ici=(q.get('ici')||'').split(',').map(Number).filter(n=>n>0);"
+           "if(!ici.length)return;const id=(location.hash.match(/^#\\/([\\w-]+)/)||[])[1],a=id&&document.getElementById('p-'+id);if(!a)return;const lis=[...a.querySelectorAll('.memo-steps li')],m=Math.min(...ici);"
+           "lis.forEach((li,k)=>{if(ici.includes(k+1)){li.classList.add('here');li.insertAdjacentHTML('beforeend','<span class=\"memo-here-tag\">📍 Vous en êtes là</span>');}else if(k+1<m)li.classList.add('done');});"
+           "const w=document.createElement('p');w.className='memo-where';w.textContent='📍 '+(q.get('nom')?q.get('nom')+' : ':'')+'vous en êtes à l\\'étape '+ici.join(' et ')+' sur '+lis.length+'.';"
+           "a.querySelector('.memo-steps')?.before(w);});</script>")
+    pages = []
+    for k, c in enumerate(cards):
+        steps = "".join(f"<li><b>{e(w)}</b> — {t}</li>" for w, t in c["steps"])
+        know = "".join(f"<li>{t}</li>" for t in c.get("know") or [])
+        body = (css if not k else "") + f"<p>{c.get('intro', '')}</p><ol class=\"memo-steps\">{steps}</ol>" \
+            + (f"<h3>Bon à savoir</h3><ul class=\"memo-know\">{know}</ul>" if know else "")   # (sans renvoi au guide : retiré le 22/11)
+        pages.append((c["id"], c["title"], body))
+    return wiki.build("aide-memoire-perso" if perso else "aide-memoire", "Aide-mémoire", pages,
+                      others=[("📘 Guide utilisateur", "/guide-utilisateur")], private=perso)
+
+
 def main():
     if "--captures" in sys.argv:
         subprocess.run(["node", os.path.join(DOCS, "captures.js")], check=True)
@@ -291,6 +331,8 @@ def main():
     write_wiki("guide-utilisateur", wiki_guide())
     if os.path.exists(os.path.join(DOCS, "backoffice_content.py")):
         write_wiki("back-office", wiki_backoffice())
+    write_wiki("aide-memoire", wiki_memo())   # aide-mémoire : la suite des évènements de chaque fonction (21/11)
+    write_wiki("aide-memoire-perso", wiki_memo(perso=True))   # (+ fonctions exclusives : privé, seulement si memo_perso.py est là)
     write_wiki("guide-technique", wiki_technique())   # (privée : seulement si docs/technique.py est là)
 
 

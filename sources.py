@@ -571,11 +571,18 @@ def lego_instructions(num):
 
 
 # ---------------------------------------------------------------- Modèles d'un set
-def lego_category(slug, max_pages=8):
-    """Produits d'une catégorie lego.com (fr-fr), toutes pages : [{code, name, theme, image, price, status, when, pieces, new}]."""
+def lego_theme_slugs():
+    """Thèmes de lego.com (fr-fr) : les adresses de la page « Thèmes » (ex. city, star-wars) — 21/11."""
+    raw, _ = _get("https://www.lego.com/fr-fr/themes", timeout=30)
+    return sorted(set(re.findall(r'href="/fr-fr/themes/([a-z0-9-]+)"', raw.decode("utf-8", "ignore"))))
+
+
+def lego_category(slug, max_pages=8, path="categories"):
+    """Produits d'une catégorie lego.com (fr-fr), toutes pages : [{code, name, theme, image, price, status, when, pieces, new}].
+    path="themes" : la page d'un thème (même présentation — 21/11)."""
     out, seen = [], set()
     for page in range(1, max_pages + 1):
-        raw, _ = _get(f"https://www.lego.com/fr-fr/categories/{slug}" + (f"?page={page}" if page > 1 else ""), timeout=30)
+        raw, _ = _get(f"https://www.lego.com/fr-fr/{path}/{slug}" + (f"?page={page}" if page > 1 else ""), timeout=30)
         html = raw.decode("utf-8", "ignore")
         m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.S)
         if not m:
@@ -643,6 +650,101 @@ def split_models(name):
 
 # ---------------------------------------------------------------- Rebrickable (clé API)
 SETTINGS_FILE = __import__("os").path.join(__import__("os").environ.get("BQ_DATA") or __import__("os").path.join(__import__("os").path.dirname(__import__("os").path.abspath(__file__)), "data"), "settings.json")
+
+
+BRICKSET_API = "https://brickset.com/api/v3.asmx/"
+
+
+def brickset_key():
+    """Clé de l'API Brickset (Réglages), ou None (21/11)."""
+    try:
+        with open(SETTINGS_FILE, encoding="utf-8") as f:
+            return json.load(f).get("brickset_key") or None
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def brickset_check(key):
+    """La clé Brickset est-elle valable ? (API officielle : checkKey)"""
+    raw, _ = _get(BRICKSET_API + "checkKey?" + urllib.parse.urlencode({"apiKey": key}), timeout=20)
+    return (json.loads(raw.decode("utf-8", "ignore")) or {}).get("status") == "success"
+
+
+def brickset_dates(numbers, key=None):
+    """Dates de mise en vente et de retrait chez LEGO de chaque set (« 75346-1 ») : {n°: {"launch": AAAA-MM-JJ, "exit": AAAA-MM-JJ}}.
+    API officielle Brickset (getSets, par paquets de 100) ; sinon les premières / dernières dates de disponibilité LEGO.com qu'elle donne."""
+    key = key or brickset_key()
+    if not key:
+        return {}
+    out = {}
+    for i in range(0, len(numbers), 100):
+        chunk = numbers[i:i + 100]
+        params = json.dumps({"setNumber": ",".join(chunk), "pageSize": 500})
+        raw, _ = _get(BRICKSET_API + "getSets?" + urllib.parse.urlencode({"apiKey": key, "userHash": "", "params": params}), timeout=40)
+        d = json.loads(raw.decode("utf-8", "ignore")) or {}
+        if d.get("status") != "success":
+            raise RuntimeError(d.get("message") or "Brickset refuse la demande")
+        for s in d.get("sets") or []:
+            n = f"{s.get('number')}-{s.get('numberVariant') or 1}"
+            lc = s.get("LEGOCom") or {}
+            reg = [lc.get(r) or {} for r in ("DE", "UK", "US", "CA")]
+            first = sorted(x.get("dateFirstAvailable")[:10] for x in reg if x.get("dateFirstAvailable"))
+            last = sorted(x.get("dateLastAvailable")[:10] for x in reg if x.get("dateLastAvailable"))
+            launch = (s.get("launchDate") or "")[:10] or (first[0] if first else None)
+            exit_ = (s.get("exitDate") or "")[:10] or (last[-1] if last else None)
+            de = reg[0]
+            try:
+                retail = float(de.get("retailPrice")) if de.get("retailPrice") else None   # (prix LEGO Allemagne, en €)
+            except (TypeError, ValueError):
+                retail = None
+            out[n] = {"launch": launch or None, "exit": exit_ or None, "retail": retail, "pieces": s.get("pieces") or None,
+                      "minifigs": s.get("minifigs") or None, "ean": ((s.get("barcode") or {}).get("EAN") or None)}
+        time.sleep(1)
+    return out
+
+
+def brickset_by_ean(code, key=None):
+    """Set dont la boîte porte ce code-barres (recherche Brickset ; le code doit correspondre) : « 75346-1 » ou None."""
+    key = key or brickset_key()
+    if not key:
+        return None
+    raw, _ = _get(BRICKSET_API + "getSets?" + urllib.parse.urlencode({"apiKey": key, "userHash": "", "params": json.dumps({"query": code, "pageSize": 20})}), timeout=30)
+    d = json.loads(raw.decode("utf-8", "ignore")) or {}
+    for s in d.get("sets") or []:
+        if str((s.get("barcode") or {}).get("EAN") or "").lstrip("0") == str(code).lstrip("0") or str((s.get("barcode") or {}).get("UPC") or "").lstrip("0") == str(code).lstrip("0"):
+            return f"{s.get('number')}-{s.get('numberVariant') or 1}"
+    return None
+
+
+BO_API = "https://api.brickowl.com/v1/"
+BO_UA = "Briquotheque/1.0 (collection LEGO personnelle)"   # (l'API BrickOwl demande un nom d'outil propre)
+
+
+def brickowl_key():
+    """Clé de l'API BrickOwl (Réglages), ou None (21/11)."""
+    try:
+        with open(SETTINGS_FILE, encoding="utf-8") as f:
+            return json.load(f).get("brickowl_key") or None
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def bo_api(method, params=None, key=None, timeout=30):
+    """Appel GET de l'API officielle BrickOwl → réponse JSON (erreur : exception avec le message de BrickOwl)."""
+    key = key or brickowl_key()
+    if not key:
+        raise RuntimeError("Pas de clé BrickOwl")
+    url = BO_API + method + "?" + urllib.parse.urlencode({"key": key, **(params or {})})
+    req = urllib.request.Request(url, headers={"User-Agent": BO_UA, "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8", "ignore"))
+    except urllib.error.HTTPError as e:
+        try:
+            msg = (json.loads(e.read().decode("utf-8", "ignore")) or {}).get("error") or str(e)
+        except Exception:
+            msg = str(e)
+        raise RuntimeError(f"BrickOwl : {msg}")
 
 
 def rebrickable_key():
@@ -1133,7 +1235,9 @@ def _brickowl_offers(url):
     mid = pool[len(pool) // 2]
     pool = [p for p in pool if p <= mid * 3] or pool   # prix aberrants (plus du triple de l'offre médiane) écartés
     med = pool[len(pool) // 2] if len(pool) % 2 else (pool[len(pool) // 2 - 1] + pool[len(pool) // 2]) / 2
-    return {"unit": round(med, 3), "url": url, "offers": len(pool), "zone": zone}
+    rows = _bo_rows(page)   # (neuf et occasion à part : l'état voulu dans « À commander » — 21/11)
+    return {"unit": round(med, 3), "url": url, "offers": len(pool), "zone": zone,
+            "new": price_stats([(p, c) for cond, p, c in rows if cond.startswith("new")]), "used": price_stats([(p, c) for cond, p, c in rows if cond.startswith("used")])}
 
 
 # ---------------------------------------------------------------- BrickLink (API officielle, OAuth 1.0a) : guide des prix
@@ -1191,6 +1295,26 @@ def bl_get(path, params=None, keys=None, timeout=20):
         full = url + ("?" + urllib.parse.urlencode(params) if params else "")
         req = urllib.request.Request(full, headers={"Authorization": head, "User-Agent": UA, "Accept": "application/json"})
     try:
+        d = _bl_fetch(req, timeout)
+    except Exception:
+        if bl_hooks.get("fail"):
+            bl_hooks["fail"]()   # (BrickLink ne répond pas : début de panne — 21/11 soir)
+        raise
+    meta = d.get("meta") or {}
+    if meta.get("code") not in (200, None):
+        msg = f"BrickLink : {meta.get('message') or ''} {meta.get('description') or ''}".strip()
+        if bl_hooks.get("error"):
+            bl_hooks["error"](msg)
+        if bl_hooks.get("fail"):
+            bl_hooks["fail"]()
+        raise RuntimeError(msg)
+    if bl_hooks.get("ok"):
+        bl_hooks["ok"]()
+    return d.get("data")
+
+
+def _bl_fetch(req, timeout):
+    try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             body = r.read()
             if "maintenance.bricklink.com" in (r.geturl() or "") or "html" in (r.headers.get("Content-Type") or "").lower():   # (BrickLink en maintenance : une page web, pas des données)
@@ -1201,15 +1325,7 @@ def bl_get(path, params=None, keys=None, timeout=20):
             d = json.loads(e.read().decode("utf-8"))
         except Exception:
             raise e
-    meta = d.get("meta") or {}
-    if meta.get("code") not in (200, None):
-        msg = f"BrickLink : {meta.get('message') or ''} {meta.get('description') or ''}".strip()
-        if bl_hooks.get("error"):
-            bl_hooks["error"](msg)
-        raise RuntimeError(msg)
-    if bl_hooks.get("ok"):
-        bl_hooks["ok"]()
-    return d.get("data")
+    return d
 
 
 BL_MIN_SALES = 3   # ventes (ou annonces) qu'il faut dans une zone pour s'y fier (sinon : zone plus large) — par défaut (réglable)
@@ -1259,8 +1375,16 @@ def _bl_zone_price(itype, no, cond, guide, color_id=None, keys=None):
         n = int(d.get("unit_quantity") or 0)   # ventes : nombre de ventes (lots) ; annonces : nombre d'annonces
         if not n:
             continue
-        unit = float(d.get("qty_avg_price") or 0) or float(d.get("avg_price") or 0)   # « Qty Avg Price » de BrickLink : prix moyen payé par exemplaire
-        rec = {"unit": round(unit, 2), "min": round(float(d.get("min_price") or 0), 2), "max": round(float(d.get("max_price") or 0), 2),
+        unit = _bl_median(d.get("price_detail")) or float(d.get("qty_avg_price") or 0) or float(d.get("avg_price") or 0)   # MÉDIANE (chaque exemplaire compte), sinon « Qty Avg Price » — 21/11
+        months = {}
+        if guide == "sold":   # ventes datées : médiane de chaque mois (historique réel, 6 mois — 21/11)
+            by = {}
+            for x in d.get("price_detail") or []:
+                dt = str((x or {}).get("date_ordered") or "")[:7]
+                if re.fullmatch(r"\d{4}-\d{2}", dt):
+                    by.setdefault(dt, []).append(x)
+            months = {k: v for k, v in ((k, _bl_median(v)) for k, v in by.items()) if v}
+        rec = {**({"months": months} if months else {}), "unit": round(unit, 2), "min": round(float(d.get("min_price") or 0), 2), "max": round(float(d.get("max_price") or 0), 2),
                "avg": round(float(d.get("avg_price") or 0), 2), "offers": n, "qty": int(d.get("total_quantity") or 0), "zone": zone,
                "src": "BrickLink", "kind": "ventes" if guide == "sold" else "annonces", **({"sold": True} if guide == "sold" else {})}
         if n >= cfg["min"]:
@@ -1268,6 +1392,32 @@ def _bl_zone_price(itype, no, cond, guide, color_id=None, keys=None):
         if not best or n > best["offers"]:
             best = {**rec, "few": True}   # pas assez ici : zone plus large (on garde la plus fournie, marquée « few » : trop mince pour s'y fier)
     return best
+
+
+def _bl_median(details):
+    """Médiane BrickLink : chaque exemplaire compte (un lot de 10 à 0,20 € pèse 10 fois) ; None sans détail (21/11)."""
+    pts = []
+    for x in details or []:
+        try:
+            p, q = float(x.get("unit_price") or 0), int(x.get("quantity") or x.get("qunatity") or 1)   # (« qunatity » : orthographe de l'API BrickLink pour les annonces)
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if p > 0:
+            pts.append((p, max(1, q)))
+    if not pts:
+        return None
+    pts.sort()
+    tot, acc = sum(q for _, q in pts), 0
+    for p, q in pts:
+        acc += q
+        if acc * 2 >= tot:
+            return round(p, 3)
+    return round(pts[-1][0], 3)
+
+
+def bl_guide_ann(itype, no, cond, color_id=None, keys=None):
+    """Prix pour ACHETER (« À commander ») : médiane des annonces en cours (France, puis Europe, puis monde) ; aucune annonce : des ventes (21/11)."""
+    return _bl_zone_price(itype, no, cond, "stock", color_id, keys) or _bl_zone_price(itype, no, cond, "sold", color_id, keys)
 
 
 def bl_guide(itype, no, cond, color_id=None, keys=None):

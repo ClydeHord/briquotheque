@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 21/11/2026 11:15.
+Généré le 22/11/2026 00:51.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -621,7 +621,7 @@ L'écran d'un inventaire
 
 #### Pointer chaque pièce
 
-- **✔ OK** : vous l'avez (en quantité). La ligne descend en bas de la liste.
+- **✔ OK** : vous l'avez (en quantité). Ordre des lignes : non vérifiées, à commander, commandées, OK, exclues.
 
 - **🛒 À commander** : elle manque ; réglez la **quantité** avec − / +. Son prix estimé s'affiche.
 
@@ -635,11 +635,11 @@ Les pièces de l'inventaire
 
 #### Passer commande depuis l'inventaire
 
-- Quand toutes les pièces sont triées (OK ou à commander), le bouton **🛒 Prêt pour la commande ?** apparaît.
+- Dès qu'une pièce est à commander, le bouton **🧾 Exporter en XML (N pièces)** apparaît : il copie la liste dans le presse-papier, au format XML de BrickLink (aucun site ne s'ouvre). Les pièces **restent dans l'inventaire**.
 
-- Il copie les pièces à commander dans la liste **À commander** ; dans l'inventaire, elles passent en **📦 Commandées**.
+- Une fois la commande passée, une pièce trouvée dans vos commandes (BrickLink ou BrickOwl) passe toute seule en **📦 Commandée le …**. Commandée ailleurs ? Touchez **📦 Commandée** sur la pièce. Seule la date s'affiche (« Commandée le … »).
 
-- À la réception, passez-les en **✔ OK**. Quand tout est OK, Briquothèque propose d'ajouter le set à votre collection.
+- Erreur : **↩ À commander** la remet à commander. À la réception, passez-les vous-même en **✔ OK** (jamais automatique). Quand tout est OK, Briquothèque propose d'ajouter le set à votre collection.
 
 **Supprimer cet inventaire** (tout en bas) le retire, après confirmation, s'il n'est pas lié à un set de votre collection.
 
@@ -672,16 +672,15 @@ La fiche d'un souhait
 
 #### La liste
 
-- **Coût estimé** de la commande, nombre de pièces, de références et de sets concernés.
+- Même présentation que l'inventaire. En haut, une information par ligne : les éléments (pièces et figurines), **🛒 à commander** (coût estimé), **📦 commandées** (montant réellement payé), **✔ reçues**, les sets concernés ; puis la barre d'avancement et les filtres **Toutes · À commander · Commandées · OK**.
 
-- Chaque pièce (ou figurine) : photo, nom, couleur, référence, prix, le set pour lequel elle est commandée, **quantité** (− / + sur la ligne,
-enregistrée aussitôt). En haut : le nombre d'**éléments** à commander (pièces et figurines).
+- Chaque pièce (ou figurine) : photo, nom, couleur, référence, prix, le set pour lequel elle est commandée, le nombre en grand à droite ; dessous, les boutons comme dans l'inventaire (« Commandée le … », ✔ OK, 📦 Commandée / ↩ À commander, − / + tant qu'elle n'est pas commandée, 🗑).
 
 - **État** voulu, sur chaque ligne : **N'importe**, **Neuf** (par défaut à l'ajout) ou **Occasion** — les choix « any / new / used »
 de BrickLink. Le prix estimé suit : prix neuf, prix d'occasion, ou, pour « N'importe », le neuf s'il vient de France (prioritaire, même plus cher), sinon le moins cher des deux (prix voulu inconnu : l'autre,
 signalé). Chaque ligne affiche toujours les **deux prix** : « Neuf : total » et « Occasion : total », avec le prix à l'unité entre parenthèses
 s'il y a plus d'un exemplaire ; celui retenu pour le coût est en gras. Les noms trop longs sont coupés (nom complet au survol).
-La quantité (− / +), ✔ OK et 🗑 sont sur la même ligne ; « 🧱 Pour … » ouvre la fiche du set ; « 🛒 À commander » n'apparaît que pour une pièce
+Les boutons sont sous les informations, comme dans l'inventaire ; « 🧱 Pour … » ouvre la fiche du set ; « 🛒 À commander » n'apparaît que pour une pièce
 venue d'un inventaire. **BrickLink ↗** à côté de
 l'état : les annonces de l'élément (pièce dans sa couleur, ou figurine), à l'état voulu, **dans la zone d'où vient le prix retenu**
 (France : vendeurs en France ; Europe : vendeurs qui livrent en France ; monde : tous ; zone inconnue : la France). L'état part dans l'export BrickLink ; changé après l'export, pensez à le changer aussi dans votre wanted list.
@@ -690,12 +689,15 @@ l'état : les annonces de l'élément (pièce dans sa couleur, ou figurine), à 
 
 #### Commander sur BrickLink
 
-- Touchez **🧾 Passer commande** : la liste est copiée au format BrickLink et la page d'import de votre wanted list s'ouvre
-(onglet « Upload BrickLink XML format »).
+- Touchez **🧾 Exporter en XML** : toutes les pièces encore à commander (ni commandées ni reçues) sont copiées dans le presse-papier, au format XML de BrickLink. Aucun site ne s'ouvre ; collez-les où vous voulez.
 
-- **Collez** et validez sur BrickLink. Les pièces exportées sont marquées : un nouvel export n'envoie que les nouvelles.
+- Commande passée : une pièce trouvée dans vos commandes (BrickLink ou BrickOwl) affiche **📦 Commandée le …** (seulement la date). Commandée ailleurs ? Touchez **📦 Commandée**. Erreur : **↩ À commander**.
 
-- Reçues ? Passez-les en ✔ OK, puis **🧹 Nettoyer** retire les pièces reçues de la liste.
+- Ordre de la liste : les pièces à commander, puis les commandées, puis les ✔ OK.
+
+- Reçues ? Passez-les en **✔ OK** (jamais automatique). Une **figurine** : Briquothèque propose de créer sa fiche. Une **pièce** qui manquait dans un de vos sets ou une de vos figurines : elle propose de l'y remettre (le set de la pièce d'abord) ; rien n'y manque mais elle était pour un de vos sets : elle demande quoi en faire (la garder à part, ou l'ajouter au set).
+
+- **🧹 Nettoyer** retire ensuite les pièces reçues de la liste.
 
 La liste À commander
 

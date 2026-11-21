@@ -550,7 +550,33 @@ def _bl_before():
 
 _bl_lock = threading.Lock()
 BL_STATE_FILE = os.path.join(DATA, "bl_state.json")   # {"alert": {"msg", "t"}} : BrickLink refuse (adresse IP changée…)
-_bl_state = {"alert": (_load(BL_STATE_FILE, {}) or {}).get("alert")}
+_bl_state = {"alert": (_load(BL_STATE_FILE, {}) or {}).get("alert"), **{k: (_load(BL_STATE_FILE, {}) or {}).get(k) for k in ("last_ok", "fail_since")}}
+
+
+def _bl_state_save():
+    _save(BL_STATE_FILE, {k: _bl_state.get(k) for k in ("alert", "last_ok", "fail_since") if _bl_state.get(k)})
+
+
+def _bl_fail():
+    """BrickLink ne répond pas (maintenance, réseau, refus) : début de la panne retenu (21/11 soir)."""
+    if not _bl_state.get("fail_since"):
+        _bl_state["fail_since"] = int(time.time())
+        _bl_state_save()
+
+
+def bl_down():
+    """BrickLink sans réponse depuis plus de 24 h (et toujours en panne) → BrickOwl prend le relais (fiches consultées, actualisation du jour)."""
+    if DEMO or not bl_on() or not _bl_state.get("fail_since"):
+        return False
+    last = _bl_state.get("last_ok")
+    if not last:   # (jamais noté : le plus récent relevé BrickLink gardé)
+        try:
+            last = max((v.get("t") or 0) for k, v in _parts_cache().items() if k[:3] in ("bm:", "fu:", "bp:") and isinstance(v, dict) and v.get("src") == "BrickLink") or 0
+        except ValueError:
+            last = 0
+        _bl_state["last_ok"] = last or _bl_state["fail_since"]
+        _bl_state_save()
+    return time.time() - max(last or 0, 0) > 86400
 
 
 def _bl_error(msg):
@@ -560,12 +586,29 @@ def _bl_error(msg):
 
 
 def _bl_ok():
-    if _bl_state["alert"]:   # de nouveau accepté : plus d'alerte
-        _bl_state["alert"] = None
-        _save(BL_STATE_FILE, {})
+    now = int(time.time())
+    back = bool(_bl_state.get("fail_since"))   # (il était en panne : il revient)
+    if _bl_state["alert"] or _bl_state.get("fail_since") or now - (_bl_state.get("last_ok") or 0) > 600:   # (réussite : notée au plus toutes les 10 min)
+        _bl_state.update(alert=None, fail_since=None, last_ok=now)
+        _bl_state_save()
+    if back:   # BrickLink revient : le secours BrickOwl activé à la main se désactive tout seul (21/11 soir)
+        def off():
+            with lock:
+                st = _load(sources.SETTINGS_FILE, {})
+                if st.get("ref_site") != "brickowl":
+                    return
+                st["ref_site"], st["bl_back"] = "bricklink", now
+                _save(sources.SETTINGS_FILE, st)
+                os.chmod(sources.SETTINGS_FILE, 0o600)
+            _ref["t"] = 0
+            try:
+                markets_reapply()
+            except Exception as e:
+                print("Retour de BrickLink :", e, flush=True)
+        threading.Thread(target=off, daemon=True).start()
 
 
-sources.bl_hooks.update(before=None if DEMO else _bl_before, error=None if DEMO else _bl_error, ok=None if DEMO else _bl_ok)   # la démo n'utilise jamais BrickLink
+sources.bl_hooks.update(before=None if DEMO else _bl_before, error=None if DEMO else _bl_error, ok=None if DEMO else _bl_ok, fail=None if DEMO else _bl_fail)   # la démo n'utilise jamais BrickLink
 
 
 
@@ -643,6 +686,18 @@ def bl_zone_of(kind, number):
     return next((z for z in sources.bl_zone_order() + ["France", "UE", "monde"] if z in zones), "")   # (la première zone réglée qui a des annonces)
 
 
+def bl_part_ann(blpart, blcolor, max_age=7 * 86400):
+    """Pièce à ACHETER : médiane des annonces BrickLink en cours (neuf, occasion), sinon des ventes ; gardé 7 jours (« bpa: ») — 21/11."""
+    key = f"bpa:{blpart}|{blcolor}"
+    c = _parts_cache().get(key)
+    if c and time.time() - c.get("t", 0) < max_age:
+        return c
+    out = {"used": sources.bl_guide_ann("PART", blpart, "U", color_id=blcolor), "new": sources.bl_guide_ann("PART", blpart, "N", color_id=blcolor),
+           "t": int(time.time()), "src": "BrickLink"}
+    _parts_cache_put(key, out)
+    return out
+
+
 def bp_unit(rec):
     """Prix unitaire d'une pièce relevé sur BrickLink : moyenne d'occasion, sinon neuve."""
     if not rec:
@@ -665,6 +720,365 @@ def rbbl_map():
 
 def bl_on():
     return not DEMO and bool(sources.bricklink_keys())
+
+
+BRICKSET_FILE = os.path.join(DATA, "cache_brickset.json")   # {n° de set: {"launch", "exit", "t"}} — dates LEGO (Brickset, 21/11 soir)
+
+
+_bsm = {"m": None, "d": {}}
+
+
+def bs_rec(number):
+    """Fiche Brickset d'un set (cache, relu seulement s'il a changé)."""
+    try:
+        mt = os.path.getmtime(BRICKSET_FILE)
+    except OSError:
+        return None
+    if mt != _bsm["m"]:
+        _bsm.update(m=mt, d=_load(BRICKSET_FILE, {}) or {})
+    return _bsm["d"].get(number or "")
+
+
+def with_bs(info, number):
+    """Catalogue d'un set d'après Brickset : prix magasin en € (devant les autres sources), pièces et figurines s'il en manque (21/11 soir)."""
+    r = bs_rec(number)
+    if not r or not isinstance(info, dict):
+        return info
+    out = dict(info)
+    if r.get("retail"):
+        out["retail"] = r["retail"]
+    if r.get("pieces") and not out.get("pieces"):
+        out["pieces"] = r["pieces"]
+    if r.get("minifigs") and not out.get("minifig_count"):
+        out["minifig_count"] = r["minifigs"]
+    return out
+
+
+def bs_dates(number):
+    r = (_load(BRICKSET_FILE, {}) or {}).get(number or "")
+    return {"launch": r.get("launch"), "exit": r.get("exit")} if r and (r.get("launch") or r.get("exit")) else None
+
+
+def brickset_fill(force=False):
+    """Dates de mise en vente / de retrait de mes sets (collection, souhaits) : les nouveaux, et tous les 30 jours."""
+    if DEMO or COPIE or not sources.brickset_key():
+        return 0
+    nums = sorted({i["number"] for i in load_db()["items"] if (i.get("kind") or "set") == "set" and re.fullmatch(r"\d+-\d+", str(i.get("number") or ""))})
+    cur, now = _load(BRICKSET_FILE, {}), time.time()
+    todo = [n for n in nums if force or n not in cur or now - (cur[n] or {}).get("t", 0) > 30 * 86400]
+    if not todo:
+        return 0
+    try:
+        got = sources.brickset_dates(todo)
+    except Exception as e:
+        print("Brickset :", e, flush=True)
+        return 0
+    with lock:
+        cur = _load(BRICKSET_FILE, {})
+        for n in todo:
+            cur[n] = {**(got.get(n) or {"launch": None, "exit": None}), "t": int(now)}
+        _save(BRICKSET_FILE, cur)
+    return len(got)
+
+
+def brickset_one(number):
+    """Un set pas encore relevé (fiche ouverte) : sa fiche Brickset, en fond."""
+    try:
+        got = sources.brickset_dates([number])
+    except Exception as e:
+        print("Brickset :", e, flush=True)
+        return
+    with lock:
+        cur = _load(BRICKSET_FILE, {})
+        cur[number] = {**(got.get(number) or {"launch": None, "exit": None}), "t": int(time.time())}
+        _save(BRICKSET_FILE, cur)
+
+
+ORDERS_FILE = os.path.join(DATA, "orders_seen.json")   # {"BrickOwl:<n°>": {"date", "status", "items": [[éléments, références, couleur, qté, nom]]}}
+_ord = {"t": 0, "busy": False}
+
+
+BL_ORDER_OFF = {"CANCELLED", "PURGED", "NPB", "NPX", "NRS", "NSS"}   # (commandes BrickLink annulées ou abandonnées : écartées)
+
+
+def orders_bl_read(seen):
+    """Mes commandes BrickLink (acheteur) → seen["BrickLink:<n°>"] = {date, status, status_id (8 : annulée), items} ; le détail d'une
+    commande n'est lu qu'une fois. items : [[], [référence BrickLink], "", quantité, nom, "Part" | "Minifigure", prix unitaire payé, "couleur BrickLink"]."""
+    import datetime as _dt
+    for o in sources.bl_get("/orders", {"direction": "out"}) or []:
+        oid = str(o.get("order_id") or "")
+        if not oid:
+            continue
+        key = "BrickLink:" + oid
+        rec = seen.get(key) or {}
+        try:
+            t = int(_dt.datetime.fromisoformat(str(o.get("date_ordered") or "").replace("Z", "+00:00")).timestamp())
+        except ValueError:
+            t = rec.get("date") or int(time.time())
+        st = str(o.get("status") or "").upper()
+        rec.update(date=t, status=st, status_id=8 if st in BL_ORDER_OFF else 1)
+        if "items" not in rec:
+            rows = []
+            for batch in sources.bl_get(f"/orders/{oid}/items") or []:
+                for x in (batch if isinstance(batch, list) else [batch]):
+                    it, typ = x.get("item") or {}, str((x.get("item") or {}).get("type") or "").upper()
+                    if typ not in ("PART", "MINIFIG"):
+                        continue
+                    rows.append([[], [str(it.get("no") or "").lower()], "", int(x.get("quantity") or 0), it.get("name") or "",
+                                 "Part" if typ == "PART" else "Minifigure", float(x.get("disp_unit_price_final") or x.get("unit_price_final") or 0),
+                                 str(x.get("color_id")) if typ == "PART" else None])
+            rec["items"] = rows
+        seen[key] = rec
+
+
+def orders_sync(force=False):
+    """Mes commandes BrickOwl (acheteur) → les lignes de « À commander » qu'elles contiennent passent « Commandée » (date, quantité) ;
+    jamais « OK » (21/11 soir). Rend {"changed": nb de lignes changées, "orders": nb de commandes, "unmatched": [noms]}."""
+    if DEMO or COPIE or not (sources.brickowl_key() or sources.bricklink_keys()) or _ord["busy"] or (not force and time.time() - _ord["t"] < 3600):
+        return {"changed": 0}
+    _ord["busy"] = True
+    try:
+        seen = _load(ORDERS_FILE, {})
+        if sources.bricklink_keys():   # mes commandes BrickLink (acheteur) — 22/11 ; en panne : rien, nouvel essai au passage suivant
+            try:
+                orders_bl_read(seen)
+            except Exception as e:
+                print("Commandes BrickLink :", e, flush=True)
+        lst = (sources.bo_api("order/list", {"list_type": "customer", "limit": 200}) or []) if sources.brickowl_key() else []
+        for o in lst:
+            oid, key = str(o.get("order_id") or ""), "BrickOwl:" + str(o.get("order_id") or "")
+            if not oid:
+                continue
+            rec = seen.get(key) or {}
+            rec.update(date=int(o.get("order_date") or 0), status=o.get("status") or "", status_id=int(o.get("status_id") or 0))
+            if "items" not in rec or any(len(x) < 7 for x in rec["items"]):   # (le détail : lu une seule fois ; relu une fois pour le prix payé — 21/11 nuit)
+                items = sources.bo_api("order/items", {"order_id": oid}) or []
+                rec["items"] = [[sorted({str(i.get("id")) for i in x.get("ids") or [] if i.get("type") == "item_no"}),
+                                 sorted({str(i.get("id")).lower() for i in x.get("ids") or [] if i.get("type") == "design_id"}),
+                                 str(x.get("color_name") or "").lower(), int(x.get("ordered_quantity") or 0) - int(x.get("refunded_quantity") or 0),
+                                 x.get("name") or "", x.get("type") or "", float(x.get("base_price") or 0)] for x in items]   # (prix unitaire payé)
+            seen[key] = rec
+        _save(ORDERS_FILE, seen)
+        cmap = {k: str(v).lower() for k, v in (moc_color_maps().get("rb") or {}).items()}
+        rbbl = {str(k): str(v) for k, v in rbbl_map().items()}   # (couleur Rebrickable → BrickLink : commandes BrickLink)
+        with lock:
+            db = load_db()
+            kinds = list_kinds(db)
+            parts = [i for i in db["items"] if kinds.get(i.get("list_id")) == "parts" and i.get("kind") == "part"]
+            # (réserve partagée : pièces identiques de plusieurs inventaires — 21/11 nuit)
+            fnorm = lambda nm: " ".join(re.sub(r"[^\w]+", " ", re.sub(r"\b(lego|minifigure|minifig|figurine)\b", " ", str(nm or "").lower())).split())   # (nom d'une figurine, comparable)
+            refs_ = lambda nm: {x.strip().lower() for x in ((re.search(r"\(([^()]*)\)\s*$", nm or "") or [None, ""])[1]).split("/") if x.strip()}   # (références du nom)
+            oitems = [{"site": key.split(":", 1)[0], "order": key.split(":", 1)[1], "date": int(rec.get("date") or 0), "els": set(els),
+                       "des": set(des) | refs_(name), "cn": cn, "left": q, "q": q, "name": name, "price": (rest or [None])[0],
+                       "fig": fnorm(name) if typ == "Minifigure" else None, "blc": rest[1] if len(rest) > 1 else None}
+                      for key, rec in seen.items() if rec.get("status_id") != 8   # (annulée : écartée)
+                      for els, des, cn, q, name, typ, *rest in rec.get("items") or [] if q > 0 and typ in ("Part", "Minifigure")]
+            cons = []   # ce qui peut recevoir une commande : (date, sorte, objet, éléments, références, couleur, quantité, commandes écartées, dès le)
+            for p_ in parts:
+                cons.append((int(p_.get("added_at") or 0), "part", p_, {str(p_.get("element_id") or "")} - {""},
+                             {str(p_.get("bricklink") or "").lower(), str(p_.get("part_num") or "").lower()} - {""}, str(p_.get("color_id")),
+                             int(p_.get("quantity") or 1), set(p_.get("o_off") or []), int(p_.get("added_at") or 0)))   # (ajoutée après la commande : surplus → vrac)
+            fcache = _load(CACHE_FILE, {})
+            for f_ in (i for i in db["items"] if kinds.get(i.get("list_id")) == "parts" and i.get("kind") == "fig"):   # figurines à commander : par leur nom (22/11)
+                nm_ = fnorm((fcache.get("fig:" + str(f_.get("number"))) or {}).get("name") or f_.get("display_name") or "")
+                fno = str(f_.get("number") or "").lower()
+                if nm_ or fno:   # (BrickLink : sa référence ; BrickOwl : son nom)
+                    cons.append((int(f_.get("added_at") or 0), "part", f_, set(), {fno, str(sources.bl_fig_no(fno) or "").lower()} - {""}, "fig:" + nm_,
+                                 int(f_.get("quantity") or 1), set(f_.get("o_off") or []), int(f_.get("added_at") or 0)))
+            linked = {(l.get("inv"), l.get("row")) for i in db["items"] for l in i.get("inv_links") or []}
+            names = part_names()
+            byid = {i["id"]: i for i in db["items"]}
+            for ikey, inv in (db.get("inventories") or {}).items():
+                snum = inv.get("set") or (byid.get(ikey) or {}).get("number")
+                if not snum:
+                    continue
+                try:
+                    base = {r["key"]: r for r in inventory_rows(snum) or [] if r.get("key")}
+                except Exception:
+                    base = {}
+                sw = {str(k_): str(v_) for k_, v_ in (inv.get("swaps") or {}).items()}   # (règle de couleur de l'inventaire)
+                for rk, st in (inv.get("rows") or {}).items():
+                    if not (st.get("s") == "order" or (st.get("s") in ("cmd", "ok") and st.get("o"))) or (ikey, rk) in linked:
+                        continue   # (« Commandée » à la main, ou de l'ancienne façon — copiée dans « À commander » — : laissée telle quelle)
+                    r = base.get(rk) or {}
+                    pn = st.get("p") or r.get("part_num") or rk.split("|")[0]
+                    c0 = str(r.get("color_id") if r else rk.split("|")[-1])
+                    col = str(st.get("c")) if st.get("c") is not None else sw.get(c0, c0)
+                    els = set()
+                    if not st.get("p") and st.get("c") is None and c0 not in sw and r.get("element_id"):
+                        els.add(str(r["element_id"]))
+                    m_ = re.search(r"/elements/(\d+)\.", st.get("ci") or "")
+                    if m_:
+                        els.add(m_.group(1))
+                    ids = {str(pn).lower(), str((names.get(pn) or {}).get("bl") or "").lower(), "" if st.get("p") else str(r.get("bricklink") or "").lower()} - {""}
+                    cons.append((int(inv.get("created") or 0), "row", (ikey, inv, st), els, ids, col, int(st.get("q") or r.get("quantity") or 1),
+                                 set(st.get("o_off") or []), max(int(inv.get("created") or 0), int(st.get("t") or 0))))   # (inventaire créé / ligne mise à commander après la commande : surplus → vrac)
+            cons.sort(key=lambda c: (not ((c[1] == "part" and c[2].get("got")) or (c[1] == "row" and c[2][2].get("s") == "ok")), c[0]))   # (déjà reçues d'abord, puis du plus ancien au plus récent)
+            changed = 0
+            for t0, kind, obj, els, ids, col, need, off, since in cons:
+                take, got_ = [], 0
+                for o in oitems:
+                    if got_ >= need:
+                        break
+                    if o["left"] <= 0 or o["order"] in off or (since and o["date"] < since):   # (commande d'avant l'inventaire : jamais)
+                        continue
+                    if ((o["fig"] is not None and ((col[4:] and o["fig"] == col[4:]) or bool(ids & o["des"]))) if col.startswith("fig:")
+                            else (o["fig"] is None and ((els & o["els"]) or ((ids & o["des"]) and ((rbbl.get(col) == o["blc"]) if o["blc"] is not None else cmap.get(col) == o["cn"]))))):
+                        n = min(o["left"], need - got_)
+                        take.append((o, n))
+                        got_ += n
+                if got_ >= need:   # toute la quantité est commandée : la réserve est prise
+                    al = {}
+                    for o, n in take:
+                        o["left"] -= n
+                        x = al.setdefault(o["order"], {"site": o["site"], "order": o["order"], "date": o["date"], "qty": 0})
+                        x["qty"] += n
+                        if o.get("price") is not None and x.get("paid", 0) is not None:   # payé : seulement la quantité attribuée à cette ligne
+                            x["paid"] = round(x.get("paid", 0) + n * o["price"], 4)
+                        else:
+                            x["paid"] = None
+                    new = sorted(al.values(), key=lambda x: x["date"] or 0)
+                else:
+                    new = []
+                if kind == "part":
+                    if (obj.get("ordered") or []) != new:
+                        if new:
+                            obj["ordered"] = new
+                        else:
+                            obj.pop("ordered", None)
+                        changed += 1
+                    continue
+                ikey, inv, st = obj
+                if st.get("s") == "ok":   # (reçue : son état ne bouge pas, seule la commande retenue suit)
+                    if new and st.get("o") != new:
+                        st["o"] = new
+                        changed += 1
+                    continue
+                if new and (st.get("s") != "cmd" or st.get("o") != new):
+                    st.update(s="cmd", o=new)
+                    inv["updated"] = int(time.time())
+                    changed += 1
+                elif not new and st.get("o"):
+                    st["s"] = "order"
+                    st.pop("o", None)
+                    inv["updated"] = int(time.time())
+                    changed += 1
+            unmatched = [o["name"] for o in oitems if o["left"] == o["q"]]
+            if changed:
+                _save(DB_FILE, db)
+        _ord["t"] = time.time()
+        return {"changed": changed, "orders": len(seen), "unmatched": unmatched[:50]}
+    except Exception as e:
+        print("Commandes BrickOwl :", e, flush=True)
+        return {"changed": 0, "error": str(e)}
+    finally:
+        _ord["busy"] = False
+
+
+def orders_keeper():
+    time.sleep(420)
+    while True:
+        try:
+            orders_sync(True)
+        except Exception as e:
+            print("Commandes :", e, flush=True)
+        time.sleep(86400)
+
+
+def brickset_keeper():
+    time.sleep(300)
+    while True:
+        try:
+            brickset_fill()
+        except Exception as e:
+            print("Brickset :", e, flush=True)
+        time.sleep(86400)
+
+
+REF_SITES = ("bricklink", "brickowl", "both")
+_ref = {"t": 0, "v": "bricklink", "m": None}
+
+
+def ref_site():
+    """Source des prix : « bricklink » (d'office) ou « brickowl » (plan de secours, Réglages — 21/11 soir)."""
+    try:
+        mt = os.path.getmtime(sources.SETTINGS_FILE)
+    except OSError:
+        mt = None
+    if mt != _ref["m"] or time.time() - _ref["t"] > 30:
+        v = str(_load(sources.SETTINGS_FILE, {}).get("ref_site") or "bricklink")
+        _ref.update(v=v if v in ("bricklink", "brickowl") else "bricklink", m=mt, t=time.time())   # (« les deux » : plus proposé)
+    return "brickowl" if _ref["v"] == "brickowl" or bl_down() else "bricklink"   # (BrickLink muet depuis 24 h : BrickOwl en attendant — 21/11 soir)
+
+
+def part_cond_view(bl_rec, bo_rec):
+    """Prix d'une pièce pour chaque état voulu (N neuf, U occasion, X n'importe), selon le site de référence (21/11)."""
+    def bl_u(c):
+        if not bl_rec:
+            return None
+        return ((bl_rec.get("new") or {}).get("unit") if c == "N" else (bl_rec.get("used") or {}).get("unit") if c == "U" else bp_unit(bl_rec))
+
+    def bo_u(c):
+        r = bo_rec or {}
+        return ((r.get("new") or {}).get("unit") if c == "N" else (r.get("used") or {}).get("unit") if c == "U" else r.get("unit"))
+    out = {}
+    for c in "NUX":
+        a, b = bl_u(c), bo_u(c)
+        u, fb = ref_mix(a, b)
+        out[c] = {"unit": u, **({"fb": fb} if fb else {}), "sites": {"BrickLink": a, "BrickOwl": b}}
+    return out
+
+
+def ref_mix(bl, bo):
+    """Prix BrickLink, prix BrickOwl → (prix retenu, site de secours utilisé ou "") selon le réglage (21/11)."""
+    bl = bl if isinstance(bl, (int, float)) and bl > 0 else None
+    bo = bo if isinstance(bo, (int, float)) and bo > 0 else None
+    s = ref_site()
+    if s == "both":
+        if bl and bo:
+            return round((bl + bo) / 2, 3), ""
+        return (bl or bo), ("BrickLink" if bl else "BrickOwl" if bo else "")   # (un seul des deux : signalé)
+    a, b, other = (bl, bo, "BrickOwl") if s == "bricklink" else (bo, bl, "BrickLink")
+    return (a, "") if a else (b, other) if b else (None, "")
+
+
+SITE_LOGO_DIR = os.path.join(DATA, "site_logos")   # (privé : jamais publié)
+SITE_LOGO_SRC = {"bricklink": ["https://www.bricklink.com/v2/img/favicon/favicon.ico", "https://www.bricklink.com/favicon.ico"],
+                 "brickowl": ["https://img.brickowl.com/sites/default/themes/bs_ss/images/favicon-32x32.png"]}
+_slogo = {"t": 0, "v": {}}
+
+
+def site_logos():
+    """Petits logos des deux sites, en data: (pour les marques de prix) ; manquant : récupéré en fond (une fois par jour)."""
+    import base64
+    if time.time() - _slogo["t"] < 60:
+        return _slogo["v"]
+    out, miss = {}, []
+    for k in SITE_LOGO_SRC:
+        f = os.path.join(SITE_LOGO_DIR, k)
+        try:
+            raw = open(f, "rb").read()
+            mime = "image/png" if raw[:4] == b"\x89PNG" else "image/x-icon"
+            out[k] = f"data:{mime};base64," + base64.b64encode(raw).decode()
+        except OSError:
+            miss.append(k)
+    if miss and not DEMO:
+        def fetch():
+            os.makedirs(SITE_LOGO_DIR, exist_ok=True)
+            for k in miss:
+                for u in SITE_LOGO_SRC[k]:
+                    try:
+                        raw = sources._get(u, timeout=20)[0]
+                    except Exception:
+                        continue
+                    if raw[:4] in (b"\x89PNG", b"\x00\x00\x01\x00") and len(raw) < 60000:   # (une vraie icône : pas la page « maintenance »)
+                        with open(os.path.join(SITE_LOGO_DIR, k), "wb") as fh:
+                            fh.write(raw)
+                        _slogo["t"] = 0
+                        break
+        bg_once("site_logos", fetch, 86400)
+    _slogo.update(t=time.time(), v=out)
+    return out
 
 
 THIN_KEYS = ("unit", "offers", "qty", "zone", "kind", "min", "max")
@@ -772,6 +1186,35 @@ def bl_queue():
 def consult_prices(item=None, set_no=None, fig_no=None):
     """Fiche ouverte (prix consultés à l'instant t) : prix BrickLink de cet élément et de ses figurines relus s'ils ont
     plus de 24 h. Rend True si au moins un appel BrickLink a été fait (les prix ont pu changer)."""
+    if not DEMO and not COPIE and ref_site() == "brickowl":   # (BrickOwl : forcé, ou BrickLink muet depuis 24 h — la fiche consultée relue si plus de 24 h ; 21/11 soir)
+        kind0 = (item or {}).get("kind", "set") if item else ("fig" if fig_no else "set")
+        num0 = (item or {}).get("number") or set_no or fig_no
+        got = False
+        try:
+            if kind0 == "set" and num0:
+                c = _parts_cache().get("bmo:" + num0)
+                if not c or time.time() - c.get("t", 0) > 86400:
+                    _market_bo(num0, True)
+                    got = True
+                for f in (_load(CACHE_FILE, {}).get(num0) or {}).get("minifigs") or []:
+                    if f.get("id"):
+                        cf = _parts_cache().get("fuo:" + f["id"])
+                        if not cf or time.time() - cf.get("t", 0) > 86400:
+                            fig_bo_rec(f["id"], fetch=True, max_age=86400)
+                            got = True
+            elif kind0 == "fig" and num0:
+                cf = _parts_cache().get("fuo:" + num0)
+                if not cf or time.time() - cf.get("t", 0) > 86400:
+                    fig_bo_rec(num0, fetch=True, max_age=86400)
+                    got = True
+        except Exception as e:
+            print("BrickOwl (fiche consultée) :", e, flush=True)
+        if got:
+            _fu_mem["t"] = 0
+            if kind0 == "set" and num0:
+                markets_reapply([num0])
+        if not bl_on():
+            return got
     if DEMO or COPIE or not bl_on():
         return False
     n0 = bl_today()
@@ -893,6 +1336,81 @@ def bg_once(key, fn, every=86400):
 
 
 def market_of(number, force=False):
+    """Annonces d'un set selon le SITE DE RÉFÉRENCE (21/11) : BrickLink et / ou BrickOwl, combinés (ref_mix) ; « sites » : chacun à part."""
+    m = _market_main(number, force)   # (comme avant : BrickLink, ou BrickOwl s'il manque)
+    bl = m if m and m.get("src") == "BrickLink" else None
+    bo = m if m and m.get("src") != "BrickLink" else None
+    if ref_site() == "brickowl":   # (BrickLink choisi : jamais BrickOwl, même en secours — 21/11 soir)
+        bo = _market_bo(number, force) or bo
+    return market_combine(bl, bo)
+
+
+
+
+def markets_reapply(numbers=None):
+    """Cote des sets (cache des sets) recalculée d'après les relevés gardés (BrickLink, BrickOwl) et le site de référence — sans réseau (21/11)."""
+    pc = _parts_cache()
+    with lock:
+        cache = _load(CACHE_FILE, {})
+        n_ok = 0
+        for n in (numbers if numbers is not None else list(cache)):
+            v = cache.get(n)
+            if not isinstance(v, dict) or str(n).startswith("fig:"):
+                continue
+            bm, bmo = pc.get("bm:" + n), pc.get("bmo:" + n)
+            bl = bm if bm and bm.get("src") == "BrickLink" else None
+            bo = bmo or (bm if bm and bm.get("src") != "BrickLink" else None)
+            m = market_combine(bl, bo)
+            if m:
+                cache[n] = market_apply(v, m)
+                n_ok += 1
+        if n_ok:
+            _save(CACHE_FILE, cache)
+    return n_ok
+
+def _market_bo(number, force=False):
+    """Annonces BrickOwl d'un set, gardées à part (« bmo: », une semaine) ; fiche ouverte : relevées en fond."""
+    c = _parts_cache().get("bmo:" + number)
+    if c and time.time() - c.get("t", 0) < MARKET_TTL and not force:
+        return c
+    if quick() and not force:
+        bg_once("bmo:" + number, lambda: _market_bo(number, True), 3600)
+        return c
+    try:
+        m = sources.set_market(number)
+    except Exception:
+        return c
+    m = {**(m or {"new": None, "used": None}), "src": "BrickOwl", "t": int(time.time())}
+    _parts_cache_put("bmo:" + number, m)
+    if not _bo_fill["on"]:   # (fiche ouverte : sa cote recalculée tout de suite ; la passe complète recalcule tout à la fin)
+        markets_reapply([number])
+    return m
+
+
+def market_combine(bl, bo):
+    """Deux relevés (BrickLink, BrickOwl) → un relevé selon le réglage ; chaque état : prix retenu, « fb » (site de secours) ; « sites » : les deux."""
+    if not bl and not bo:
+        return None
+    s = ref_site()
+    sites = {nm: {"new": ((r or {}).get("new") or {}).get("unit"), "used": ((r or {}).get("used") or {}).get("unit"), "url": (r or {}).get("url")}
+             for nm, r in (("BrickLink", bl), ("BrickOwl", bo)) if r}
+    if s == "bricklink" and bl and not bo:   # (comme avant)
+        return {**bl, "sites": sites}
+    base = dict(bl if (s != "brickowl" and bl) or not bo else bo)
+    for k in ("new", "used"):
+        a, b = ((bl or {}).get(k) or {}), ((bo or {}).get(k) or {})
+        u, fb = ref_mix(a.get("unit"), b.get("unit"))
+        if u is None:
+            base[k] = a or b or None
+            continue
+        src_rec = b if fb == "BrickOwl" or (s == "brickowl" and not fb) else a if a.get("unit") else b
+        base[k] = {**src_rec, "unit": u, **({"fb": fb} if fb else {}), **({"mix": True} if s == "both" and a.get("unit") and b.get("unit") else {})}
+    base["src"] = {"both": "both", "brickowl": "BrickOwl"}.get(s, base.get("src") or "BrickLink")
+    base["sites"] = sites
+    return base
+
+
+def _market_main(number, force=False):
     """Annonces d'un set (gardées 24 h) : BrickLink si ses codes sont réglés, sinon BrickOwl. {"new", "used", "url", "t", "src"} ou None."""
     c = _parts_cache().get("bm:" + number)
     want_bl = bl_on()
@@ -907,6 +1425,10 @@ def market_of(number, force=False):
     if want_bl:
         try:
             m = bl_market("SET", number)
+            try:
+                hist_backfill(number, m)   # (6 mois de ventes, mois par mois — 21/11)
+            except Exception:
+                pass
             for k in ("used", "new"):   # moins de 3 ventes partout : l'ancien relevé solide est gardé
                 m[k] = bl_keep_rec(m.get(k), (c or {}).get(k))
             _parts_cache_put("bm:" + number, m)
@@ -915,13 +1437,7 @@ def market_of(number, force=False):
             print("BrickLink", number, e, flush=True)   # injoignable ou quota atteint : BrickOwl
             if c and c.get("src") == "BrickLink":   # déjà relevé sur BrickLink : on garde ce prix-là
                 return c
-    try:
-        m = sources.set_market(number)
-    except Exception:
-        return c   # BrickOwl injoignable : on garde le dernier relevé
-    if m:
-        _parts_cache_put("bm:" + number, m)
-    return m or c
+    return c   # (BrickLink seul : plus de relevé BrickOwl ; le dernier prix connu reste jusqu'au retour de BrickLink — 21/11)
 
 
 def with_market(data, number, force=False):
@@ -934,15 +1450,23 @@ def market_apply(data, m):
     if not m:
         return data
     out = dict(data)
-    mk = {k: m.get(k) for k in ("new", "used", "url", "src")}
+    mk = {k: m.get(k) for k in ("new", "used", "url", "src", "sites")}   # (sites : prix de chaque site — 21/11)
     for key, fld in (("used", "used_value"), ("new", "new_value")):
         rec = m.get(key) or {}
         if not rec.get("unit"):
             continue
-        if bl_thin(rec) and not rec.get("thin") and out.get(fld) and abs(out[fld] - rec["unit"]) > 0.004 and not (key == "used" and out.get("used_guess")):
-            mk[key] = {"unit": out[fld], "thin": {x: rec.get(x) for x in THIN_KEYS}}   # trop peu de ventes : le prix déjà connu de la fiche est gardé
+        pure_bl = not rec.get("mix") and not rec.get("fb") and (m.get("src") or "BrickLink") == "BrickLink"   # (prix BrickLink pur — 21/11)
+        if "kept_" + fld not in out and out.get(fld) is not None:
+            out["kept_" + fld] = out[fld]   # (le prix connu de la fiche, mis à part : un retour à BrickLink le retrouve)
+        kept = out.get("kept_" + fld)
+        if bl_thin(rec) and not rec.get("thin") and pure_bl \
+                and kept and abs(kept - rec["unit"]) > 0.004 and not (key == "used" and out.get("used_guess")):
+            mk[key] = {"unit": kept, "thin": {x: rec.get(x) for x in THIN_KEYS}}   # trop peu de ventes : le prix déjà connu de la fiche est gardé
+            out[fld] = kept
         else:
             out[fld] = rec["unit"]
+            if pure_bl:
+                out["kept_" + fld] = rec["unit"]
             if key == "used":
                 out.pop("used_guess", None)
     if not (m.get("used") or {}).get("unit") and not out.get("used_value") and out.get("new_value"):   # aucune annonce d'occasion : repli habituel
@@ -1218,10 +1742,76 @@ def theme_norm(t):
 def lego_urls():
     """Pages produits LEGO.com connues (relevées avec les nouveautés) : {numéro du set : adresse}. Les autres sets : pas d'adresse sûre."""
     out = {}
+    for n, x in (_load(LEGO_PRICES, {}) or {}).items():   # (pages des thèmes lego.com, relevées chaque jour — 21/11)
+        u = str((x or {}).get("url") or "")
+        if u.startswith("https://www.lego.com/") and (x or {}).get("status") != "gone":
+            out[n] = u
     for x in (_load(NOV_FILE, {}) or {}).get("items") or []:
         u = str(x.get("url") or "")
         if x.get("number") and u.startswith("https://www.lego.com/"):
             out[x["number"]] = u
+    return out
+
+
+LEGO_SKIP = {"braille-bricks", "brand-catalogue", "lego-education", "serious-play", "powered-up"}   # (pas des sets à collectionner)
+
+
+def lego_themes_build():
+    """Une fois par jour : les pages des thèmes de lego.com → prix public, page produit, disponibilité de chaque set vendu (21/11)."""
+    try:
+        slugs = [s for s in sources.lego_theme_slugs() if s not in LEGO_SKIP]
+    except Exception as e:
+        print("Thèmes lego.com :", e, flush=True)
+        return
+    now, seen = int(time.time()), set()
+    for slug in slugs:
+        try:
+            prods = sources.lego_category(slug, 12, "themes")
+        except Exception as e:
+            print("Thème lego.com", slug, e, flush=True)
+            time.sleep(20)
+            continue
+        with lock:
+            lp = _load(LEGO_PRICES, {})
+            for p in prods:
+                n = p["code"] + "-1"
+                seen.add(n)
+                old = lp.get(n) or {}
+                soon = str(p.get("status") or "").startswith(("B_COMING_SOON", "A_PRE_ORDER"))
+                lp[n] = {**old, **({"price": p["price"]} if p.get("price") is not None else {}), "when": p.get("when") or old.get("when") or "",
+                         "soon": soon, "name": p.get("name") or old.get("name") or "", "url": p.get("url") or old.get("url") or "",
+                         "status": p.get("status") or "", "t": now}
+            _save(LEGO_PRICES, lp)
+        time.sleep(6)   # (une pause entre deux thèmes : lego.com n'est pas pressé)
+    with lock:   # plus en vente (absent de tous les thèmes) : le lien direct n'est plus proposé ; le prix public reste
+        lp = _load(LEGO_PRICES, {})
+        for n, x in lp.items():
+            if isinstance(x, dict) and x.get("url") and n not in seen and x.get("t", 0) < now - 3 * 86400:
+                x["status"] = "gone"
+        _save(LEGO_PRICES, lp)
+    print(f"Thèmes lego.com : {len(seen)} sets relevés", flush=True)
+
+
+def lego_themes_keeper():
+    time.sleep(900)
+    while True:
+        try:
+            lego_themes_build()
+        except Exception as e:
+            print("Thèmes lego.com :", e, flush=True)
+        time.sleep(86400)   # (une fois par jour)
+
+
+def with_lego(info, number):
+    """Fiche d'un set : prix public lego.com s'il manque, « en vente » si on n'en sait rien d'autre (pages des thèmes — 21/11)."""
+    lp = lego_price(number) or {}
+    if not info or not lp:
+        return info
+    out = dict(info)
+    if lp.get("price") and not out.get("retail"):
+        out["retail"] = lp["price"]
+    if not out.get("availability") and lp.get("status") and lp.get("status") != "gone" and not lp.get("soon"):
+        out["availability"] = "Retail"
     return out
 
 
@@ -1339,6 +1929,61 @@ def novelties_build():
     finally:
         _nov["busy"] = False
 
+
+
+
+_bo_fill = {"on": False}
+
+
+def bo_fill_start():
+    """Prix BrickOwl de ce que j'ai (sets, figurines) et de mes souhaits, en fond, une page toutes les 2 s (réglage BrickOwl / les deux — 21/11)."""
+    if _bo_fill["on"]:
+        return
+    _bo_fill["on"] = True
+
+    def run():
+        try:
+            db, kinds = load_db(), list_kinds()
+            sets, figs, done = [], [], []
+            for it in db["items"]:
+                if kinds.get(it.get("list_id")) not in ("collection", "wishlist"):
+                    continue
+                if it.get("kind", "set") == "set" and it.get("number") and it["number"] != "custom":
+                    sets.append(it["number"])
+                elif it.get("kind") == "fig" and it.get("number"):
+                    figs.append(it["number"])
+            for n in dict.fromkeys(sets):
+                if ref_site() == "bricklink":
+                    return
+                c = _parts_cache().get("bmo:" + n)
+                if not c or time.time() - c.get("t", 0) >= 86400:   # (une fois par jour — 21/11 soir)
+                    _market_bo(n, True)
+                    done.append(n)
+                    if len(done) % 20 == 0:
+                        markets_reapply(done[-20:])
+                    time.sleep(2)
+            for f in dict.fromkeys(figs):
+                if ref_site() == "bricklink":
+                    return
+                c = _parts_cache().get("fuo:" + f)
+                if not c or time.time() - c.get("t", 0) >= 86400:   # (une fois par jour — 21/11 soir)
+                    fig_bo_rec(f, fetch=True, max_age=86400)
+                    time.sleep(2)
+            _fu_mem["t"] = 0
+            markets_reapply()
+        except Exception as e:
+            print("BrickOwl (site de référence) :", e, flush=True)
+        finally:
+            _bo_fill["on"] = False
+    threading.Thread(target=run, daemon=True).start()
+
+
+def bo_keeper():
+    time.sleep(600)
+    while True:
+        if ref_site() != "bricklink":
+            bo_fill_start()
+        time.sleep(3600)   # (vérifie chaque heure ; chaque fiche est relue au plus une fois par jour — 21/11 soir)
 
 def novelties_keeper():
     time.sleep(150)
@@ -2890,8 +3535,30 @@ def _fu_cache():
 
 
 def fig_used(fid):
-    """Prix d'occasion relevé (cache seulement, sans requête) ou None."""
-    return (_fu_cache().get(fid) or {}).get("unit")
+    """Prix d'occasion relevé (cache seulement, sans requête) ou None — selon le site de référence (21/11)."""
+    return ref_mix((fig_bl_rec(fid) or {}).get("unit"), (fig_bo_rec(fid) or {}).get("unit"))[0]
+
+
+def fig_bl_rec(fid):
+    c = _fu_cache().get(fid)
+    return c if c and c.get("src") == "BrickLink" else None
+
+
+def fig_bo_rec(fid, fetch=False, max_age=None):
+    """Prix d'occasion BrickOwl d'une minifig, gardé à part (« fuo: ») ; l'ancien relevé BrickOwl (« fu: ») sert en attendant."""
+    c = _parts_cache().get("fuo:" + fid)
+    if fetch and not RB_FIG.fullmatch(fid or "") and (not c or time.time() - c.get("t", 0) >= (max_age or FIG_USED_TTL)):
+        try:
+            r = sources.fig_used_price(fid) or {"unit": None}
+            r.update(t=int(time.time()), src="BrickOwl")
+            _parts_cache_put("fuo:" + fid, r)
+            c = r
+        except Exception:
+            pass
+    if c:
+        return c
+    leg = _fu_cache().get(fid)
+    return leg if leg and leg.get("src") != "BrickLink" else None
 
 
 def fig_used_fetch(fid, max_age=FIG_USED_TTL):
@@ -2907,6 +3574,10 @@ def fig_used_fetch(fid, max_age=FIG_USED_TTL):
     if want_bl:   # BrickLink d'abord : annonces d'occasion (prix retenu) et neuves
         try:
             m = bl_market("MINIFIG", fid)
+            try:
+                hist_backfill("fig:" + fid, m)   # (6 mois de ventes, mois par mois — 21/11)
+            except Exception:
+                pass
             u = bl_keep_rec(m.get("used"), c if c and c.get("src") == "BrickLink" else None) or {}   # moins de 3 ventes partout : l'ancien prix solide est gardé
             m["new"] = bl_keep_rec(m.get("new"), (c or {}).get("new"))
             r = {**u, "unit": u.get("unit"), "new": m.get("new"), "url": m["url"], "src": "BrickLink", "name": (c or {}).get("name")}
@@ -2914,19 +3585,35 @@ def fig_used_fetch(fid, max_age=FIG_USED_TTL):
             print("BrickLink", fid, e, flush=True)
             if c and c.get("src") == "BrickLink":   # déjà relevée sur BrickLink : on garde ce prix-là
                 return c.get("unit")
-    try:
-        r = r or sources.fig_used_price(fid) or {"unit": None}
-    except Exception:
-        return c.get("unit") if c else None   # BrickOwl injoignable : on garde l'ancien prix
+    if not r:   # (BrickLink muet : le dernier prix connu reste ; plan de secours BrickOwl : son relevé — 21/11 soir)
+        if ref_site() == "brickowl":
+            fig_bo_rec(fid, fetch=True)
+            _fu_mem["t"] = 0
+            return fig_used(fid)
+        return c.get("unit") if c else None
     r["t"] = int(time.time())
     _parts_cache_put("fu:" + fid, r)
     _fu_mem["t"] = 0
-    return r.get("unit")
+    if ref_site() != "bricklink" and r.get("src") == "BrickLink":   # (site de référence BrickOwl / les deux : BrickOwl aussi — 21/11)
+        fig_bo_rec(fid, fetch=True)
+    return fig_used(fid)
 
 
 def fig_used_stats(fid):
-    """Annonces d'occasion relevées (BrickOwl) : {min, max, avg, offers, zone} ou None."""
-    r = _fu_cache().get(fid) or {}
+    """Annonces d'occasion relevées : {min, max, avg, offers, zone} ou None — du site de référence (secours : l'autre ; les deux : la moyenne).
+    « sites » : le prix de chaque site ; « fb » : site de secours (21/11)."""
+    bl, bo = fig_bl_rec(fid), fig_bo_rec(fid)
+    u, fb = ref_mix((bl or {}).get("unit"), (bo or {}).get("unit"))
+    s = ref_site()
+    r = dict((bo if (fb == "BrickOwl" or (s == "brickowl" and bo and bo.get("unit"))) else bl or bo) or {})
+    if u is not None:
+        r.update(unit=u, **({"fb": fb} if fb else {}), **({"mix": True} if s == "both" and not fb else {}))
+    r["sites"] = {nm: {"used": (x or {}).get("unit"), "url": (x or {}).get("url")} for nm, x in (("BrickLink", bl), ("BrickOwl", bo)) if x}
+    if r.get("min") is None and u is not None:
+        r["min"] = r["max"] = u
+    if r.get("min") is not None:
+        return {**{k: r.get(k) for k in ("min", "max", "avg", "offers", "zone", "fr", "src", "unit", "kind", "sold", "qty", "thin", "few", "fb", "mix")}, "sites": r["sites"]}
+    r = {}
     return {k: r.get(k) for k in ("min", "max", "avg", "offers", "zone", "fr", "src", "unit", "kind", "sold", "qty", "thin", "few")} if r.get("min") is not None else None   # (unit, kind : drapeau et « ventes / annonces »)
 
 
@@ -4287,7 +4974,8 @@ def part_chg(part, color, pc=None):
     """Variation (%) du prix d'une pièce depuis le relevé d'avant, dans le même ordre que lot_price() (BrickLink, sinon BrickOwl) ; None si inconnue."""
     pc = pc if pc is not None else _parts_cache()
     blc = bo_bl_color(color)
-    for rec, unit in ((pc.get(f"bp:{part}|{blc}") if blc is not None else None, bp_unit), (pc.get("mp:" + f"{part}|{color}"), lambda r: (r or {}).get("unit"))):
+    order = ((pc.get(f"bp:{part}|{blc}") if blc is not None else None, bp_unit), (pc.get("mp:" + f"{part}|{color}"), lambda r: (r or {}).get("unit")))
+    for rec, unit in (order if ref_site() != "brickowl" else order[::-1]):   # (le site de référence d'abord — 21/11)
         u = unit(rec) if isinstance(rec, dict) else None
         if u:
             prev = (rec.get("prev") or {}).get("unit")
@@ -4296,11 +4984,12 @@ def part_chg(part, color, pc=None):
 
 
 def lot_price(part, color):
-    """Prix unitaire BrickOwl d'une pièce dans une couleur (cache 7 jours), ou None."""
+    """Prix unitaire d'une pièce dans une couleur, selon le site de référence (BrickLink, BrickOwl, les deux : moyenne — 21/11), ou None."""
     blc = bo_bl_color(color)
     u = bp_unit(_parts_cache().get(f"bp:{part}|{blc}")) if blc is not None else None
-    if u:   # relevé BrickLink (moyenne des annonces)
+    if u and ref_site() == "bricklink":   # relevé BrickLink (moyenne des annonces)
         return u
+    bl_u = u
     key = "mp:" + f"{part}|{color}"
     c = _parts_cache().get(key)
     if not c or time.time() - c.get("t", 0) > 7 * 86400:
@@ -4311,7 +5000,7 @@ def lot_price(part, color):
         c["t"] = int(time.time())
         _parts_cache_put(key, c)
         time.sleep(0.4)
-    return c.get("unit")
+    return ref_mix(bl_u, c.get("unit"))[0]
 
 
 _lp = {"todo": [], "on": False}
@@ -4331,10 +5020,14 @@ def lot_prices_cached(lots):
             continue
         blc = bo_bl_color(color)   # couleur BrickOwl (nom) → n° BrickLink
         bpr = pc.get(f"bp:{part}|{blc}") if blc is not None else None
-        if bp_unit(bpr):   # relevé BrickLink (moyenne des annonces)
-            out[f"{part}|{color}"] = bp_unit(bpr)
-            continue
         c = pc.get("mp:" + f"{part}|{color}")
+        if bp_unit(bpr) and (ref_site() == "bricklink" or (c and now - c.get("t", 0) <= 7 * 86400)):   # relevé BrickLink (et BrickOwl si le réglage s'en sert)
+            out[f"{part}|{color}"] = ref_mix(bp_unit(bpr), (c or {}).get("unit"))[0] if ref_site() != "bricklink" else bp_unit(bpr)
+            continue
+        if bp_unit(bpr):   # BrickOwl pas encore relevé : BrickLink en attendant, BrickOwl cherché
+            out[f"{part}|{color}"] = bp_unit(bpr)
+            miss.append((part, color))
+            continue
         bl_done = blc is None or bpr is not None or now - _lp_bl_tried.get(f"{part}|{blc}", 0) < 6 * 3600   # BrickLink déjà interrogé (ou impossible)
         if c and now - c.get("t", 0) <= 7 * 86400 and (c.get("unit") is not None or bl_done):   # BrickOwl connu, ou introuvable partout
             out[f"{part}|{color}"] = c.get("unit")
@@ -5557,10 +6250,14 @@ def _enrich(item, cache=None, kinds=None):
     wish = kinds.get(item.get("list_id")) == "wishlist"
     out_noest = False
     lp = lego_price(item.get("number")) if item.get("kind", "set") == "set" else None
+    if lp and info and not info.get("availability") and lp.get("status") and lp.get("status") != "gone" and not lp.get("soon"):
+        info = {**info, "availability": "Retail"}   # (vendu sur lego.com d'après la page de son thème — 21/11)
     if lp and lp.get("price") and info and not info.get("retail"):   # prix public lego.com (sets à venir / récents) quand le catalogue n'en a pas
         dm = re.search(r"\d{1,2}\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}", lp.get("when") or "", re.I)
         info = {**info, "retail": lp["price"], **({"availability": "Pending", "releasing": ("Disponible le " + dm.group(0)) if dm else lp.get("when") or ""}
                                                   if lp.get("soon") and not info.get("availability") else {})}
+    if item.get("kind", "set") == "set" and info:
+        info = with_bs(info, item.get("number"))   # (catalogue Brickset : prix magasin en €… — 21/11 soir)
     if info.get("pending_prices"):   # ajouté sans cote : estimation par ses pièces si demandée, sinon en attente
         mp = item.get("moc_price") or {}
         if item.get("moc_parts") and mp.get("priced"):
@@ -5794,6 +6491,20 @@ def record_day(items, kinds):
             if nv is None and uv is None:
                 continue
             rows = ih.setdefault(key, [])
+            if not rows or rows[-1][1:] != [nv, uv]:
+                rows.append([day, nv, uv])
+        absent = set()   # (figurines absentes de mes sets : leur prix aussi, chaque jour — courbe « Le set » d'un set sans figurines, 21/11 soir)
+        for i in items:
+            if (i.get("kind") or "set") == "set" and (i.get("with_minifigs") is False or i.get("missing_minifigs")):
+                if i.get("with_minifigs") is False:
+                    absent |= {f["id"] for f in ((cache.get(cache_key(i)) or {}).get("minifigs") or []) if f.get("id")}
+                else:
+                    absent |= {(x.get("id") if isinstance(x, dict) else x) for x in i.get("missing_minifigs") or []}
+        for fid in absent - {None, ""}:
+            nv, uv = (cache.get("fig:" + fid) or {}).get("value"), fig_used(fid)
+            if nv is None and uv is None:
+                continue
+            rows = ih.setdefault("fig:" + fid, [])
             if not rows or rows[-1][1:] != [nv, uv]:
                 rows.append([day, nv, uv])
         h["items_day"] = day
@@ -6067,6 +6778,59 @@ def comp_chg(e, cache, ih, today):
     return round((v - prev) / prev * 100, 1) if known and prev > 0.004 else None
 
 
+def hist_backfill(key, m):
+    """Historique réel (history.json) : les médianes mensuelles des ventes BrickLink (6 mois) ajoutées AVANT le premier relevé de l'appli
+    — [« AAAA-MM-15 », neuf, occasion] (21/11)."""
+    nm, um = ((m or {}).get("new") or {}).get("months") or {}, ((m or {}).get("used") or {}).get("months") or {}
+    if not nm and not um:
+        return
+    with lock:
+        h = _load(HISTORY_FILE, {})
+        rows = (h.setdefault("items", {})).get(key) or []
+        first = rows[0][0] if rows else time.strftime("%Y-%m-%d")
+        add = [[mo + "-15", nm.get(mo), um.get(mo)] for mo in sorted(set(nm) | set(um)) if mo + "-15" < first]
+        if not add:
+            return
+        h["items"][key] = add + rows
+        _save(HISTORY_FILE, h)
+
+
+def mkt_pair(e, cache, ih, today, until):
+    """(prix du marché aujourd'hui, prix du marché au jour de comparaison) d'une fiche, sur l'historique réel — même état que mon exemplaire ; None."""
+    kind = e.get("kind") or "set"
+    if kind not in ("set", "fig") or not e.get("number"):
+        return None
+    key = cache_key(e)
+    pts = ih.get(key)
+    if not pts:
+        return None
+    info = cache.get(key) or {}
+    neuf = e.get("condition") == "neuf"
+    col = 1 if neuf else 2
+    cur = (info.get("value") if neuf else fig_used(e["number"])) if kind == "fig" else (info.get("new_value") if neuf else info.get("used_value"))
+    r = trend_ref_row(pts, today, until, lambda x: len(x) > col and x[col] is not None)
+    ref = r[col] if r else None
+    return (cur, ref) if cur and ref and ref > 0.004 else None
+
+
+def mkt_chg(e, cache, ih, today, until):
+    """Variation du MARCHÉ seul (sans mes ajouts) d'une fiche, sur l'historique réel du set / de la figurine (21/11) ; None si inconnue."""
+    kind = e.get("kind") or "set"
+    if kind not in ("set", "fig") or not e.get("number"):
+        return None
+    key = cache_key(e)
+    pts = ih.get(key)
+    if not pts:
+        return None
+    info = cache.get(key) or {}
+    neuf = e.get("condition") == "neuf"
+    col = 1 if neuf else 2
+    cur = (info.get("value") if neuf else fig_used(e["number"])) if kind == "fig" else (info.get("new_value") if neuf else info.get("used_value"))
+    r = trend_ref_row(pts, today, until, lambda x: len(x) > col and x[col] is not None)
+    ref = r[col] if r else None
+    return round((cur - ref) / ref * 100, 1) if cur and ref and ref > 0.004 else None
+
+
 def vl_trends(enriched, kinds, cache=None):
     """Pose e["chg"] sur chaque fiche de la collection : l'écart en % entre son prix (à l'unité) du moment et celui du dernier relevé d'avant
     aujourd'hui (rien si elle n'était pas relevée). Rend, par liste, [valeur au dernier relevé, valeur du moment] (fiches comptées)."""
@@ -6086,6 +6850,12 @@ def vl_trends(enriched, kinds, cache=None):
         v = (e.get("own_total") if orig else e.get("total_value")) or 0
         if not orig:
             lists.setdefault(e["list_id"], [0.0, 0.0])[1] += v
+        mp = mkt_pair(e, cache, ih, today, until)   # (MON EXEMPLAIRE sur l'historique réel du marché — 21/11 soir)
+        if mp and v > 0 and not e.get("no_estimate"):
+            unit = v / q
+            r0 = mp[1] + (unit - mp[0]) if unit >= mp[0] else unit * mp[1] / mp[0]   # (ce jour-là : le marché + mes ajouts ; exemplaire incomplet / décoté : en proportion)
+            if r0 > 0.004:
+                e["_chg_mine"] = round((unit - r0) / r0 * 100, 1)
         ref = ref_of(items.get(e["id"]))
         if not ref:   # pas de relevé d'avant (fiche ajoutée ou copiée depuis) : d'après ses composantes
             c = comp_chg(e, cache, ih, until)
@@ -6097,6 +6867,9 @@ def vl_trends(enriched, kinds, cache=None):
         u0 = ref[1] / max(1, ref[2])
         if u0 > 0.004 and not e.get("no_estimate"):
             e["chg"] = round((v / q - u0) / u0 * 100, 1)
+    for e in enriched:   # (variation de mon exemplaire sur l'historique réel : elle l'emporte sur celle des seuls relevés de ma fiche — 21/11 soir)
+        if "_chg_mine" in e:
+            e["chg"] = e.pop("_chg_mine")
     for iid, r in items.items():   # fiches parties depuis le dernier relevé : dans la valeur d'avant
         if iid in seen or (r.get("gone") and r["gone"] < today):
             continue
@@ -6379,7 +7152,14 @@ def ean_to_set(code):
     if code in c and (c[code].get("number") or time.time() - c[code].get("t", 0) < 7 * 86400):
         return c[code]
     num, title = None, ""
+    try:   # (Brickset d'abord : mes sets connus, puis sa recherche — le code doit correspondre ; 21/11 soir)
+        num = next((n for n, r in (_load(BRICKSET_FILE, {}) or {}).items() if str((r or {}).get("ean") or "").lstrip("0") == str(code).lstrip("0")), None) \
+            or (sources.brickset_by_ean(code) if sources.brickset_key() and not DEMO else None)
+    except Exception:
+        num = None
     try:
+        if num:
+            raise StopIteration   # (trouvé par Brickset)
         page = sources._get_en("https://www.brickowl.com/search/catalog?query=" + code, timeout=20)
         for l in dict.fromkeys(re.findall(r'href="(/catalog/lego-[^"]+)"', page)):
             m = re.search(r"-set-(\d{3,7}(?:-\d+)?)$", l)
@@ -6544,7 +7324,7 @@ def inv_mark_ok(db, key, part_num, color_id, qty):
     hit = next((x for x in inventories_with_part(db, part_num, color_id) if x["key"] == key), None)
     if not hit:
         return None
-    inv = db.setdefault("inventories", {}).setdefault(key, {"rows": {}})
+    inv = db.setdefault("inventories", {}).setdefault(key, {"rows": {}, "created": int(time.time())})   # (created : une commande d'avant ne le valide jamais)
     try:
         q = max(1, min(9999, int(qty or 1)))
     except (TypeError, ValueError):
@@ -6986,7 +7766,7 @@ class Handler(BaseHTTPRequestHandler):
         if DEMO and os.path.basename(path) == "index.html":   # démonstration : bandeau et réglages réduits
             ra = int(os.environ.get("BQ_DEMO_RESET_AT") or 0)   # heure de la prochaine remise à zéro (compte à rebours)
             data = data.replace(b"</head>", f"<script>window.BQ_DEMO = true; window.BQ_DEMO_RESET = {ra};</script></head>".encode(), 1)
-        if not DEMO and path.endswith(".html") and os.path.basename(path) not in ("admin.html", "setup.html", "page.html", "backoffice-aide.html", "guide-utilisateur.html", "guide-technique.html", "back-office.html"):   # back office : personnalisation
+        if not DEMO and path.endswith(".html") and os.path.basename(path) not in ("admin.html", "setup.html", "page.html", "backoffice-aide.html", "guide-utilisateur.html", "guide-technique.html", "back-office.html", "aide-memoire.html", "aide-memoire-perso.html"):   # back office : personnalisation
             if COPIE:
                 data = data.replace(b"</head>", b"<script>window.BO_COPIE = true;</script></head>", 1)
             data = backoffice.inject(data, public=not auth.valid_session(self.token()), off="bo=off" in (urlparse(self.path).query or ""))
@@ -7467,6 +8247,14 @@ class Handler(BaseHTTPRequestHandler):
         watch = {l["id"]: "" for l in db["lists"] if l.get("gift")} if page == "watch" else {}
         pub_prices = _load(sources.SETTINGS_FILE, {}).get("public_prices") is True   # Réglages › Pages publiques : prix de la collection (non par défaut)
         _vlog, _today, _until = (_load(VALUE_LOG_FILE, {}).get("items") or {}) if pub_prices else {}, time.strftime("%Y-%m-%d"), trend_until()
+        _chg_map = {}   # (variation de chaque fiche : le même calcul que la page privée — vl_trends, sur mon exemplaire — 22/11)
+        if pub_prices:
+            try:
+                _pre = [enrich(i, cache, kinds) for i in db["items"]]
+                vl_trends(_pre, kinds, cache)
+                _chg_map = {x["id"]: x["chg"] for x in _pre if x.get("chg") is not None}
+            except Exception as _e:
+                print("Pages publiques : variations impossibles :", _e, flush=True)
         want = {"collection": ("collection",), "wishlist": ("wishlist",), "watch": ("wishlist",)}.get(page, ("collection",))   # chaque page : ses listes seules
         lists = [{"id": l["id"], "name": l["name"], "kind": l["kind"], "parent_id": "" if page == "watch" else l.get("parent_id", ""), **({"logo": l["logo"]} if l.get("logo") else {}), **({"emoji": l["emoji"]} if l.get("emoji") else {}), **({"hide_name": True} if l.get("hide_name") else {}), **({"show": l["show"]} if isinstance(l.get("show"), dict) else {}), **({"sub_logo": "self"} if l.get("sub_logo") == "self" else {}), **({"color": l["color"]} if l.get("color") else {}), **({"emoji_off": True} if l.get("emoji_off") else {})}
                  for l in db["lists"] if l["kind"] in want and bool(l.get("gift")) == (page == "watch")]
@@ -7496,12 +8284,8 @@ class Handler(BaseHTTPRequestHandler):
             mods = mods if isinstance(mods, dict) else None
             view = {**it, **({"fig_swaps": mods.get("fig_swaps") or []} if mods else {})}
             e = enrich(it, cache, kinds)
-            if pub_prices and kinds.get(it["list_id"]) == "collection":   # flèche de variation (comme la page privée)
-                _r = trend_ref_row((_vlog.get(it["id"]) or {}).get("rows"), _today, _until, unit=lambda x: x[1] / max(1, x[2]))   # (période choisie ; relevés douteux écartés)
-                _own = bool(it.get("set_orig") and it.get("attached_to"))
-                _v, _q = (e.get("own_total") if _own else e.get("total_value")) or 0, max(1, int(it.get("quantity", 1) or 1))
-                if _r and _r[1] / max(1, _r[2]) > 0.004 and not e.get("no_estimate"):
-                    e["chg"] = round((_v / _q - _r[1] / max(1, _r[2])) / (_r[1] / max(1, _r[2])) * 100, 1)
+            if pub_prices and kinds.get(it["list_id"]) == "collection" and it["id"] in _chg_map:   # flèche de variation : celle de la page privée
+                e["chg"] = _chg_map[it["id"]]
             if pub_prices and att_all.get(it["id"]) and e.get("total_value") is not None:   # set : avec ses figurines rangées (celles d'origine valent 0, déjà dans sa cote)
                 e = {**e, "total_value": round(e["total_value"] + sum(enrich(a, cache, kinds).get("total_value") or 0 for a in att_all[it["id"]]), 2)}
             info = e.get("info") or {}
@@ -7557,7 +8341,7 @@ class Handler(BaseHTTPRequestHandler):
                              for a in attached.get(it["id"], [])]},
             })
         warm_fig_objs([i for i in db["items"] if i.get("kind") == "fig" and not i.get("set_orig") and kinds.get(i.get("list_id")) == "collection"])   # objets des figurines seules, en fond
-        return self.send_json({"lists": lists, "items": items, "page": page, "owner": owner_name(), "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "", "ig_user": ig_public_user(), "show_prices": pub_prices, **({"trend": trend_cfg(), "trend_ref": vl_ref()} if pub_prices and not bo_behav("noTrend") else {}), **({"no_pub_nav": True} if bo_behav("noPubNav") else {}), **({"no_merge": True} if bo_behav("noMerge") else {})})   # (figurines identiques non regroupées : comme la page privée)
+        return self.send_json({"lists": lists, "items": items, "page": page, "owner": owner_name(), "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "", "ig_user": ig_public_user(), "show_prices": pub_prices, "ref_site": ref_site(), "site_logos": site_logos(), **({"trend": trend_cfg(), "trend_ref": vl_ref()} if pub_prices and not bo_behav("noTrend") else {}), **({"no_pub_nav": True} if bo_behav("noPubNav") else {}), **({"no_merge": True} if bo_behav("noMerge") else {})})   # (figurines identiques non regroupées : comme la page privée)
 
     # -- routes
     def do_GET(self):
@@ -7643,7 +8427,7 @@ class Handler(BaseHTTPRequestHandler):
                                 ([i["info"].get("name_en") or i["info"].get("name")] if i.get("kind") == "fig" and i.get("info") else
                                  [f.get("name_en") or f.get("name") for f in ((i.get("info") or {}).get("minifigs") or [])])])
                 return self.send_json({"lists": db["lists"], "items": items, "mod_discount": mod_discount(), "box_bonus": box_bonus(), "plan_cut": plan_cut(),
-                                       "trend": trend_cfg(), "trend_lists": trend_lists, "trend_ref": vl_ref(),   # flèches de variation à côté des prix (et le relevé comparé)
+                                       "ref_site": ref_site(), "bl_down": bl_down(), "bl_back": _load(sources.SETTINGS_FILE, {}).get("bl_back"), "site_logos": site_logos(), "trend": trend_cfg(), "trend_lists": trend_lists, "trend_ref": vl_ref(),   # flèches de variation à côté des prix (et le relevé comparé)
                                        "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "",   # thème de l'application (Réglages)
                                        **(perso.payload() if perso else {}),   # (extensions locales)
                                        "bl_zones": {**sources.bl_zone_cfg(), "order": sources.bl_zone_order()},   # zones BrickLink réglées (drapeaux, liens)
@@ -7734,6 +8518,55 @@ class Handler(BaseHTTPRequestHandler):
                 return perso.handle_get(self, p, q)
             if p == "/api/variations":   # Statistiques → « Comprendre les variations » (liste affichée, depuis tel jour)
                 return self.send_json(variations((q.get("list") or [""])[0][:60], (q.get("since") or [""])[0][:10]))
+            m = re.fullmatch(r"/api/state-hist/([\w-]{6,40})", p)
+            if m:   # « Le set » dans l'état du mien : le set MOINS ses figurines absentes, date par date, sur les vrais relevés (21/11 soir)
+                db, cache = load_db(), _load(CACHE_FILE, {})
+                it = next((i for i in db["items"] if i["id"] == m.group(1)), None)
+                if not it:
+                    return self.error("Introuvable", 404)
+                info = cache.get(cache_key(it)) or {}
+                ih = _load(HISTORY_FILE, {}).get("items") or {}
+                col = 1 if it.get("condition") == "neuf" else 2
+                q = max(1, int(it.get("quantity", 1) or 1))
+                if it.get("with_minifigs") is False:
+                    miss = {}
+                    for f in info.get("minifigs") or []:
+                        if f.get("id"):
+                            miss[f["id"]] = miss.get(f["id"], 0) + int(f.get("qty") or 1)
+                else:
+                    miss = {}
+                    for x in it.get("missing_minifigs") or []:
+                        fid = x.get("id") if isinstance(x, dict) else x
+                        if fid:
+                            miss[fid] = miss.get(fid, 0) + 1
+                    miss = {k: v / q for k, v in miss.items()}   # (manquantes : comptées sur l'ensemble des exemplaires → par exemplaire)
+
+                def serie(key, c):
+                    return [(r[0], r[c]) for r in ih.get(key) or [] if isinstance(r, list) and len(r) > c and isinstance(r[c], (int, float)) and r[c] > 0]
+                sp = serie(it["number"], col)
+                fp = {fid: (serie("fig:" + fid, 2) or serie("fig:" + fid, 1)) for fid in miss}
+
+                def at(pts, d):
+                    v = None
+                    for d0, x in pts:
+                        if d0 <= d:
+                            v = x
+                        else:
+                            break
+                    return v
+                rows = []
+                for d in sorted({d for d, _ in sp} | {d for pts in fp.values() for d, _ in pts}):
+                    sv = at(sp, d)
+                    fv = [at(fp[fid], d) for fid in miss]
+                    if sv is None or any(v is None for v in fv):
+                        continue   # (une donnée manque à cette date : rien n'est inventé)
+                    rows.append([d, round(max(0.0, sv - sum(v * miss[fid] for v, fid in zip(fv, miss))), 2)])
+                return self.send_json({"rows": rows, "figs": sum(miss.values())})
+            m = re.fullmatch(r"/api/vlog/([\w-]{6,40})", p)
+            if m:   # relevés de la valeur de MA fiche, à l'unité : [date, valeur] (graphique « Mon exemplaire » — 21/11 soir)
+                r = (_load(VALUE_LOG_FILE, {}).get("items") or {}).get(m.group(1)) or {}
+                return self.send_json({"rows": [[x[0], round(x[1] / max(1, x[2] or 1), 2)] for x in r.get("rows") or []
+                                                if isinstance(x, list) and len(x) > 2 and isinstance(x[1], (int, float)) and x[1] > 0]})
             if p == "/api/history/collection":   # valeur de la collection dans le temps
                 return self.send_json(collection_history((q.get("list") or [""])[0][:40]))
             if p in ("/guide-utilisateur/ia", "/guide-utilisateur/ia.txt"):   # « 🤖 Condensé pour IA » du guide utilisateur (même accès que le guide)
@@ -7772,6 +8605,10 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 self.end_headers()
                 self.wfile.write(data)
                 return
+            if p == "/aide-memoire":   # aide-mémoire (21/11) : la version du propriétaire (+ fonctions exclusives) si elle est là, jamais dans la démo
+                fs_ = [os.path.join(ROOT, "docs", "wiki", n + ".html") for n in ((() if DEMO else ("aide-memoire-perso",)) + ("aide-memoire",))]
+                f = next((x for x in fs_ if os.path.isfile(x)), None)
+                return self.send_file(f) if f else self.error("Aide-mémoire pas encore généré (python3 docs/build_docs.py)", 404)
             m = re.fullmatch(r"/(guide-utilisateur|guide-technique)(?:/img/([\w-]{1,80}\.jpg))?", p)
             if m:   # guides en wiki (docs/wiki/*.html, écrits par docs/build_docs.py) : connecté seulement ; le technique : jamais dans la démo
                 tech = m.group(1) == "guide-technique"
@@ -7817,6 +8654,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                                                          "last_done": _load(sources.SETTINGS_FILE, {}).get("parts_priced_at")},
                                        "last_refresh": last, "last_refresh_full": bool(st.get("last_refresh")), "bans": auth.list_bans(), "rebrickable": bool(key),
                                        "rebrickable_hint": ("…" + key[-4:]) if key and not DEMO else None,
+                                       "brickowl": bool(sources.brickowl_key()), "brickowl_hint": ("…" + sources.brickowl_key()[-4:]) if sources.brickowl_key() and not DEMO else None,
+                                       "brickset": bool(sources.brickset_key()), "brickset_hint": ("…" + sources.brickset_key()[-4:]) if sources.brickset_key() and not DEMO else None,
                                        "bricklink": bl_on(), "bricklink_hint": ("…" + sources.bricklink_keys()["token"][-4:]) if bl_on() else None,
                                        "bricklink_today": bl_today(), "bl_alert": None if DEMO else _bl_state["alert"],
                                        "public_ip": None if DEMO else _load(sources.SETTINGS_FILE, {}).get("public_ip"),   # (réglage : aide BrickLink)
@@ -7905,9 +8744,40 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 blp = (q.get("bl") or [""])[0].strip()[:40] or (part_names().get(part) or {}).get("bl") or part
                 cid = (q.get("cid") or [""])[0].strip()
                 blc = rbbl_map().get(cid) if cid.lstrip("-").isdigit() else None
-                if bl_on() and blp and blc is not None:   # BrickLink, tout de suite : neuf et occasion (moyennes)
+                site = ref_site()
+                bo_rec = None
+                if site != "bricklink":   # (site de référence BrickOwl / les deux : son relevé, gardé 7 jours — 21/11)
+                    key = "pp:" + (el or f"{part}|{color}")
+                    bo_rec = _parts_cache().get(key)
+                    if not bo_rec or time.time() - bo_rec.get("t", 0) >= 7 * 86400 or (bo_rec.get("unit") and "new" not in bo_rec):   # (sans neuf / occasion à part : relu)
+                        try:
+                            bo_rec = sources.part_price(el, part, color) or {"unit": None}
+                            bo_rec["t"] = int(time.time())
+                            _parts_cache_put(key, bo_rec)
+                        except Exception:
+                            bo_rec = bo_rec or None
+                bl_rec = None
+                if bl_on() and blp and blc is not None:
                     try:
-                        r = bl_part(blp, blc)
+                        bl_rec = bl_part(blp, blc)
+                    except Exception as e:
+                        print("BrickLink pièce", blp, blc, e, flush=True)
+                if site != "bricklink":
+                    u, fb = ref_mix(bp_unit(bl_rec) if bl_rec else None, (bo_rec or {}).get("unit"))
+                    if u is not None:
+                        one = bo_rec if fb == "BrickOwl" or (site == "brickowl" and not fb) else None
+                        return self.send_json({"unit": u, "src": "both" if site == "both" and not fb else ("BrickOwl" if one else "BrickLink"),
+                                               **({"fb": fb} if fb else {}), "zone": (one or {}).get("zone") or ((bl_rec or {}).get("used") or {}).get("zone"),
+                                               "offers": (one or {}).get("offers"), "url": (bo_rec or {}).get("url") if site == "brickowl" else None,
+                                               "sites": {"BrickLink": bp_unit(bl_rec) if bl_rec else None, "BrickOwl": (bo_rec or {}).get("unit")},
+                                               "cond": part_cond_view(bl_rec, bo_rec), "bl_color": blc, "t": int(time.time())})
+                if bl_on() and blp and blc is not None:   # BrickLink, tout de suite : neuf et occasion (médianes)
+                    try:
+                        r = bl_rec or bl_part(blp, blc)
+                        if (q.get("ann") or [""])[0] == "1":   # « À commander » : médiane des annonces en cours, sinon des ventes (21/11)
+                            a = bl_part_ann(blp, blc)
+                            if a and bp_unit(a):
+                                r = {**r, "used": a.get("used"), "new": a.get("new")}
                         u = r.get("used") or {}
                         n = r.get("new") or {}
                         if bp_unit(r):
@@ -7918,15 +8788,9 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         print("BrickLink pièce", blp, blc, e, flush=True)
                 key = "pp:" + (el or f"{part}|{color}")
                 c = _parts_cache().get(key)
-                if c and time.time() - c.get("t", 0) < 7 * 86400:
-                    return self.send_json(c)
-                try:
-                    res = sources.part_price(el, part, color) or {"unit": None}
-                except Exception as e:
-                    return self.error(f"Prix indisponible : {e}", 502)
-                res["t"] = int(time.time())
-                _parts_cache_put(key, res)
-                return self.send_json(res)
+                if c and c.get("unit"):   # (BrickLink seul : plus de relevé BrickOwl ; le dernier prix connu reste, sans mention — 21/11)
+                    return self.send_json({"unit": c["unit"], "t": c.get("t")})
+                return self.send_json({"unit": None})
             if p == "/api/parts/search":
                 query = (q.get("q") or [""])[0].strip()
                 if len(query) < 2:
@@ -8166,13 +9030,16 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     bg_once("frset:" + num_, lambda: fr_name(num_, fetch=True))
                 else:
                     fr_name(num_, fetch=True)
-                info = with_fr(info, m.group(1))
+                info = with_bs(with_lego(with_fr(info, m.group(1)), info.get("number") or m.group(1)), info.get("number") or m.group(1))   # (Brickset : catalogue — 21/11 soir)
+                if sources.brickset_key() and not DEMO and not COPIE and bs_rec(info.get("number") or m.group(1)) is None:
+                    _bsn = info.get("number") or m.group(1)
+                    bg_once("bs:" + _bsn, lambda: brickset_one(_bsn), 86400)   # (prix public et « en vente » d'après lego.com — 21/11)
                 fill_fig_names([f.get("name") for f in info.get("minifigs") or []])
                 fig_used_many([f["id"] for f in info.get("minifigs") or []])
                 info = with_used_figs(info)
                 mu = [f.get("used") for f in info.get("minifigs") or []]
                 extras_start(info.get("number") or m.group(1))
-                return self.send_json({**info, "sf": sf_prices(info.get("number") or m.group(1), info), "extras": set_extras(info.get("number") or m.group(1)),   # (sf : prix sans figurines, 21/11)
+                return self.send_json({**info, "sf": sf_prices(info.get("number") or m.group(1), info), "bs": bs_dates(info.get("number") or m.group(1)), "extras": set_extras(info.get("number") or m.group(1)),   # (sf : prix sans figurines, 21/11)
                                        "own_hist": (_load(HISTORY_FILE, {}).get("items") or {}).get(m.group(1)) or [], "minifigs": [with_fr_fig(f) for f in info.get("minifigs") or []],
                                        "minifig_used": round(sum((f["used"] if f.get("used") is not None else f.get("value") or 0) * f.get("qty", 1)
                                                                  for f in info.get("minifigs") or []), 2) if mu else None,
@@ -9025,7 +9892,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 _parts_cache_put("inv:" + num, rows)
                 with lock:
                     db = load_db()
-                    db.setdefault("inventories", {})["set-" + num] = {"rows": {}, "set": num, "name": name, "label": name, "xml": True, "updated": int(time.time())}
+                    db.setdefault("inventories", {})["set-" + num] = {"rows": {}, "set": num, "name": name, "label": name, "xml": True, "updated": int(time.time()), "created": int(time.time())}
                     _save(DB_FILE, db)
                 missing = [x["part"] for x in lots if "bl:" + x["part"] not in pc]
                 if missing:
@@ -9068,6 +9935,23 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         n += 1
                     _save(DB_FILE, db)
                 return self.send_json({"ok": True, "rows": n, "list": lst["name"]})
+            m = re.fullmatch(r"/api/inventory/([\w.-]+)/xml", p)
+            if m:   # {parts: [{part_num, bricklink, color_id, quantity}]} → XML BrickLink (BrickOwl le lit aussi) — l'inventaire ne bouge pas (21/11 soir)
+                from xml.sax.saxutils import escape as _x
+                rb, names, out, skipped = rbbl_map(), part_names(), [], []
+                for x in (self.json_body().get("parts") or [])[:2000]:
+                    pn = str(x.get("part_num") or "")[:40]
+                    bl = str(x.get("bricklink") or "") or (names.get(pn) or {}).get("bl") or pn
+                    col = rb.get(str(x.get("color_id")))
+                    if not bl or col is None:
+                        skipped.append(pn)
+                        continue
+                    try:
+                        q = max(1, min(9999, int(x.get("quantity") or 1)))
+                    except (TypeError, ValueError):
+                        q = 1
+                    out.append(f"  <ITEM>\n    <ITEMTYPE>P</ITEMTYPE>\n    <ITEMID>{_x(bl)}</ITEMID>\n    <COLOR>{col}</COLOR>\n    <MINQTY>{q}</MINQTY>\n    <CONDITION>X</CONDITION>\n  </ITEM>\n")
+                return self.send_json({"xml": "<INVENTORY>\n" + "".join(out) + "</INVENTORY>\n", "refs": len(out), "skipped": skipped})
             m = re.fullmatch(r"/api/items/(\w+)/recue", p)
             if m:   # {"n"} : pièces reçues — la quantité baisse (ou la pièce sort de la liste) ; les lignes d'inventaire couvertes passent OK
                 b = self.json_body()
@@ -9122,7 +10006,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     db = load_db()
                     if not key.startswith("set-") and not any(i["id"] == key for i in db["items"]):
                         return self.error("Set introuvable", 404)
-                    inv = db.setdefault("inventories", {}).setdefault(key, {"rows": {}})
+                    inv = db.setdefault("inventories", {}).setdefault(key, {"rows": {}, "created": int(time.time())})   # (created : une commande d'avant ne le valide jamais)
                     if key.startswith("set-"):
                         inv["set"] = key[4:]
                         if b.get("name"):
@@ -9165,6 +10049,10 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                             except (TypeError, ValueError):
                                 q = 1
                             row.update(s=st, q=q)
+                            if st in ("order", "cmd") and prev in ("order", "cmd") and (inv["rows"].get(str(k)) or {}).get("t"):
+                                row["t"] = inv["rows"][str(k)]["t"]   # (date du passage « à commander » : gardée)
+                            elif st == "order" and prev != "order":
+                                row["t"] = int(time.time())   # passée « à commander » maintenant : seules les commandes d'après la servent
                         if str(v.get("c", "")).lstrip("-").isdigit():   # couleur choisie pour cette pièce
                             row["c"] = int(v["c"])
                             ci = str(v.get("ci") or "")
@@ -9173,6 +10061,23 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                             if re.fullmatch(r"[\w.-]{1,40}", str(v.get("p") or "")):   # pièce de même forme choisie
                                 row["p"] = str(v["p"])
                                 row["pn"] = str(v.get("pn") or "")[:150]
+                        prow = inv["rows"].get(str(k)) or {}   # (ce que mes commandes ont posé : gardé — 21/11 soir)
+                        if st in ("cmd", "ok") and prow.get("o"):
+                            row["o"] = prow["o"]
+                        if st in ("cmd", "ok") and not row.get("o"):   # « Commandée » à la main : sa date (m) — gardée jusqu'à OK compris
+                            try:
+                                mm = int(v.get("m") or prow.get("m") or 0)
+                            except (TypeError, ValueError):
+                                mm = 0
+                            if st == "cmd" and prev != "cmd" and not mm:
+                                mm = int(time.time())
+                            if mm:
+                                row["m"] = mm
+                        offs = set(prow.get("o_off") or [])
+                        if prev == "cmd" and prow.get("o") and st in ("order", ""):   # remise « à commander » à la main : cette commande ne la reprend plus
+                            offs |= {o.get("order") for o in prow["o"] if o.get("order")}
+                        if offs:
+                            row["o_off"] = sorted(offs)
                         if row:
                             inv["rows"][str(k)[:60]] = row
                         else:
@@ -9539,6 +10444,58 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     _save(sources.SETTINGS_FILE, st)
                     os.chmod(sources.SETTINGS_FILE, 0o600)
                 return self.send_json({"ok": True, "trend": trend_cfg()})
+            if p == "/api/orders/sync":   # « À commander » ouvert : mes commandes relues (au plus une fois par heure ; {force} : tout de suite)
+                return self.send_json(orders_sync(bool(self.json_body().get("force"))))
+            if p == "/api/settings/brickowl":   # clé de l'API BrickOwl — vérifiée sur la liste de mes commandes (acheteur), puis enregistrée (21/11 soir)
+                key = str(self.json_body().get("key") or "").strip()
+                if key:
+                    try:
+                        sources.bo_api("order/list", {"list_type": "customer", "limit": 1}, key=key)
+                    except Exception as e:
+                        return self.error(f"Clé BrickOwl refusée ou sans accès aux commandes : {e}")
+                with lock:
+                    st = _load(sources.SETTINGS_FILE, {})
+                    if key:
+                        st["brickowl_key"] = key
+                    else:
+                        st.pop("brickowl_key", None)
+                    _save(sources.SETTINGS_FILE, st)
+                    os.chmod(sources.SETTINGS_FILE, 0o600)
+                return self.send_json({"ok": True, "brickowl": bool(key)})
+            if p == "/api/settings/brickset":   # clé de l'API Brickset (dates de mise en vente / de retrait) — vérifiée, puis enregistrée (21/11 soir)
+                key = str(self.json_body().get("key") or "").strip()
+                if key:
+                    try:
+                        ok = sources.brickset_check(key)
+                    except Exception as e:
+                        return self.error(f"Brickset ne répond pas : {e}", 502)
+                    if not ok:
+                        return self.error("Clé Brickset refusée")
+                with lock:
+                    st = _load(sources.SETTINGS_FILE, {})
+                    if key:
+                        st["brickset_key"] = key
+                    else:
+                        st.pop("brickset_key", None)
+                    _save(sources.SETTINGS_FILE, st)
+                    os.chmod(sources.SETTINGS_FILE, 0o600)
+                if key:
+                    bg_once("brickset-now", lambda: brickset_fill(True), 60)
+                return self.send_json({"ok": True, "brickset": bool(key)})
+            if p == "/api/settings/ref-site":   # site de référence des prix : bricklink | brickowl | both (21/11)
+                v = str(self.json_body().get("site") or "")
+                if v not in ("bricklink", "brickowl"):   # (plan de secours : deux choix — 21/11 soir)
+                    return self.error("Site inconnu")
+                with lock:
+                    st = _load(sources.SETTINGS_FILE, {})
+                    st["ref_site"] = v
+                    _save(sources.SETTINGS_FILE, st)
+                    os.chmod(sources.SETTINGS_FILE, 0o600)
+                _ref["t"] = 0
+                markets_reapply()   # (cote des sets : tout de suite selon le nouveau réglage)
+                if v != "bricklink" and not DEMO and not COPIE:   # (copies d'essai : pas de relevé de fond)
+                    bo_fill_start()
+                return self.send_json({"ok": True, "ref_site": v})
             if p == "/api/settings/discount":   # décote d'un exemplaire modifié, en %
                 try:
                     v = max(0.0, min(90.0, float(self.json_body().get("pct"))))
@@ -9720,7 +10677,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 db = load_db()
                 if list_kinds(db).get(lid) != "parts":
                     return self.error("Liste introuvable", 404)
-                its = [i for i in db["items"] if i.get("kind") in ("part", "fig") and i.get("list_id") == lid]   # (pièces et figurines à commander)
+                its = [i for i in db["items"] if i.get("kind") in ("part", "fig") and i.get("list_id") == lid
+                       and not i.get("got") and not i.get("ordered") and not i.get("cmd_m")]   # (pièces et figurines À COMMANDER : ni commandées ni reçues — 22/11)
                 if not its:
                     return self.error("Aucune pièce dans cette liste")
                 try:
@@ -10491,7 +11449,12 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
         return {**({"bl_cond": b["bl_cond"]} if b.get("bl_cond") in ("N", "U", "X") else {}),
                 **({"bl_wanted": int(b["bl_wanted"])} if str(b.get("bl_wanted") or "").isdigit() else {}),   # dernier export vers ma wanted list BrickLink (date)
                 **({"bl_qty": int(b["bl_qty"])} if str(b.get("bl_qty") or "").isdigit() and int(b["bl_qty"]) > 0 else {}),   # combien sont déjà dans la wanted list
-                **({"got": True} if b.get("got") is True else {})}   # ✔ OK : reçue (sort de la liste au « Nettoyer »)
+                **({"got": True} if b.get("got") is True else {}),   # ✔ OK : reçue (sort de la liste au « Nettoyer »)
+                **({"ordered": [{"site": str(o.get("site") or "")[:20], "order": str(o.get("order") or "")[:40], "date": int(o.get("date") or 0),
+                                 "qty": int(o.get("qty") or 0), **({"paid": float(o["paid"])} if isinstance(o.get("paid"), (int, float)) else {})} for o in b["ordered"][:20] if isinstance(o, dict)]}
+                   if isinstance(b.get("ordered"), list) and b["ordered"] else {}),   # commandée d'après mes commandes (lues)
+                **({"cmd_m": int(b["cmd_m"])} if str(b.get("cmd_m") or "").isdigit() and int(b["cmd_m"]) > 0 else {}),   # commandée à la main (date)
+                **({"o_off": [str(x)[:40] for x in b["o_off"][:50]]} if isinstance(b.get("o_off"), list) and b["o_off"] else {})}   # commandes écartées à la main
 
     @staticmethod
     def clean_part(b):
@@ -10887,6 +11850,15 @@ def img_path(url):
     return os.path.join(IMG_DIR, hashlib.sha1(url.encode()).hexdigest())
 
 
+IMG_MAGIC = (b"\xff\xd8\xff", b"\x89PNG", b"GIF8", b"RIFF", b"\x00\x00\x01\x00", b"<svg", b"<?xml")
+
+
+def is_image(head):
+    """Les premiers octets sont-ils ceux d'une image (et pas d'une page web « introuvable ») ? (21/11)"""
+    head = head or b""
+    return any(head.startswith(m) for m in IMG_MAGIC) or head[4:8] == b"ftyp"   # (ftyp : AVIF / HEIC)
+
+
 def cache_any(url):
     """Une image et ses sources de secours (BrickEconomy bloqué → Rebrickable, banque BrickLink…) : d'abord une copie locale de
     n'importe laquelle (fonctionne sans internet), sinon chaque source l'une après l'autre ; la première trouvée est gardée.
@@ -10894,7 +11866,10 @@ def cache_any(url):
     cands = [url] + img_fallbacks(url)
     for c in cands:
         if os.path.exists(img_path(c)):
-            return cache_image(c)   # (déjà là : aucune requête)
+            try:
+                return cache_image(c)   # (déjà là : aucune requête)
+            except Exception:   # (fausse image retirée : la suivante — 21/11)
+                pass
     err = LookupError("Image introuvable")
     for c in cands:
         try:
@@ -10905,8 +11880,14 @@ def cache_any(url):
 
 
 def has_local(url):
-    """Une copie locale de cette image (ou de l'une de ses sources de secours) existe-t-elle ?"""
-    return any(os.path.exists(img_path(c)) for c in [url] + img_fallbacks(url))
+    """Une copie locale de cette image (ou de l'une de ses sources de secours) existe-t-elle ? (une vraie image — 21/11)"""
+    def real(c):
+        try:
+            with open(img_path(c), "rb") as fh:
+                return is_image(fh.read(16))
+        except OSError:
+            return False
+    return any(real(c) for c in [url] + img_fallbacks(url))
 
 
 _img_miss = {}   # url → heure : image absente chez la source (404), pas redemandée pendant 6 h
@@ -11157,6 +12138,20 @@ def cache_image(url):
     path = img_path(url)
     meta = path + ".type"
     if os.path.exists(path):
+        try:
+            with open(path, "rb") as fh:
+                ok = is_image(fh.read(16))
+        except OSError:
+            ok = True
+        if not ok:   # gardée par erreur (page « introuvable » déguisée en image) : retirée, la source est dite absente (21/11)
+            for f in (path, meta):
+                try:
+                    os.remove(f)
+                except OSError:
+                    pass
+            _img_miss[url] = time.time()
+            raise LookupError("Pas une image")
+    if os.path.exists(path):
         try:   # dernière utilisation (au plus une écriture par jour) : sert à choisir quoi supprimer en premier
             if time.time() - os.path.getmtime(path) > 86400:
                 os.utime(path)
@@ -11171,7 +12166,8 @@ def cache_image(url):
             if getattr(e, "code", None) in (404, 410):
                 _img_miss[url] = time.time()
             raise
-        if not (ctype or "").startswith("image/") or not data:
+        if not (ctype or "").startswith("image/") or not data or not is_image(data[:16]):   # (contenu vérifié : pas une page « introuvable » — 21/11)
+            _img_miss[url] = time.time()
             raise LookupError("Pas une image")
         tmp = path + f".{threading.get_ident()}.part"
         with open(tmp, "wb") as f:
@@ -11591,6 +12587,10 @@ if __name__ == "__main__":
         threading.Thread(target=uploads_keeper, daemon=True).start()   # photos qui ne servent plus : supprimées chaque jour
         threading.Thread(target=hd_keeper, daemon=True).start()   # images du catalogue en HD (Rebrickable)
         threading.Thread(target=novelties_keeper, daemon=True).start()   # nouveautés lego.com (à venir, récentes) et leurs minifigs
+        threading.Thread(target=bo_keeper, daemon=True).start()
+        threading.Thread(target=brickset_keeper, daemon=True).start()
+        threading.Thread(target=orders_keeper, daemon=True).start()   # mes commandes BrickOwl → « Commandée » (chaque jour — 21/11 soir)   # dates LEGO de mes sets (Brickset), chaque jour pour les nouveaux (21/11 soir)   # site de référence BrickOwl / les deux : prix BrickOwl de la collection (21/11)
+        threading.Thread(target=lego_themes_keeper, daemon=True).start()   # pages des thèmes lego.com : prix public et lien des sets vendus (21/11)
         threading.Thread(target=backup_keeper, daemon=True).start()   # copie quotidienne de la collection   # sets ajoutés sans cote : cote récupérée dès que possible
         threading.Thread(target=parts_pricing_keeper, daemon=True).start()   # prix des pièces : reprise + chaque semaine
         if DEMO_SITE and os.environ.get("BQ_NO_DEMO") != "1":
