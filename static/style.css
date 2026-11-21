@@ -3319,3 +3319,52 @@ html.hdr-mini .topbar #btnAdd { font-size: 20px !important; min-width: 40px; pad
 html[data-ui="verre"] #topViews2.is-stuck, html[data-ui="pastel"] #topViews2.is-stuck { background: var(--bg) !important; }
 /* (tuiles : montant et « ~ » sur une seule ligne, taille adaptée à la tuile — 20/11) */
 @media (min-width: 601px) and (max-width: 1180px) { .stats .stat .val { white-space: nowrap; font-size: clamp(16px, 2.4vw, 24px); } }
+/* (remplacer une pièce : case « Corriger l'originale » — 20/11) */
+.fix-opt { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; line-height: 1.35; }
+.fix-opt:has(input:checked) { border-color: #16a34a; background: rgba(22, 163, 74, .08); }
+/* (Réglages : curseur « Comparer les variations à » — 20/11) */
+.tr-period { display: inline-flex; align-items: center; gap: 10px; min-width: 240px; }
+.tr-period input[type=range] { flex: 1; min-width: 120px; accent-color: var(--red); padding: 0; border: 0; }
+.tr-period b { white-space: nowrap; min-width: 92px; }
+/* (tri de variation / d'écart : ligne de la date de référence ; inversion dans le menu ⇅ Tri — 21/11) */
+.trend-refline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: -6px 0 12px; font-size: 13.5px; color: var(--muted); }
+.trend-refline b { color: var(--ink, inherit); }
+#sortPop .sort-rev-in { width: 100%; text-align: left; cursor: pointer; font: inherit; font-weight: 600; background: transparent; color: inherit; }
+/* (bouton « Filtres » : un entonnoir dessiné, couleur du texte — 21/11) */
+.ico-funnel { width: 1.05em; height: 1.05em; flex: none; vertical-align: -0.15em; }
+/* (ligne du tri en cours, toujours visible ; « Changer la période » sur la même ligne — 21/11) */
+.trend-refline { display: block; line-height: 1.6; }
+.trend-refline .btn { margin-left: 6px; vertical-align: middle; padding: 2px 10px; }
+.sort-rev .ico-funnel { width: 1.15em; height: 1.15em; }
+#trendTog { display: none !important; }   /* (bouton 📈 retiré : les variations suivent les Réglages) */
+/* (fiche : prix en bulles au-dessus des liens — libellés normaux, prix en gras — 21/11) */
+.tf-mini { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.tf-mini .tf-bulle { padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font-weight: 400; line-height: 1.45; }
+.tf-mini .tf-bulle b { font-weight: 700; white-space: nowrap; }
+#btnTarifs { display: none !important; }
+/* (bulles des prix : allure des liens BrickLink / Rebrickable ; set : une par ligne, figurine : en ligne — 21/11) */
+.tf-mini { flex-direction: column; align-items: flex-start; gap: 6px; }
+.tf-mini.tf-fig { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.tf-mini .tf-bulle { padding: 3px 9px; font-weight: 400; line-height: 1.5; border-radius: 99px; cursor: default; }
+.tf-mini .tf-bulle:hover { border-color: var(--line); color: var(--ink); }
+.tf-mini .tf-bulle b { font-weight: 700; }
+/* (sens du tri : flèche ↘ / ↗ — 21/11) */
+.tri-sens { font-weight: 700; font-size: 1.1em; color: var(--ink, inherit); }
+/* (bulles des prix : « sans figurines » un peu plus petit, en italique — 21/11) */
+.tf-mini .tf-sf { font-size: .9em; font-style: italic; }
+
+/* (choix de la liste : bouton et menu à soi, logos en petit avant le nom — 21/11) */
+.list-pick-native { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
+.list-pick-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; text-align: left; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 9px 12px; }
+.list-pick-btn.invalid { border: 2px solid var(--red); box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 30%, transparent); }
+.list-pick-btn .lp-nm, .lp-opt .lp-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lp-ind { white-space: pre; flex: none; }
+.list-pick-btn .list-logo, .lp-opt .list-logo { width: auto; height: 22px; max-width: 72px; object-fit: contain; flex: none; border-radius: 4px; }
+.list-pick-btn .list-emo, .lp-opt .list-emo { font-size: 18px; line-height: 1; flex: none; }
+.lp-box { max-height: 85vh; overflow-y: auto; }
+.lp-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.lp-opt { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; background: transparent; padding: 9px 10px; border-radius: 10px; cursor: pointer; font-weight: 500; }
+.lp-opt:hover { background: rgba(127, 127, 127, .12); }
+.lp-opt.on { background: color-mix(in srgb, var(--red) 18%, transparent); font-weight: 700; }
+#modal.ro .list-pick-btn { pointer-events: none; }

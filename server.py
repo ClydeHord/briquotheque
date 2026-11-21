@@ -3055,7 +3055,7 @@ def cmf_stand_removed(info, sw):
 
 
 def _real_swaps(swaps):
-    return [x for x in swaps or [] if not x.get("free")]
+    return [x for x in swaps or [] if not x.get("free") and not x.get("fix")]   # (fix : pièce d'origine corrigée — pas une modification)
 
 
 _pc = {"t": 0, "v": 5.0}
@@ -3464,6 +3464,17 @@ def wish_lines(item, info):
     return out
 
 
+def sf_prices(number, info):
+    """Set : ses prix SANS figurines {"neuf", "occasion"} (même calcul que la liste de souhaits) ; None s'il n'a pas de figurines."""
+    if not info or not (info.get("minifigs") or info.get("minifig_count")):
+        return None
+    base = {"kind": "set", "number": number, "quantity": 1, "with_minifigs": False, "has_box": False, "no_plan": False}
+    try:
+        return {"neuf": estimate_wish({**base, "condition": "neuf"}, info), "occasion": estimate_wish({**base, "condition": "occasion"}, info)}
+    except Exception:
+        return None
+
+
 def estimate_wish(item, info):
     """Liste de souhaits, selon l'état choisi : neuf → prix magasin tant qu'il est en vente, sinon sa valeur neuve ;
     occasion → valeur d'occasion, avec ou sans figurines comme renseigné. Neuf ou occasion : le moins cher des deux.
@@ -3788,7 +3799,10 @@ def with_avail(results):
 
 def rb_fig_candidates(fid):
     """Minifigs Rebrickable qui peuvent correspondre à une minifig BrickEconomy : celles de ses sets, puis par nom."""
-    info = get_fig(fid)
+    try:
+        info = get_fig(fid)
+    except Exception:   # (catalogue des cotes injoignable : sa fiche gardée, sinon rien que son n°)
+        info = _load(CACHE_FILE, {}).get("fig:" + fid) or {"name": fid}
     if RB_FIG.fullmatch(fid):
         return [{"fig_num": fid, "name": info.get("name") or fid, "image": info.get("image"), "num_parts": info.get("pieces"), "from": fid, "score": 1, "sure": True}]
     out, seen = [], set()
@@ -3878,6 +3892,161 @@ def _bg_once(key, fn):
     threading.Thread(target=go, daemon=True).start()
 
 
+SFA_STOP = {"with", "and", "the", "minifigure", "minifig", "lego", "of", "in", "figure", "head", "print", "torso", "legs", "hips"}
+
+
+def _sfa_words(name):
+    """Mots qui distinguent une figurine (couleurs BrickLink → Rebrickable : Flesh = Nougat, Grey = Gray)."""
+    t = (name or "").lower().replace("grey", "gray").replace("medium dark flesh", "medium nougat").replace("light flesh", "light nougat").replace("flesh", "nougat")
+    return {w for w in re.findall(r"[a-z0-9]+", t) if len(w) > 2 and w not in SFA_STOP}
+
+
+def bo_fig_name(fid):
+    """Nom BrickOwl d'une minifig (réf. BrickLink), lu sur SA page (le n° y figure) ; gardé pour toujours (« bon: »). "" si rien de sûr."""
+    import html as _html
+    c = _parts_cache().get("bon:" + fid)
+    if isinstance(c, dict) and "n" in c:
+        return c["n"]
+    name = ""
+    page = sources._get_en("https://www.brickowl.com/search/catalog?query=" + urllib.parse.quote(fid))
+    for l in [x for x in dict.fromkeys(re.findall(r'href="(/catalog/lego-[^"]+)"', page)) if "-set-" not in x][:3]:
+        pg = sources._get_en("https://www.brickowl.com" + l)
+        if re.search(r"(?<![\w-])" + re.escape(fid) + r"(?![\w-])", pg, re.I):
+            t = re.search(r"<h1[^>]*>(.*?)</h1>", pg, re.S)
+            name = _html.unescape(re.sub(r"<[^>]+>", "", t.group(1))).strip() if t else ""
+            break
+    _parts_cache_put("bon:" + fid, {"n": name, "_t": time.time()})
+    return name
+
+
+def _sfa_assign(fs, ms, names):
+    """Associe figurines du catalogue (fs) et minifigs Rebrickable du set (ms) sans ambiguïté : quantités, noms (meilleur dans les deux
+    sens), élimination ; recommence tant que ça avance. Rend {n° catalogue: fig-… Rebrickable}."""
+    out, lf, lm = {}, list(fs), list(ms)
+    same_size = len(fs) == len(ms)   # (« la dernière de chaque côté » : seulement si les deux listes ont autant de figurines)
+    sc = lambda f, m: len(_sfa_words(names(f)) & _sfa_words(m.get("set_name") or m.get("name")))
+    def take(f, m):
+        out[f["id"]] = m["set_num"]; lf.remove(f); lm.remove(m)
+    while lf and lm:
+        moved = False
+        for f in list(lf):   # quantité > 1 qui n'existe qu'une fois de chaque côté
+            q = int(f.get("qty") or 1)
+            if q > 1 and sum(1 for g in lf if int(g.get("qty") or 1) == q) == 1:
+                same = [m for m in lm if int(m.get("quantity") or 1) == q]
+                if len(same) == 1:
+                    take(f, same[0]); moved = True
+        for f in list(lf):   # nom : le meilleur pour elle, et elle la meilleure pour lui (à égalité : rien)
+            if f not in lf or not lm:
+                continue
+            ss = sorted(lm, key=lambda m: -sc(f, m))
+            if sc(f, ss[0]) == 0 or (len(ss) > 1 and sc(f, ss[0]) == sc(f, ss[1])):
+                continue
+            back = sorted(lf, key=lambda g: -sc(g, ss[0]))
+            if back[0] is f and (len(back) == 1 or sc(back[0], ss[0]) > sc(back[1], ss[0])):
+                take(f, ss[0]); moved = True
+        if same_size and len(lf) == 1 and len(lm) == 1:   # la dernière de chaque côté
+            take(lf[0], lm[0]); moved = True
+        if not moved:
+            break
+    return out
+
+
+def bl_fig_refs(fid):
+    """Références BrickLink des pièces d'une minifig (API officielle BrickLink, « subsets ») ; gardées pour toujours. None : BrickLink indisponible."""
+    c = _parts_cache().get("bls:" + fid)
+    if isinstance(c, dict) and isinstance(c.get("r"), list):
+        return set(c["r"])
+    if not bl_on():
+        return None
+    try:
+        d = sources.bl_get(f"/items/MINIFIG/{urllib.parse.quote(str(sources.bl_fig_no(fid)))}/subsets") or []
+    except Exception:
+        return None   # (maintenance, quota… : nouvel essai plus tard)
+    refs = set()
+    for g in d if isinstance(d, list) else []:
+        for e in g.get("entries") or []:
+            it = e.get("item") or {}
+            if it.get("type") == "PART" and it.get("no"):
+                refs.add(str(it["no"]).lower())
+    if refs:
+        _parts_cache_put("bls:" + fid, {"r": sorted(refs), "_t": time.time()})
+    return refs or None
+
+
+def fig_pick_by_refs(fid, cands):
+    """Parmi les versions Rebrickable candidates, celle dont les références de pièces sont celles de la minifig BrickLink (fid). None sinon."""
+    refs = bl_fig_refs(fid)
+    if not refs:
+        return None
+    scored = []
+    for m in cands[:12]:
+        fn = m.get("fig_num") or m.get("set_num")
+        if not fn:
+            continue
+        try:
+            got = {str(r.get("part") or r.get("part_num") or "").lower() for r in rb_fig_parts(fn)}
+        except sources.RebrickableBusy:
+            raise
+        except Exception:
+            continue
+        got.discard("")
+        if got:
+            scored.append((len(refs & got) / len(refs | got), got == refs, fn, m))
+    exact = [x for x in scored if x[1]]
+    if len(exact) == 1:
+        return exact[0][3]
+    scored.sort(key=lambda x: -x[0])
+    if scored and scored[0][0] >= .8 and (len(scored) == 1 or scored[0][0] - scored[1][0] >= .2):
+        return scored[0][3]
+    return None
+
+
+def set_figs_rb(number, mfs):
+    """Figurines d'un set → leur minifig Rebrickable (inventaire Rebrickable du même set) ; gardé (« sfa:<set> »)."""
+    key = "sfa:" + number
+    c = _parts_cache().get(key)
+    if isinstance(c, dict) and isinstance(c.get("m"), dict) and not (c.get("partial") and bl_on()):
+        return c["m"]
+    ms = [m for m in sources.rb(f"lego/sets/{urllib.parse.quote(number)}/minifigs/?page_size=100").get("results", []) if m.get("set_num")]
+    fs = [f for f in mfs if isinstance(f, dict) and f.get("id")]
+    out = _sfa_assign(fs, ms, lambda f: f.get("name"))
+    left = [f for f in fs if f["id"] not in out]
+    if left and len(ms) > len(out):   # encore ambigu : les noms BrickOwl (plus précis : couleur de la tête…) pour celles-là
+        bo = {}
+        for f in left:
+            try:
+                bo[f["id"]] = bo_fig_name(sources.bl_fig_no(f["id"]))
+            except Exception:
+                bo[f["id"]] = ""
+        used = set(out.values())
+        more = _sfa_assign(left, [m for m in ms if m["set_num"] not in used], lambda f: (f.get("name") or "") + " " + bo.get(f["id"], ""))
+        out.update(more)
+    left = [f for f in fs if f["id"] not in out]
+    for f in left:   # toujours ambiguës : leurs références BrickLink comparées à celles des minifigs Rebrickable du set qui restent
+        used = set(out.values())
+        try:
+            pick = fig_pick_by_refs(f["id"], [m for m in ms if m["set_num"] not in used])
+        except sources.RebrickableBusy:
+            raise
+        if pick:
+            out[f["id"]] = pick["set_num"]
+    if left and any(f["id"] not in out for f in left) and not bl_on():
+        _parts_cache_put(key, {"m": out, "_t": time.time(), "partial": True})   # (BrickLink absent : complété plus tard)
+        return out
+    _parts_cache_put(key, {"m": out, "_t": time.time()})
+    return out
+
+
+def set_figs_apply(it, mfs):
+    """Les versions déduites du set deviennent celles de ses figurines (« fc: »), sauf si une version est déjà connue."""
+    m = set_figs_rb(norm_set(it.get("number") or "") or it.get("number"), mfs)
+    for fid, rb in m.items():
+        c = _parts_cache().get("fc:" + fid)
+        if not (isinstance(c, dict) and c.get("rb")):
+            _parts_cache_put("fc:" + fid, {"rb": rb, "_t": time.time(), "src": "set"})
+    return m
+
+
 def rb_fig_match(fid, refresh=False):
     """Minifigs Rebrickable candidates d'une figurine (rb_fig_candidates), GARDÉES pour toujours :
     rendues tout de suite. Une liste vide (Rebrickable injoignable ?) n'est pas gardée."""
@@ -3888,6 +4057,40 @@ def rb_fig_match(fid, refresh=False):
     lst = rb_fig_candidates(fid)
     if lst:
         _parts_cache_put(key, {"l": lst, "_t": time.time()})
+    return lst
+
+
+def rb_fig_match_known(fid):
+    """Comme rb_fig_match, mais une version déjà connue (déduite de son set, ou choisie) passe en tête, marquée sûre : plus de question."""
+    rb = (_parts_cache().get("fc:" + fid) or {}).get("rb") if isinstance(_parts_cache().get("fc:" + fid), dict) else None
+    if not rb:   # figurine d'un de mes sets : sa version se déduit du set
+        db, cache = load_db(), _load(CACHE_FILE, {})
+        for it in db["items"]:
+            mfs = (cache.get(cache_key(it)) or {}).get("minifigs") if (it.get("kind") or "set") == "set" else None
+            if mfs and any(isinstance(f, dict) and f.get("id") == fid for f in mfs):
+                try:
+                    rb = set_figs_apply(it, mfs).get(fid)
+                except Exception:
+                    rb = None
+                if rb:
+                    break
+    try:
+        lst = [dict(x) for x in rb_fig_match(fid)]
+    except Exception:
+        lst = []
+    if not rb and lst and not lst[0].get("sure"):   # plusieurs versions possibles : ses références BrickLink tranchent (si BrickLink répond)
+        try:
+            pick = fig_pick_by_refs(fid, lst)
+        except Exception:
+            pick = None
+        if pick:
+            rb = pick.get("fig_num")
+            _parts_cache_put("fc:" + fid, {"rb": rb, "_t": time.time(), "src": "refs"})
+    if rb:
+        for x in lst:
+            x.pop("sure", None)
+        hit = next((x for x in lst if x.get("fig_num") == rb), None) or {"fig_num": rb, "name": rb, "image": RB_IMG.format(rb), "from": "set"}
+        lst = [dict(hit, sure=True)] + [x for x in lst if x.get("fig_num") != rb]
     return lst
 
 
@@ -3929,6 +4132,17 @@ def offline_warm():
     if DEMO or COPIE or not sources.rebrickable_key():
         return
     done = 0
+    _cache = _load(CACHE_FILE, {})
+    for it in [i for i in load_db()["items"] if (i.get("kind") or "set") == "set"]:   # versions des figurines d'origine : déduites de leur set
+        mfs = (_cache.get(cache_key(it)) or {}).get("minifigs") or []
+        _c = _parts_cache().get("sfa:" + (norm_set(it.get("number") or "") or it.get("number")))
+        if mfs and (not _c or (isinstance(_c, dict) and _c.get("partial") and bl_on())):   # (pas encore fait, ou fait sans BrickLink et BrickLink revenu)
+            try:
+                set_figs_apply(it, mfs)
+            except (sources.RebrickableBusy, PermissionError):
+                return
+            except Exception:
+                continue
     for n, known in sorted(offline_figs().items()):
         try:
             rb = fig_rb_cached(n, known)
@@ -3937,6 +4151,12 @@ def offline_warm():
                 rb = lst[0]["fig_num"] if lst and lst[0].get("sure") else None
             if rb and "mf2:" + rb not in _parts_cache():
                 rb_fig_parts(rb); done += 1
+            if not rb and bl_on() and "rbm:" + n in _parts_cache():   # plusieurs versions possibles : ses références BrickLink tranchent
+                pick = fig_pick_by_refs(n, (_parts_cache().get("rbm:" + n) or {}).get("l") or [])
+                if pick:
+                    rb = pick["fig_num"]; _parts_cache_put("fc:" + n, {"rb": rb, "_t": time.time(), "src": "refs"})
+                    if "mf2:" + rb not in _parts_cache():
+                        rb_fig_parts(rb); done += 1
             if not rb:   # plusieurs versions possibles (choix demandé une fois) : les pièces des candidates de ses sets, prêtes d'avance — 20/11
                 for m in [x for x in (_parts_cache().get("rbm:" + n) or {}).get("l") or [] if x.get("from") and x.get("from") != "nom"][:8]:
                     if m.get("fig_num") and "mf2:" + m["fig_num"] not in _parts_cache():
@@ -4199,9 +4419,9 @@ def _swap_price_item(iid):
                 continue   # modifié entre-temps : un autre chiffrage suivra
             ok = lambda x: (x["orig"] is None or x["orig"]["unit"] is not None) and (x["new"] is None or x["new"]["unit"] is not None)
             delta = sum(((x["new"]["unit"] * x["new"]["qty"]) if x["new"] else 0) - ((x["orig"]["unit"] * x["orig"]["qty"]) if x["orig"] else 0)
-                        for x in priced if ok(x) and not x.get("free"))
+                        for x in priced if ok(x) and not x.get("free") and not x.get("fix"))   # (correction : sans effet sur l'estimation)
             cur["fig_swaps"] = priced
-            cur["swap_price"] = {"delta": round(delta, 2), "done": True, "unpriced": sum(1 for x in priced if not ok(x) and not x.get("free")),
+            cur["swap_price"] = {"delta": round(delta, 2), "done": True, "unpriced": sum(1 for x in priced if not ok(x) and not x.get("free") and not x.get("fix")),
                                  "approx": any((x.get(s) or {}).get("approx") for x in priced if ok(x) and not x.get("free") for s in ("orig", "new"))}
             _save(DB_FILE, db)
 
@@ -5403,6 +5623,9 @@ def _enrich(item, cache=None, kinds=None):
     if item.get("kind", "set") == "set" and info:
         out["info"] = with_fr(out["info"], item["number"])
         out["info"]["extras"] = set_extras(item["number"])
+        _sf = sf_prices(item["number"], info)
+        if _sf:
+            out["info"]["sf"] = _sf   # (prix sans figurines : neuf, occasion — bulles de la fiche, 21/11)
         if out["info"].get("minifigs"):
             out["info"]["minifigs"] = [with_fr_fig(f) for f in with_used_figs(out["info"])["minifigs"]]
             names = {fid: m["name"] for fid, m in (item.get("fig_mods") or {}).items() if isinstance(m, dict) and m.get("name")}
@@ -5690,9 +5913,14 @@ def vl_record(raw_items, enriched, cache, kinds):
             morning = _vl_backfill(log, st, raw_items, cache)
         log["ver"] = 2
         items = log.setdefault("items", {})
+        _pend = lambda x: bool(x.get("fig_swaps")) and not (x.get("swap_price") or {}).get("done")   # pièces échangées pas encore chiffrées
+        pending = {i["id"] for i in raw_items if isinstance(i, dict) and (_pend(i) or _pend(i.get("set_mod") or {})
+                   or any(isinstance(m, dict) and _pend(m) for m in (i.get("fig_mods") or {}).values()))}
         for iid, s in st.items():
             if morning:
                 continue   # (le relevé du matin vient d'être reconstitué : l'état du moment n'est pas « ce matin »)
+            if iid in pending and (items.get(iid) or {}).get("rows"):
+                continue   # (chiffrage en cours : valeur provisoire — le relevé d'avant reste la référence, 20/11)
             r = items.setdefault(iid, {"rows": []})
             r.update(n=s["n"], num=s["num"], k=s["k"])
             r.pop("gone", None)
@@ -5709,6 +5937,46 @@ def vl_record(raw_items, enriched, cache, kinds):
         log.setdefault("first", day)
         log.setdefault("exact_from", day)
         _save(VALUE_LOG_FILE, log)
+
+
+TREND_DAYS = (1, 7, 15, 30, 90, 180, 365)   # crans du curseur « Comparer les variations à » (Réglages) ; 30 / 90 / 180 / 365 : même jour, 1 / 3 / 6 / 12 mois avant
+TREND_OLD = {"veille": 1, "mois": 30, "annee": 365}   # (anciens choix de la liste)
+
+
+def trend_until():
+    """Date (AAAA-MM-JJ) avant laquelle on cherche le relevé de comparaison des variations, selon la période choisie (Réglages)."""
+    import datetime
+    import calendar
+    n, d = int(trend_cfg().get("period") or 1), datetime.date.today()
+    months = {30: 1, 90: 3, 180: 6, 365: 12}.get(n)
+    if months:   # glissant : le même jour, 1 / 3 / 6 / 12 mois avant (jour inexistant : le dernier du mois), relevés jusqu'à ce jour-là compris
+        y, m = d.year, d.month - months
+        while m < 1:
+            y, m = y - 1, m + 12
+        ref = datetime.date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
+    else:   # 1 / 7 / 15 : ce nombre de jours avant (1 = la veille)
+        ref = d - datetime.timedelta(days=max(1, n))
+    return (ref + datetime.timedelta(days=1)).isoformat()
+
+
+def trend_ref_row(rows, today, until, ok=lambda x: True, unit=None):
+    """Relevé de comparaison : le dernier d'avant « until » ; sinon (fiche plus récente que la période) le tout premier d'avant aujourd'hui.
+    unit (valeur à l'unité d'un relevé) : un relevé qui vaut moins du quart d'un des deux suivants (prix pas encore connu à l'ajout…)
+    n'est jamais pris — c'est le relevé fiable suivant qui sert (20/11)."""
+    rows = [x for x in rows or [] if ok(x)]
+    if unit:
+        def sure(k):
+            u = unit(rows[k])
+            nxt = [unit(y) for y in rows[k + 1:k + 3]]
+            return not any(v and v > 0.004 and (u or 0) < v / 4 for v in nxt)
+        rows = [x for k, x in enumerate(rows) if sure(k)]
+    ref = None
+    for x in rows:
+        if x[0] < until:
+            ref = x
+    if ref is None:
+        ref = next((x for x in rows if x[0] < today), None)
+    return ref
 
 
 def trend_cfg():
@@ -5731,17 +5999,18 @@ def trend_cfg():
     except (TypeError, ValueError):
         size = 100
     return {"on": t.get("on", True) is not False, "up": num("up", 3.0), "down": num("down", 3.0),
-            "stable": t.get("stable", True) is not False, "pct": bool(t.get("pct")), "size": size}
+            "stable": t.get("stable", True) is not False, "pct": bool(t.get("pct")), "size": size,
+            "period": (lambda v: v if v in TREND_DAYS else 1)(TREND_OLD.get(t.get("period")) or (int(t["period"]) if str(t.get("period") or "").isdigit() else 1))}   # (curseur : jours, Réglages)
 
 
 def vl_ref():
     """Relevé auquel les variations sont comparées : le dernier d'avant aujourd'hui → {"day": "AAAA-MM-JJ", "t": heure (epoch) ou None}."""
-    log, today = _load(VALUE_LOG_FILE, {}), time.strftime("%Y-%m-%d")
+    log, today, until = _load(VALUE_LOG_FILE, {}), time.strftime("%Y-%m-%d"), trend_until()
     times = log.get("times") or {}
     days = [d for d in times if d < today] + [d for d in (_load(HISTORY_FILE, {}).get("collection") or {}) if d < today]
     if not days:
         return None
-    d = max(days)
+    d = max([x for x in days if x < until] or [min(days)])   # (période choisie ; sinon le premier relevé)
     return {"day": d, "t": times.get(d)}
 
 
@@ -5802,14 +6071,10 @@ def vl_trends(enriched, kinds, cache=None):
     """Pose e["chg"] sur chaque fiche de la collection : l'écart en % entre son prix (à l'unité) du moment et celui du dernier relevé d'avant
     aujourd'hui (rien si elle n'était pas relevée). Rend, par liste, [valeur au dernier relevé, valeur du moment] (fiches comptées)."""
     items = _load(VALUE_LOG_FILE, {}).get("items") or {}
-    today = time.strftime("%Y-%m-%d")
+    today, until = time.strftime("%Y-%m-%d"), trend_until()   # (période choisie dans les Réglages)
 
     def ref_of(r):
-        ref = None
-        for x in (r or {}).get("rows") or []:
-            if x[0] < today:
-                ref = x
-        return ref
+        return trend_ref_row((r or {}).get("rows"), today, until, unit=lambda x: x[1] / max(1, x[2]))   # (relevés douteux écartés)
     lists, seen = {}, set()
     cache, ih = cache if cache is not None else _load(CACHE_FILE, {}), _load(HISTORY_FILE, {}).get("items") or {}   # (fiches sans relevé d'avant : comp_chg)
     for e in enriched:
@@ -5823,7 +6088,7 @@ def vl_trends(enriched, kinds, cache=None):
             lists.setdefault(e["list_id"], [0.0, 0.0])[1] += v
         ref = ref_of(items.get(e["id"]))
         if not ref:   # pas de relevé d'avant (fiche ajoutée ou copiée depuis) : d'après ses composantes
-            c = comp_chg(e, cache, ih, today)
+            c = comp_chg(e, cache, ih, until)
             if c is not None:
                 e["chg"] = c
             continue
@@ -5845,14 +6110,11 @@ def cote_trends(enriched, cache):
     """Fiche : variation de chaque COTE (neuve, d'occasion) depuis le dernier relevé d'avant aujourd'hui (history.json) →
     info["cote_chg"] = {"new": %, "used": %} (sur une copie de « info » : le cache n'est pas touché)."""
     ih = _load(HISTORY_FILE, {}).get("items") or {}
-    today = time.strftime("%Y-%m-%d")
+    today, until = time.strftime("%Y-%m-%d"), trend_until()
 
-    def ref_of(pts, col):   # dernier relevé d'avant aujourd'hui
-        ref = None
-        for p_ in pts or []:
-            if p_[0] < today and p_[col] is not None:
-                ref = p_[col]
-        return ref
+    def ref_of(pts, col):   # relevé de comparaison (période des Réglages ; sinon le premier connu)
+        r = trend_ref_row(pts, today, until, lambda x: len(x) > col and x[col] is not None)
+        return r[col] if r else None
     for e in enriched:
         if e.get("kind") not in ("set", "fig", None) or not isinstance(e.get("info"), dict):
             continue
@@ -7204,7 +7466,7 @@ class Handler(BaseHTTPRequestHandler):
         # « À surveiller » : seulement sur sa page à elle (/a-surveiller) ; jamais avec les autres listes
         watch = {l["id"]: "" for l in db["lists"] if l.get("gift")} if page == "watch" else {}
         pub_prices = _load(sources.SETTINGS_FILE, {}).get("public_prices") is True   # Réglages › Pages publiques : prix de la collection (non par défaut)
-        _vlog, _today = (_load(VALUE_LOG_FILE, {}).get("items") or {}) if pub_prices else {}, time.strftime("%Y-%m-%d")
+        _vlog, _today, _until = (_load(VALUE_LOG_FILE, {}).get("items") or {}) if pub_prices else {}, time.strftime("%Y-%m-%d"), trend_until()
         want = {"collection": ("collection",), "wishlist": ("wishlist",), "watch": ("wishlist",)}.get(page, ("collection",))   # chaque page : ses listes seules
         lists = [{"id": l["id"], "name": l["name"], "kind": l["kind"], "parent_id": "" if page == "watch" else l.get("parent_id", ""), **({"logo": l["logo"]} if l.get("logo") else {}), **({"emoji": l["emoji"]} if l.get("emoji") else {}), **({"hide_name": True} if l.get("hide_name") else {}), **({"show": l["show"]} if isinstance(l.get("show"), dict) else {}), **({"sub_logo": "self"} if l.get("sub_logo") == "self" else {}), **({"color": l["color"]} if l.get("color") else {}), **({"emoji_off": True} if l.get("emoji_off") else {})}
                  for l in db["lists"] if l["kind"] in want and bool(l.get("gift")) == (page == "watch")]
@@ -7235,10 +7497,7 @@ class Handler(BaseHTTPRequestHandler):
             view = {**it, **({"fig_swaps": mods.get("fig_swaps") or []} if mods else {})}
             e = enrich(it, cache, kinds)
             if pub_prices and kinds.get(it["list_id"]) == "collection":   # flèche de variation (comme la page privée)
-                _r = None
-                for _x in (_vlog.get(it["id"]) or {}).get("rows") or []:
-                    if _x[0] < _today:
-                        _r = _x
+                _r = trend_ref_row((_vlog.get(it["id"]) or {}).get("rows"), _today, _until, unit=lambda x: x[1] / max(1, x[2]))   # (période choisie ; relevés douteux écartés)
                 _own = bool(it.get("set_orig") and it.get("attached_to"))
                 _v, _q = (e.get("own_total") if _own else e.get("total_value")) or 0, max(1, int(it.get("quantity", 1) or 1))
                 if _r and _r[1] / max(1, _r[2]) > 0.004 and not e.get("no_estimate"):
@@ -7284,6 +7543,7 @@ class Handler(BaseHTTPRequestHandler):
                              "zones": price_zones(it.get("kind", "set"), it.get("number"), info),   # drapeau de la zone des prix
                              "estimate": e["own_total"] if it.get("set_orig") and e.get("own_total") is not None else e.get("total_value"),   # figurine d'origine : son prix à elle (comme la page privée)
                              **({"box_add": e["box_add"]} if e.get("box_add") else {}),   # part de la boîte (ligne « réel » des vignettes)
+                             **(lambda sf: {"sf": sf} if sf else {})(sf_prices(it["number"], info) if it.get("kind", "set") == "set" else None),   # prix sans figurines (bulles de la fiche, comme la page privée — 21/11)
                              **({"used": info.get("used") if info.get("used") is not None else info.get("value"), "new": info.get("value")} if it.get("kind") == "fig" else {})}
                             if kinds.get(it["list_id"]) == "wishlist" or pub_prices else {}),   # collection : seulement si l'option est cochée
                          "minifigs": guest_figs(it, info, kinds.get(it["list_id"]) == "wishlist", pub_prices) + [
@@ -7297,7 +7557,7 @@ class Handler(BaseHTTPRequestHandler):
                              for a in attached.get(it["id"], [])]},
             })
         warm_fig_objs([i for i in db["items"] if i.get("kind") == "fig" and not i.get("set_orig") and kinds.get(i.get("list_id")) == "collection"])   # objets des figurines seules, en fond
-        return self.send_json({"lists": lists, "items": items, "page": page, "owner": owner_name(), "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "", "ig_user": ig_public_user(), "show_prices": pub_prices, **({"trend": trend_cfg()} if pub_prices and not bo_behav("noTrend") else {}), **({"no_pub_nav": True} if bo_behav("noPubNav") else {}), **({"no_merge": True} if bo_behav("noMerge") else {})})   # (figurines identiques non regroupées : comme la page privée)
+        return self.send_json({"lists": lists, "items": items, "page": page, "owner": owner_name(), "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "", "ig_user": ig_public_user(), "show_prices": pub_prices, **({"trend": trend_cfg(), "trend_ref": vl_ref()} if pub_prices and not bo_behav("noTrend") else {}), **({"no_pub_nav": True} if bo_behav("noPubNav") else {}), **({"no_merge": True} if bo_behav("noMerge") else {})})   # (figurines identiques non regroupées : comme la page privée)
 
     # -- routes
     def do_GET(self):
@@ -7853,7 +8113,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
             m = re.fullmatch(r"/api/fig/([\w.-]+)/rbmatch", p)
             if m:   # minifigs Rebrickable candidates (gardées : rendues tout de suite)
                 try:
-                    return self.send_json(rb_fig_match(m.group(1)))
+                    return self.send_json(rb_fig_match_known(m.group(1)))   # (version déduite de son set ou choisie : en tête, sûre)
                 except PermissionError:
                     return self.error("Il faut une clé API Rebrickable (Réglages)")
                 except Exception as e:
@@ -7912,7 +8172,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 info = with_used_figs(info)
                 mu = [f.get("used") for f in info.get("minifigs") or []]
                 extras_start(info.get("number") or m.group(1))
-                return self.send_json({**info, "extras": set_extras(info.get("number") or m.group(1)), "own_hist": (_load(HISTORY_FILE, {}).get("items") or {}).get(m.group(1)) or [], "minifigs": [with_fr_fig(f) for f in info.get("minifigs") or []],
+                return self.send_json({**info, "sf": sf_prices(info.get("number") or m.group(1), info), "extras": set_extras(info.get("number") or m.group(1)),   # (sf : prix sans figurines, 21/11)
+                                       "own_hist": (_load(HISTORY_FILE, {}).get("items") or {}).get(m.group(1)) or [], "minifigs": [with_fr_fig(f) for f in info.get("minifigs") or []],
                                        "minifig_used": round(sum((f["used"] if f.get("used") is not None else f.get("value") or 0) * f.get("qty", 1)
                                                                  for f in info.get("minifigs") or []), 2) if mu else None,
                                        "minifig_used_missing": sum(1 for u in mu if u is None)})
@@ -9273,7 +9534,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     return self.error("Seuil invalide")
                 with lock:
                     st = _load(sources.SETTINGS_FILE, {})
-                    st["trend"] = {**(st.get("trend") or {}), "up": up, "down": down}
+                    st["trend"] = {**(st.get("trend") or {}), "up": up, "down": down,
+                                   **({"period": int(b["period"])} if str(b.get("period") or "").isdigit() and int(b["period"]) in TREND_DAYS else {})}
                     _save(sources.SETTINGS_FILE, st)
                     os.chmod(sources.SETTINGS_FILE, 0o600)
                 return self.send_json({"ok": True, "trend": trend_cfg()})
@@ -9614,7 +9876,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 if isinstance(b.get("swaps"), list):
                     try:
                         swaps = [{"k": int(x["k"]), "orig": lot(x["orig"]) if x.get("orig") else None,   # orig None : pièce ajoutée
-                                  "new": lot(x["new"]) if x.get("new") else None}   # new None : pièce retirée
+                                  "new": lot(x["new"]) if x.get("new") else None,   # new None : pièce retirée
+                                  **({"fix": True} if x.get("fix") and x.get("orig") and x.get("new") else {})}   # (pièce d'origine corrigée)
                                  for x in b["swaps"][:300]]
                     except (ValueError, KeyError, TypeError):
                         return self.error("Pièce ou couleur invalide")

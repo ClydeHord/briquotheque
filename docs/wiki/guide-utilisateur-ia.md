@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 20/11/2026 19:36.
+Généré le 21/11/2026 11:15.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -55,7 +55,7 @@ L'écran principal
 
 - **Filtrer par nom, numéro, thème…** : la liste se réduit pendant la saisie.
 
-- Menu **⚙️ Filtres** : cochez une ou plusieurs étiquettes — **Complet**, **Amélioré**, **Modifié**, **Set partiel**, **MOC** — pour n'afficher que ces fiches (le bouton compte les étiquettes cochées).
+- Menu **Filtres (l'entonnoir)** : cochez une ou plusieurs étiquettes — **Complet**, **Amélioré**, **Modifié**, **Set partiel**, **MOC** — pour n'afficher que ces fiches (le bouton compte les étiquettes cochées).
 
 - **↺** (à gauche du filtre) : remet les filtres à zéro.
 
@@ -110,7 +110,7 @@ Le bas du menu
 
 - Touchez **Créer**.
 
-**Sous-listes** : seules les listes principales sont dans le menu. Une liste qui a des sous-listes les montre en pastilles (sur ordinateur dans la barre du haut, sur téléphone sous le titre, puis dans la barre qui apparaît en faisant défiler ; l'active est surlignée) : la liste elle-même (tout son contenu, sous-listes comprises), chaque sous-liste, et **Non classées** (ce qui est rangé directement dans la liste). Dans une sous-liste, le bouton **‹** devant les pastilles ramène à la liste parente. On peut déposer des fiches sur une pastille. Les nombres sont dans les boutons Tout / Sets / Figurines / Pièces ; le bouton de la valeur (ce qui est affiché) trie du plus cher au moins cher. **Logo sur les cartes** : dans **Toute la collection**, chaque carte porte en bas à droite le logo de sa liste principale ; dans une liste qui a des sous-listes, celui de la sous-liste qui la contient (rien pour ce qui est rangé directement dans la liste). Réglable dans ⚙️ Filtres → « Sur les cartes ». La barre du haut d'une liste montre aussi son logo, avec son nom seulement si « Afficher le nom » est coché.
+**Sous-listes** : seules les listes principales sont dans le menu. Une liste qui a des sous-listes les montre en pastilles (sur ordinateur dans la barre du haut, sur téléphone sous le titre, puis dans la barre qui apparaît en faisant défiler ; l'active est surlignée) : la liste elle-même (tout son contenu, sous-listes comprises), chaque sous-liste, et **Non classées** (ce qui est rangé directement dans la liste). Dans une sous-liste, le bouton **‹** devant les pastilles ramène à la liste parente. On peut déposer des fiches sur une pastille. Les nombres sont dans les boutons Tout / Sets / Figurines / Pièces ; le bouton de la valeur (ce qui est affiché) trie du plus cher au moins cher. **Logo sur les cartes** : dans **Toute la collection**, chaque carte porte en bas à droite le logo de sa liste principale ; dans une liste qui a des sous-listes, celui de la sous-liste qui la contient (rien pour ce qui est rangé directement dans la liste). Réglable dans Filtres (l'entonnoir) → « Sur les cartes ». La barre du haut d'une liste montre aussi son logo, avec son nom seulement si « Afficher le nom » est coché.
 
 Créer une liste
 
@@ -121,7 +121,7 @@ Sous le titre d'une liste ouverte :
 Sous le titre d'une liste, **✏️ Modifier la liste** ouvre une fenêtre qui regroupe tout :
 
 - **Logo** et **Émoji** : une liste peut avoir les deux ;
-- **Afficher** : un petit tableau dit, pour le **menu latéral**, la **barre supérieure** (la liste et ses pastilles de sous-listes), le **titre** et les **vignettes** (le petit logo en bas à droite des cartes ; le nom de la liste sur les cartes se règle dans ⚙️ Filtres), s'il faut montrer l'émoji, le logo et le nom — à la carte. Sans émoji ni logo coché, le nom s'affiche toujours ;
+- **Afficher** : un petit tableau dit, pour le **menu latéral**, la **barre supérieure** (la liste et ses pastilles de sous-listes), le **titre** et les **vignettes** (le petit logo en bas à droite des cartes ; le nom de la liste sur les cartes se règle dans Filtres (l'entonnoir)), s'il faut montrer l'émoji, le logo et le nom — à la carte. Sans émoji ni logo coché, le nom s'affiche toujours ;
 - **↳** (en haut du menu latéral, à droite de ＋ et ⇅) : montre ou cache toutes les sous-listes dans le menu ; cachées, celles cochées « Afficher cette sous-liste dans le menu latéral » restent ;
 - **Sous-liste — Afficher cette sous-liste dans le menu latéral** : cochée, elle apparaît dans le menu, sous sa liste parente (une liste principale y est toujours) ; décochée, la ligne « Menu latéral » du tableau se grise ;
 - **Couleur** : la couleur du thème de la liste — dans la liste (et ses sous-listes sans couleur à elles) et dans ses fiches, les boutons et surlignages la prennent. Réglages → **🎨 Thème de l'application** : la couleur générale ; **↺ Réinitialiser tous les thèmes** remet le rouge partout.
@@ -265,7 +265,7 @@ au set. Elles se sélectionnent, se glissent, se déplacent (sans leur set), ont
 à elle, mais compté **dans la cote de son set** (jamais deux fois). **Sortie du set**, elle devient indépendante et sa valeur est déduite du set ;
 retirée (« je ne l'ai pas »), elle est déduite du set.
 
-- Sa photo (touchez-la pour l'agrandir), ses sets d'origine, sa cote d'occasion et neuve (**💶 Tarifs**).
+- Sa photo (touchez-la pour l'agrandir), ses sets d'origine, sa cote d'occasion et neuve (au-dessus des liens BrickLink et Rebrickable).
 
 - Touchez le **nom** de la fiche : la **renommer**. Pour une figurine d'un de vos sets, le nom est gardé dans ce set — et lui seul — et affiché partout, pages publiques comprises.
 
@@ -381,7 +381,7 @@ Touchez une vignette : sa fiche s'ouvre. Tout s'y modifie, puis **💾** (ou **E
 
 - Touchez la **photo** pour l'agrandir. Le menu **🧱 Set ▾** change le type de fiche (set, figurine, MOC, set partiel, figurine MOC).
 
-- **🔶 Pièces (292 · 5 modifiées)** : la liste des pièces du set (voir plus bas). **💶 Tarifs** : tous les prix. **📘 Plan** : la notice de montage sur LEGO.com
+- **🔶 Pièces (292 · 5 modifiées)** : la liste des pièces du set (voir plus bas). **📘 Plan** : la notice de montage sur LEGO.com
 (ou dans l'appli LEGO Builder).
 
 - Puis la **liste**, la **quantité**, **⧉ Copier cette fiche** (figurine : **⧉ Copier/Déplacer un exemplaire**), **📦 Boîte**, **📘 Livret**, **🚧 À construire**.
@@ -397,7 +397,7 @@ Le haut de la fiche
 - Le **✕** à côté d'une étiquette la retire de cette fiche, même celle que l'application calcule (elle revient par « + Étiquette » → « ↩ Remettre »).
 Retirer une étiquette ne change pas la valeur.
 
-- Les étiquettes s'affichent sur la carte, comptent dans le menu **⚙️ Filtres**, et apparaissent sur les pages publiques et les fiches partagées.
+- Les étiquettes s'affichent sur la carte, comptent dans le menu **Filtres (l'entonnoir)**, et apparaissent sur les pages publiques et les fiches partagées.
 
 Les étiquettes d'une fiche
 
@@ -510,16 +510,17 @@ Les pièces retirées disparaissent de la liste ; les ajoutées s'affichent dess
 
 Les pièces d'un set
 
-#### 💶 Tarifs
+#### Les prix d'une fiche
 
-Prix magasin, prix d'occasion, figurines seules, puis les prix **BrickLink** : **neuf** et **occasion**, moyenne des **ventes réelles des 6 derniers mois**,
+Au-dessus des liens BrickLink et Rebrickable, en bulles : **Prix magasin** (« retiré » s'il n'est plus vendu), **Neuf** (et sans figurines), **Occasion** (et sans figurines) — une bulle par ligne pour un set ; une figurine : neuf et occasion, côte à côte.
+Pour un set que vous n'avez pas encore, le cadre « Tarifs constatés » donne en plus les prix **BrickLink** : **neuf** et **occasion**, moyenne des **ventes réelles des 6 derniers mois**,
 minimum – maximum, nombre de ventes et zone (France, sinon 🇪🇺 Europe, sinon 🇺🇳 monde, s'il manque de ventes ; aucune vente : les annonces
 en cours). **Partout** où un prix relevé s'affiche (cartes, fiches, estimation, figurines d'un set, pièces, « À commander », pages publiques),
 le drapeau de sa zone le précède : 🇪🇺 Europe, 🇺🇳 monde ; sans drapeau, le prix vient de France. (Sur les cartes de la vue principale, pas de drapeau : il apparaît dans la fiche.) Touchez un prix pour voir les annonces sur BrickLink.
 
 Les prix sont relus chaque nuit, pour tout (sets, figurines, pièces), les plus anciens d'abord et dans une limite d'appels par jour ; et quand vous ouvrez une fiche dont le prix a plus de 24 h (pour un MOC : ses pièces) : la fiche se met à jour toute seule. Ces durées et la limite d'appels par jour se règlent dans ⚙️ Réglages › 💶 Prix (curseurs). Les **zones** où chercher les prix BrickLink (ex. Belgique, France, Europe, monde) et le nombre minimum de ventes pour en retenir une s'y règlent aussi.
 
-💶 Tarifs
+Les prix d'une fiche
 
 #### 📈 Évolution
 
@@ -791,7 +792,7 @@ Aujourd'hui, Depuis hier, 7 jours, 30 jours, Depuis le début. Touchez une ligne
 ou les cache à la volée ; il est allumé quand elles sont affichées, et l'appareil s'en souvient. Dans une fiche — de tout type : set, figurine (même vue depuis son set), MOC, set partiel, figurine MOC — la variation est **toujours** affichée
 (mais pas sur le prix tout en haut) : sous le montant de l'estimation (à la ligne) — suivie de « (par rapport à 08:05) » si le relevé comparé a moins de 24 h, sinon
 « (par rapport au 16/11/2026) » — de la cote (« Set complet d'occasion »), des lignes « Figurines ajoutées » et « Figurines manquantes », du prix de chaque figurine du set, du prix de chaque pièce,
-et dans le détail des prix (💶 Tarifs : neuf, occasion). Pour les pièces, elle compare au relevé précédent de la pièce : elle apparaît au fil des relevés.
+et dans le détail des prix (prix de la fiche : neuf, occasion). Pour les pièces, elle compare au relevé précédent de la pièce : elle apparaît au fil des relevés.
 Les **seuils** (à partir de quel écart la flèche monte ou descend) se règlent dans **Réglages → 🧮 Estimations** ; le « ~ », le pourcentage et la taille des
 flèches, dans le **back office** (Comportements → Prix et variations). Sur les pages publiques, elles n'apparaissent
 que si les prix y sont montrés.
@@ -858,15 +859,14 @@ Les étiquettes d'état de la fiche partagée sont celles de votre fiche (**Modi
 **💶 Afficher les prix sur ce lien** montre ou masque la valeur, le prix d'achat et les cotes. C'est immédiat et le lien reste le même :
 inutile d'en refaire un.
 
-La barre au-dessus des vignettes : **↺**, la recherche, **⚙️ Filtres**, **⇅ Tri**, **🔃** et **📈** (sur téléphone et tablette, tout tient sur une ligne,
+La barre au-dessus des vignettes : **↺**, la recherche, **Filtres (l'entonnoir)**, **Tri** (barres en escalier) et le bouton qui **inverse l'ordre** (deux flèches opposées ; en tri Aléatoire, il **remélange**), puis le **calendrier** : la période de comparaison des prix (sur téléphone et tablette, tout tient sur une ligne,
 les boutons en carrés de même taille). Elle reste en haut de l'écran quand vous faites défiler, et la recherche est surlignée tant que quelque chose y est écrit.
 « Filtres » et « Tri » sont deux menus **identiques** : un appui ouvre la même fenêtre, avec une ligne par choix. Dans « Filtres » on coche
 autant d'étiquettes qu'on veut (la fenêtre reste ouverte) ; dans « Tri » on choisit un seul tri (la fenêtre se referme, et sur ordinateur le tri
 en cours est rappelé sur le bouton). Un clic ailleurs ou la touche Échap referme le menu. C'est pareil sur les pages publiques.
 
-Parmi les tris : **Variation de prix (%)** range les fiches selon leur flèche ↑ ↓ ~ — les plus grosses variations en % d'abord, hausses comme baisses (−52 % avant +10 %), celles sans relevé à la fin ; **Augmentation / baisse (%)** va de la plus forte hausse à la plus forte baisse (+, puis ~, puis −) ; avec 🔃 Renverser le tri, de la plus forte baisse à la plus forte hausse ; **Aléatoire** mélange les fiches (l'ordre reste le même pendant la visite ; 🔃 remélange) ; **Variation de prix (€)** met d'abord le plus gros écart de prix en euros, en hausse comme en baisse. Choisir l'un des deux affiche les variations (📈). En tête du menu, **Définir par défaut** fait du tri en cours le tri d'office ; **↺** y revient (et remet l'ordre normal).
-Le bouton **🔃 Renverser le tri**, à droite de « Tri » (sur téléphone aussi), donne l'ordre inverse du tri en cours : les plus
-fortes baisses d'abord, de Z à A, du moins cher au plus cher… L'ordre inversé est retenu, liste par liste, jusqu'à ce que vous touchiez de nouveau le bouton.
+Les tris de la collection : **Dernière modification**, **Aléatoire**, **Valeur**, **Variation de prix (%)** (les plus grosses variations en % d'abord, hausses comme baisses), **Variation de prix (€)** (le plus gros écart en euros d'abord), **Écart de prix (%)** (de la plus forte hausse à la plus forte baisse), **Écart de prix (€)** (idem, en euros), **Nombre de pièces** et **Nombre de figurines**. Avec un tri en euros, l'écart s'affiche en € à côté de la flèche. Sous la barre, une ligne rappelle toujours le tri en cours et son sens : ↘ décroissant, ↗ croissant (« Valeur ↘ ») ; avec un tri de variation ou d'écart, elle donne aussi la date de référence (« par rapport au … ») ; le bouton **calendrier** de la barre change la période (1, 7, 15, 30, 90, 180 ou 365 jours, glissants ; aussi dans Réglages › Estimations).
+En tête du menu « Tri » : **Définir par défaut** fait du tri en cours le tri d'office (**↺** y revient), ; le bouton à côté du menu inverse l'ordre du tri en cours (les plus fortes baisses d'abord, du moins cher au plus cher…), retenu liste par liste — avec le tri Aléatoire, il remélange. Les « Pièces à commander » gardent leurs tris (ajout, nom, numéro, nombre).
 
 **Inventaire** : son résumé donne une information par ligne (pièces, OK, à commander avec leur prix, commandées, à vérifier, exclues).
 La ligne **❔ à vérifier** donne aussi ce que coûteraient les pièces pas encore triées s'il fallait toutes les commander, et
@@ -880,7 +880,7 @@ c'est la couleur de remplacement qui est cherchée (prix, sets où elle apparaî
 remplacement), l'appli vérifie qu'elle **existe vraiment** dans cette couleur. Sinon la ligne porte **⚠ n'existe pas en …** (avec, si possible, une pièce
 de même forme à mettre à la place), le résumé compte ces références, et la pièce **ne peut pas passer « à commander »** tant qu'elle n'est pas corrigée (🎨 ou 🔁).
 
-**Recherche et filtres** : si une recherche ne trouve rien parce que des filtres sont cochés (⚙️ Filtres), ce qu'elle trouve sans eux
+**Recherche et filtres** : si une recherche ne trouve rien parce que des filtres sont cochés (Filtres (l'entonnoir)), ce qu'elle trouve sans eux
 s'affiche juste en dessous, sous le titre **Résultats sans filtres** — comme « Ailleurs » pour les autres listes. Pareil sur les pages publiques.
 
 Partager une fiche
@@ -892,7 +892,7 @@ Partager une fiche
 - Chaque page publique ne montre **que son contenu**, avec des boutons vers les autres pages, toujours au même endroit : au bout de la rangée des listes, sous le titre.
 
 - Elle s'affiche **comme votre application**, sans le menu latéral et sans rien de modifiable : mêmes boutons en haut (Tout, Sets, Figurines, Pièces), mêmes tuiles,
-même barre (↺, recherche, **⚙️ Filtres** : Complet, Amélioré, Modifié, Set partiel, MOC ; même tri), mêmes cartes (étiquettes, figurines des sets en cartes « Dans un set »)
+même barre (↺, recherche, **Filtres (l'entonnoir)** : Complet, Amélioré, Modifié, Set partiel, MOC ; même tri), mêmes cartes (étiquettes, figurines des sets en cartes « Dans un set »)
 et même fiche (photo, figurines en vignettes, apparences, accessoires, pièces). Les listes remplacent le menu : une rangée sous le titre ; les sous-listes, dans la barre du haut. En défilant, les listes principales restent à portée dans la barre collée en haut, et dans une liste un bouton discret **↩ Toute la collection** y ramène. Sur téléphone, en descendant, cette barre ne montre que la liste en cours ; dès que vous remontez, tout revient (pareil dans l'application).
 Aucun prix tant que l'option **Afficher les prix sur la collection publique** (Réglages › 🌐 Pages publiques) n'est pas cochée.
 

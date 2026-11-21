@@ -250,32 +250,34 @@
   <div class="toolbar">
     <div class="filt-box"><button type="button" class="icon-btn filt-reset" id="filtReset" title="Remettre les filtres à zéro" aria-label="Remettre les filtres à zéro">↺</button>
       <input type="search" id="filter" placeholder="Filtrer par nom, numéro, thème…"></div>
-    <details class="filt-menu" id="filtMenu"><summary class="btn" title="Filtres" aria-label="Filtres">⚙️<span class="filt-w"> Filtres</span> <b class="filt-n" id="filtN" hidden></b></summary>
+    <details class="filt-menu" id="filtMenu"><summary class="btn" title="Filtres" aria-label="Filtres"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18l-7 8.2v5.6l-4 2.2v-7.8z" fill="currentColor"/></svg><span class="filt-w"> Filtres</span> <b class="filt-n" id="filtN" hidden></b></summary>
       <div class="filt-pop" id="filtPop"></div><!-- une case par étiquette (Complet, Amélioré, Modifié, Set partiel, MOC) -->
     </details>
-    <details class="filt-menu sort-menu" id="sortMenu"><summary class="btn" title="Tri" aria-label="Tri">⇅<span class="filt-w"> Tri</span><span class="sort-cur" id="sortCur"></span></summary>
+    <details class="filt-menu sort-menu" id="sortMenu"><summary class="btn" title="Tri" aria-label="Tri"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h12M3 18h6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg><span class="filt-w"> Tri</span><span class="sort-cur" id="sortCur"></span></summary>
       <div class="filt-pop" id="sortPop"></div><!-- un choix par tri : la même fenêtre que « Filtres », remplie par syncSortMenu() à partir de la liste invisible ci-dessous -->
     </details>
-    <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Renverser le tri (ordre inverse)" aria-label="Renverser le tri" aria-pressed="false">🔃</button>
+    <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Inverser l'ordre" aria-label="Inverser l'ordre" aria-pressed="false"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
     <button type="button" class="btn trend-tog" id="trendTog" hidden title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button>
     <select id="sort" hidden aria-hidden="true" tabindex="-1">
       
       <option value="modified">Dernière modification</option>
-      <option value="added">Ajout récent</option>
+      <option value="added" data-coll-hide>Ajout récent</option>
       <option value="random">Aléatoire</option>
       <option value="value">Valeur</option>
       <option value="variation">Variation de prix (%)</option>
       <option value="ecart">Variation de prix (€)</option>
-      <option value="hausse">Augmentation / baisse (%)</option>
-      <option value="name">Nom</option>
-      <option value="number">Numéro</option>
-      <option value="year">Année</option>
-      <option value="qty">Nombre d'exemplaires</option>
+      <option value="hausse">Écart de prix (%)</option>
+      <option value="hausse_eur">Écart de prix (€)</option>
+      <option value="name" data-coll-hide>Nom</option>
+      <option value="number" data-coll-hide>Numéro</option>
+      <option value="year" data-coll-hide>Année</option>
+      <option value="qty" data-coll-hide>Nombre d'exemplaires</option>
       <option value="pieces">Nombre de pièces</option>
       <option value="figs">Nombre de figurines</option>
-      <option value="theme">Thème</option>
+      <option value="theme" data-coll-hide>Thème</option><!-- (data-coll-hide : plus proposés, comme la page privée — 21/11) -->
     </select>
   </div>
+  <div class="trend-refline" id="trendRefLine" hidden></div><!-- le tri en cours et son sens (comme la page privée, 21/11) -->
   <section id="items"><div class="loading"><span class="spinner"></span>Chargement…</div></section>
 </main>
 <script>
@@ -598,10 +600,12 @@ const catUsed = i => i._virt ? i._cat : isCustom(i) || isWishId(i.list_id) ? nul
 /* variation d'un prix depuis le dernier relevé (comme la page privée) : ↑ ↓ ~, selon les réglages du propriétaire */
 const trendOf = i => { const t = data.trend || {}, pct = i?.chg;
   if (data.trend && !trendOf.sized) { trendOf.sized = true; document.documentElement.style.setProperty("--trend-k", String((t.size || 100) / 100)); }   // taille réglée par le propriétaire
-  if (!data.trend || pct == null || isNaN(pct) || !(gTrendOn ?? (t.on !== false))) return "";   // (📈 : montrées ou cachées à la volée)
+  if (!data.trend || pct == null || isNaN(pct) || t.on === false) return "";   // (le réglage du propriétaire, toujours : plus de bouton 📈 — 21/11)
   const k = pct >= (t.up ?? 3) ? "up" : pct <= -(t.down ?? 3) ? "down" : "eq";
   if (k === "eq" && t.stable === false) return "";
-  const p = t.pct && k !== "eq" && Math.abs(pct) >= 0.05 ? `<i>${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0).replace(".", ",")} %</i>` : "";
+  const eur = ["ecart", "hausse_eur"].includes(document.getElementById("sort")?.value) ? (v => v - v / (1 + pct / 100))(i.info?.estimate ?? 0) : null;   // (tri en € : l'écart en euros — 21/11)
+  const p = eur != null && k !== "eq" && Math.abs(eur) >= 0.005 ? `<i>${eur > 0 ? "+" : "−"}${money(Math.abs(eur))}</i>`
+    : t.pct && k !== "eq" && Math.abs(pct) >= 0.05 ? `<i>${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0).replace(".", ",")} %</i>` : "";
   return `<span class="trend ${k}">${k === "up" ? "↑" : k === "down" ? "↓" : "~"}${p}</span>`; };
 const valueFoot = (cat, mine, apx, q, tr = "") => {
   const diff = Math.abs((cat || 0) - (mine || 0)) >= 0.015;
@@ -738,7 +742,7 @@ function render() {
     $("#filter").classList.toggle("on", !!f);   // recherche : surlignée tant que quelque chose y est écrit
     $('#sort option[value="value"]').hidden = $('#sort option[value="value"]').disabled = !PRICES();
     if (!PRICES() && $("#sort").value === "value") $("#sort").value = "modified";
-    for (const v of ["variation", "hausse"]) { const o = $(`#sort option[value="${v}"]`); o.hidden = o.disabled = !data.trend || data.trend.on === false; if (o.hidden && $("#sort").value === v) $("#sort").value = "modified"; }   // tri « Variation » : seulement si les flèches sont montrées
+    for (const v of ["variation", "hausse", "ecart", "hausse_eur"]) { const o = $(`#sort option[value="${v}"]`); o.hidden = o.disabled = !data.trend || data.trend.on === false; if (o.hidden && $("#sort").value === v) $("#sort").value = "modified"; }   // tri « Variation » : seulement si les flèches sont montrées
     syncSortMenu();   // (menu « ⇅ Tri » : comme la page privée)
   }
   const hit = (i, extra = []) => !f || [i.number, i.display_name, i.info?.name, i.info?.theme, i.portion_note, ...extra].join(" ").toLowerCase().includes(f);
@@ -782,7 +786,9 @@ function render() {
     added_old: (a, b) => (a.added_at || 0) - (b.added_at || 0),
     value: (a, b) => (b.info?.estimate ?? 0) - (a.info?.estimate ?? 0),
     variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : Math.abs(b.chg) - Math.abs(a.chg) || b.chg - a.chg; },   // la plus grosse variation en %, hausse ou baisse ; sans relevé : à la fin
-    hausse: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // « Augmentation / baisse (%) » : + puis ~ puis − (🔃 : − puis ~ puis +) ; sans relevé : à la fin
+    hausse: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // « Écart de prix (%) » : + puis ~ puis − (🔃 : − puis ~ puis +) ; sans relevé : à la fin
+    hausse_eur: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Écart de prix (€) » : la plus forte hausse en euros d'abord (comme la page privée, 21/11)
+      const eur = x => { const v = x.info?.estimate ?? 0; return v - v / (1 + x.chg / 100); }; return eur(b) - eur(a); },
     ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Variation de prix (€) » : le plus gros écart EN EUROS d'abord, hausse ou baisse
       const eur = x => { const v = x.info?.estimate ?? 0; return Math.abs(v - v / (1 + x.chg / 100)); };   // (valeur actuelle − valeur d'avant, d'après la variation en %)
       return eur(b) - eur(a); },
@@ -915,9 +921,16 @@ var gTrendOn;   // « 📈 » : variations montrées ou cachées à la volée (d
 document.addEventListener("click", e => { if (!e.target.closest?.("#trendTog")) return; gTrendOn = !(gTrendOn ?? (data.trend?.on !== false)); render(); });
 function syncSortMenu() {
   const so = $("#sort"), pop = $("#sortPop"); if (!so || !pop) return;
-  pop.innerHTML = [...so.options].filter(o => !o.hidden && !o.disabled).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
+  pop.innerHTML = [...so.options].filter(o => !o.hidden && !o.disabled && o.dataset.collHide == null).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
   const c = $("#sortCur"); if (c) c.textContent = so.selectedOptions[0]?.textContent || "";
   const rb = $("#sortRev"); if (rb) rb.setAttribute("aria-pressed", gSortRev);
+  { const rl = $("#trendRefLine");   /* (toujours visible : le tri en cours et son sens, comme la page privée — 21/11) */
+    if (rl) { const up = ["added_old", "name", "number", "theme"].includes(so.value);
+      const dir = so.value === "random" ? "" : (up !== gSortRev) ? `<span class="tri-sens" title="Croissant">↗</span>` : `<span class="tri-sens" title="Décroissant">↘</span>`;
+      const rf = data.trend_ref, n = +data.trend?.period || 1, tr = ["variation", "hausse", "ecart", "hausse_eur"].includes(so.value) && !!rf?.day && !(current !== ALL && kindOf(current) === "wishlist");
+      const lbl = n === 1 ? "la veille" : n === 30 ? "il y a 1 mois" : n === 90 ? "il y a 3 mois" : n === 180 ? "il y a 6 mois" : n === 365 ? "il y a 1 an" : `il y a ${n} jours`;   // (comme trendDaysLbl, page privée)
+      rl.hidden = false; rl.innerHTML = `<b>${esc(so.selectedOptions[0]?.textContent || "")}</b>${dir ? " " + dir : ""}`
+        + (tr ? ` · par rapport au <b>${esc(rf.day.split("-").reverse().join("/"))}</b> <span class="muted">(${esc(lbl)})</span>` : ""); } }
   const tb = $("#trendTog"); if (tb) { const on = gTrendOn ?? (data.trend?.on !== false); tb.hidden = !data.trend || !PRICES() || (current !== ALL && kindOf(current) === "wishlist"); tb.classList.toggle("on", on); tb.setAttribute("aria-pressed", on); }
 }
 document.addEventListener("click", e => { if (!e.target.closest?.("[data-sortrev]")) return; if ($("#sort").value === "random") { window.bqRandSeed = Math.random().toString(36).slice(2); $("#sortMenu").open = false; return render(); }   /* (Aléatoire : 🔃 remélange) */ gSortRev = !gSortRev; $("#sortMenu").open = false; render(); });
@@ -1036,6 +1049,14 @@ function openDetail(i, altK = null) {
     ${est ? `<div class="gs-est"><div class="gs-est-t">Estimation ${i.kind === "fig" ? "de ma figurine" : isCustom(i) ? "de mon MOC" : "de mon set"}</div><b>${moneyA(inf.estimate, i.approx)}</b>
       ${inf.used_value ? `<div class="gs-est-l"><span>${i.kind === "set" ? "Set complet d'occasion" : "Occasion (catalogue)"}</span><b>${zf(inf.zones?.used)}${money(inf.used_value * (i.quantity || 1))}</b></div>` : ""}
       ${inf.new_value ? `<div class="gs-est-l"><span>Neuf (catalogue)</span><b>${zf(inf.zones?.new)}${money(inf.new_value * (i.quantity || 1))}</b></div>` : ""}</div>` : ""}
+    ${(() => {   /* prix en bulles au-dessus des liens, comme la page privée (prix publics seulement ; pas les MOC ni la liste de souhaits) — 21/11 */
+      if (!PRICES() || wishItem || isMoc(i)) return "";
+      const fig = i.kind === "fig", p = v => `<b>${money(v)}</b>`, rows = [], sf = inf.sf || {};
+      if (!fig && inf.retail != null) rows.push(`Prix magasin : ${p(inf.retail)}${retired(i) ? " (retiré)" : ""}`);
+      const nv = fig ? inf.new : inf.new_value ?? (retired(i) ? null : inf.retail), uv = fig ? inf.used : inf.used_value;
+      if (nv != null || sf.neuf != null) rows.push([nv != null ? `Neuf : ${p(nv)}` : "", sf.neuf != null ? `<span class="tf-sf">sans figurines : ${p(sf.neuf)}</span>` : ""].filter(Boolean).join(" · "));
+      if (uv != null || sf.occasion != null) rows.push([uv != null ? `Occasion : ${p(uv)}` : "", sf.occasion != null ? `<span class="tf-sf">sans figurines : ${p(sf.occasion)}</span>` : ""].filter(Boolean).join(" · "));
+      return rows.length ? `<div class="tf-mini${fig ? " tf-fig" : ""}">${rows.map(r => `<span class="ext tf-bulle">${r}</span>`).join("")}</div>` : ""; })()}
     ${links.length ? `<div class="ext-links ext-bottom">${links.map(([t, u]) => `<a class="btn small-btn" href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join("")}</div>` : ""}`);
   /* apparences : en grand avec les autres sur le côté (l'actuelle encadrée) ; un appui l'affiche à la place */
   const nm = itemName(i), full = a => a ? `${nm} (${a})` : nm;

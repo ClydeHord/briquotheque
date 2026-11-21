@@ -93,34 +93,37 @@
     <div class="toolbar">
       <div class="filt-box"><button type="button" class="icon-btn filt-reset" id="filtReset" title="Remettre les filtres à zéro" aria-label="Remettre les filtres à zéro">↺</button><!-- efface le texte et les étiquettes cochées -->
         <input type="search" id="filter" placeholder="Filtrer par nom, numéro, thème…"></div>
-      <details class="filt-menu" id="filtMenu"><summary class="btn" title="Filtres" aria-label="Filtres">⚙️<span class="filt-w"> Filtres</span> <b class="filt-n" id="filtN" hidden></b></summary>
+      <details class="filt-menu" id="filtMenu"><summary class="btn" title="Filtres" aria-label="Filtres"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18l-7 8.2v5.6l-4 2.2v-7.8z" fill="currentColor"/></svg><span class="filt-w"> Filtres</span> <b class="filt-n" id="filtN" hidden></b></summary>
         <div class="filt-pop" id="filtPop"></div><!-- une case par étiquette (Complet, Amélioré, Modifié, Set partiel, MOC), remplie par l'appli -->
       </details>
-      <details class="filt-menu sort-menu" id="sortMenu"><summary class="btn" title="Tri" aria-label="Tri">⇅<span class="filt-w"> Tri</span><span class="sort-cur" id="sortCur"></span></summary>
+      <details class="filt-menu sort-menu" id="sortMenu"><summary class="btn" title="Tri" aria-label="Tri"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h12M3 18h6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg><span class="filt-w"> Tri</span><span class="sort-cur" id="sortCur"></span></summary>
         <div class="filt-pop" id="sortPop"></div><!-- un choix par tri : la même fenêtre que « Filtres », remplie par syncSortMenu() à partir de la liste invisible ci-dessous -->
       </details>
-      <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Renverser le tri (ordre inverse)" aria-label="Renverser le tri" aria-pressed="false">🔃</button>
-      <button type="button" class="btn trend-tog" id="trendTog" title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button><!-- 🔃 ordre inverse du tri en cours ; 📈 variations montrées ou cachées -->
+      <button type="button" class="btn sort-rev" id="sortRev" data-sortrev title="Inverser l'ordre" aria-label="Inverser l'ordre" aria-pressed="false"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button><!-- (inverser l'ordre ; en Aléatoire : remélanger — 21/11) -->
+      <button type="button" class="btn sort-rev" id="trPeriod" data-trperiod title="Période de comparaison des prix (variations)" aria-label="Période de comparaison des prix"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7.5 13.5h3v3h-3z" fill="currentColor"/></svg></button><!-- (période : à droite de l'inversion — 21/11) -->
+      <button type="button" class="btn trend-tog" id="trendTog" hidden title="Afficher ou masquer les variations (↑ ↓ ~)" aria-label="Afficher les variations" aria-pressed="false">📈</button><!-- (retiré le 21/11 : les variations suivent les Réglages) --><!-- 🔃 ordre inverse du tri en cours ; 📈 variations montrées ou cachées -->
       <select id="sort" hidden aria-hidden="true" tabindex="-1">
         
         <option value="modified">Dernière modification</option>
-        <option value="added">Ajout récent</option>
+        <option value="added" data-coll-hide>Ajout récent</option>
         <option value="random">Aléatoire</option>
         <option value="value">Valeur</option>
         <option value="variation">Variation de prix (%)</option>
         <option value="ecart">Variation de prix (€)</option>
-        <option value="hausse">Augmentation / baisse (%)</option>
+        <option value="hausse">Écart de prix (%)</option>
+        <option value="hausse_eur">Écart de prix (€)</option>
         <option value="added_old" data-internal>Ajout le plus ancien</option>
-        <option value="name">Nom</option>
-        <option value="number">Numéro</option>
-        <option value="year">Année</option>
-        <option value="qty">Nombre d'exemplaires</option>
+        <option value="name" data-coll-hide>Nom</option>
+        <option value="number" data-coll-hide>Numéro</option>
+        <option value="year" data-coll-hide>Année</option>
+        <option value="qty" data-coll-hide>Nombre d'exemplaires</option>
         <option value="pieces">Nombre de pièces</option>
         <option value="figs">Nombre de figurines</option>
-        <option value="theme">Thème</option>
+        <option value="theme" data-coll-hide>Thème</option><!-- (data-coll-hide : plus proposés pour la collection — 21/11 ; gardés pour les pièces, la liste de souhaits) -->
       </select><!-- (invisible : elle garde le tri choisi ; ce qu'on voit est le menu « ⇅ Tri » juste au-dessus) -->
     </div>
 
+    <div class="trend-refline" id="trendRefLine" hidden></div><!-- tri de variation ou d'écart : date de référence + « Changer la période » (21/11) -->
     <section id="items"></section>
   </main>
 </div>
@@ -330,6 +333,7 @@
       <div class="in-sets big" id="cfgInSets" hidden></div>
       <div class="in-sets big" id="cfgCatSets" hidden></div>
       <div class="links-row"><button type="button" class="btn small-btn gift-btn" id="modalGift" hidden title="À surveiller" aria-label="À surveiller">👀</button>
+        <div class="tf-mini" id="cfgTarifs" hidden></div><!-- prix : magasin, neuf (sans figurines), occasion (sans figurines) — au-dessus des liens (21/11) -->
         <div class="ext-links ext-bottom" id="cfgLinks"></div></div>
       <div class="estimate">
         <div class="est-actions">

@@ -1107,12 +1107,26 @@ const cardZone = i => !i?.info ? "" : isFig(i) ? (i.info.used != null ? zoneTxt(
   : i.info.used_guess ? "" : zoneTxt(i.info.market?.used, i.info.used_value);
 /* 💶 Tarifs : magasin, neuf actuel (s'il n'est plus en vente), occasion, puis les annonces BrickLink (neuf, occasion) */
 /* tarifs d'une fiche (tarifsOf) : prix magasin, neuf, occasion, figurines seules, puis les annonces (priceBox) */
-function tarifsHtml(t) {
+/* fiche : les prix en bulles, au-dessus des liens BrickLink / Rebrickable — libellés normaux, prix en gras (21/11) */
+function drawTarifsMini() {
+  const box = $("#cfgTarifs"); if (!box) return;
+  const dr = state.draft, t = dr?.tarifs;
+  if (!t || dr.kind === "custom") { box.hidden = true; box.innerHTML = ""; return; }
+  const p = v => `<b>${money(v)}</b>`, rows = [];
+  if (!t.fig && t.retail != null) rows.push(`${t.upcoming ? "Prix public annoncé" : "Prix magasin"} : ${p(t.retail)}${t.retired && !t.upcoming ? " (retiré)" : ""}`);
+  const nv = t.new_now ?? (t.retired ? null : t.retail);
+  if (nv != null || t.sf?.neuf != null) rows.push([nv != null ? `Neuf : ${p(nv)}` : "", t.sf?.neuf != null ? `<span class="tf-sf">sans figurines : ${p(t.sf.neuf)}</span>` : ""].filter(Boolean).join(" · "));
+  if (t.used != null || t.sf?.occasion != null) rows.push([t.used != null ? `Occasion : ${p(t.used)}` : "", t.sf?.occasion != null ? `<span class="tf-sf">sans figurines : ${p(t.sf.occasion)}</span>` : ""].filter(Boolean).join(" · "));
+  box.hidden = !rows.length;
+  box.classList.toggle("tf-fig", !!t.fig);   // (figurine : toutes les bulles sur une ligne ; set : une par ligne)
+  box.innerHTML = rows.map(r => `<span class="ext tf-bulle">${r}</span>`).join("");   // (même allure que les liens BrickLink / Rebrickable)
+}
+function tarifsHtml(t, noTop = false) {   // noTop : sans les lignes magasin / neuf / occasion (déjà au-dessus des liens, 21/11)
   /* neuf / occasion : lien vers les annonces BrickLink (état et zone du prix), quand le prix vient bien de ce relevé */
   const go = (cond, rec, v) => t.market?.url && zoneOf(rec, v) ? blShopUrl(t.market.url, cond, rec.zone) : "";
   const top = [[t.upcoming ? "Prix public annoncé" : "Prix magasin", t.retail], t.retired && !t.upcoming ? ["Prix neuf actuel", t.new_now, zoneTxt(t.market?.new, t.new_now), go("N", t.market?.new, t.new_now), t.chg?.new] : null,
     ["Prix d'occasion", t.used, zoneTxt(t.market?.used, t.used), go("U", t.market?.used, t.used), t.chg?.used], t.figs ? ["Figurines seules (occasion)", t.figs] : null].filter(x => x && x[1] != null);
-  return `${top.length ? `<div class="tf-top">${top.map(([k, v, z, u, c]) => `<div class="tf-line"><span>${esc(k)}</span><span class="tf-v">${u
+  return `${top.length && !noTop ? `<div class="tf-top">${top.map(([k, v, z, u, c]) => `<div class="tf-line"><span>${esc(k)}</span><span class="tf-v">${u
     ? `<a class="pb-link" href="${esc(u)}" target="_blank" rel="noopener" title="Voir sur BrickLink"><b>${z || ""}${money(v)} ↗</b></a>` : `<b>${z || ""}${money(v)}</b>`}${trendMark(c, true)}</span></div>`).join("")}</div>` : ""}
     ${priceBox(t.market, [], {}, t.chg)}`;
 }
@@ -1122,10 +1136,11 @@ const notMine = () => { const dr = state.draft; return !!dr && !dr.item && dr.ki
 function drawAddPrices() {
   const t = state.draft?.tarifs, on = notMine() && !!t, box = $("#addPrices");
   $("#estBox").hidden = on; box.hidden = !on;
-  $("#btnTarifs").hidden = !t || on;
+  $("#btnTarifs").hidden = true;   // (bouton « 💶 Tarifs » retiré : les prix sont au-dessus des liens — 21/11)
+  drawTarifsMini();
   if (!on) { box.innerHTML = ""; return; }
   box.classList.toggle("evo", $("#estBox").classList.contains("evo"));   // 📈 Évolution : quand un historique de prix existe
-  box.innerHTML = `<div class="est-top"><div class="muted">💶 Tarifs constatés</div><button type="button" class="evo-hint" data-evo>📈 Évolution</button></div>${tarifsHtml(t)}`;
+  box.innerHTML = `<div class="est-top"><div class="muted">💶 Tarifs constatés</div><button type="button" class="evo-hint" data-evo>📈 Évolution</button></div>${tarifsHtml(t, true)}`;
   $("[data-evo]", box).onclick = () => $("#btnEvo").click();
 }
 /* 💶 Tarifs : à droite du numéro du set (sous le prix) */
@@ -1316,7 +1331,7 @@ function origFill(i) {
 }
 /* pièces échangées : seulement les REMPLACEMENTS (une pièce à la place d'une autre) ou seulement les RETRAITS (rien à la place) */
 const isRemSw = x => !!(x?.orig && !x.new && !x.acc);
-const isRepSw = (x, l) => !!(x?.orig && x.new) || (isRemSw(x) && (l || []).some(y => !y?.orig && y?.new));   // (retirée + une pièce ajoutée dans la même liste : un remplacement, 17/11)
+const isRepSw = (x, l) => !!(x?.orig && x.new && !x.fix) || (isRemSw(x) && (l || []).some(y => !y?.orig && y?.new));   // (retirée + une pièce ajoutée dans la même liste : un remplacement, 17/11)
 const swOnly = (it, keep) => { const f = l => (l || []).filter(x => keep(x, l));
   return { ...it, set_mod: it.set_mod ? { ...it.set_mod, fig_swaps: f(it.set_mod.fig_swaps) } : it.set_mod, fig_swaps: f(it.fig_swaps), _mods: it._mods ? { ...it._mods, fig_swaps: f(it._mods.fig_swaps) } : it._mods,
     fig_mods: Object.fromEntries(Object.entries(it.fig_mods || {}).map(([k, m]) => [k, m && typeof m === "object" ? { ...m, fig_swaps: f(m.fig_swaps) } : m])) }; };
@@ -1381,14 +1396,37 @@ document.addEventListener("change", e => {   // une étiquette cochée / décoch
   syncFiltMenu(); render();
 });
 /* menu « Tri » : la même fenêtre que « Filtres » — une ligne par tri proposé par la liste invisible #sort (qui garde le choix et prévient l'appli) */
+/* « Changer la période » (ligne de la date de référence) : le curseur des Réglages, dans une petite fenêtre — enregistré dès qu'il bouge (21/11) */
+document.addEventListener("click", e => {
+  if (!e.target.closest?.("[data-trperiod]")) return;
+  const d = document.createElement("div"); d.className = "modal top";
+  const cur = Math.max(0, TREND_DAYS.indexOf(+state.trend?.period || 1));
+  d.innerHTML = `<div class="modal-box" style="width:min(420px,100%)"><div class="modal-head"><h2>📅 Comparer les prix à</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
+    <div class="tr-period" style="width:100%"><input type="range" min="0" max="6" step="1" value="${cur}" data-p><b data-l>${esc(trendDaysLbl(TREND_DAYS[cur]))}</b></div>
+    <p class="hint">Glissant : 30, 90, 180 et 365 jours = le même jour il y a 1, 3, 6 ou 12 mois. Aussi dans Réglages › 🧮 Estimations.</p></div>`;
+  document.body.append(d);
+  const close = () => d.remove(); $("[data-x]", d).onclick = close; d.onclick = ev => { if (ev.target === d) close(); };
+  const r = $("[data-p]", d);
+  r.oninput = () => { $("[data-l]", d).textContent = trendDaysLbl(TREND_DAYS[+r.value]); };
+  r.onchange = async () => { try { await api("/api/settings/trend", { method: "POST", body: { up: state.trend?.up ?? 3, down: state.trend?.down ?? 3, period: TREND_DAYS[+r.value] } }); await load(); toast("✔ Période : " + trendDaysLbl(TREND_DAYS[+r.value])); } catch (err) { toast(err.message); } };
+});
 function syncSortMenu() {
   const so = $("#sort"), pop = $("#sortPop"); if (!so || !pop) return;
   const rev = sortRevOn();
   const defOk = !isWish(state.current) && state.current !== UNBUILT && !isPartsList(state.current);   // (« Définir par défaut » : listes de la collection)
   pop.innerHTML = (defOk ? `<label class="moc-chk sort-def"><input type="checkbox" data-sortdef ${so.value === state.sortDef ? "checked" : ""}> Définir par défaut</label>` : "")
-    + [...so.options].filter(o => !o.hidden && !o.disabled && !o.dataset.natHide && o.dataset.internal == null).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
-  const c = $("#sortCur"); if (c) c.textContent = so.selectedOptions[0]?.textContent || "";   // (ordinateur : le tri en cours est rappelé sur le bouton)
-  const rb = $("#sortRev"); if (rb) { rb.setAttribute("aria-pressed", rev); rb.title = so.value === "random" ? "Remélanger" : rev ? "Tri inversé : remettre l'ordre habituel" : "Renverser le tri (ordre inverse)"; rb.setAttribute("aria-label", so.value === "random" ? "Remélanger" : "Renverser le tri"); }   // (aucun aspect « actif » : demande du 17/11)
+    + [...so.options].filter(o => !o.hidden && !o.disabled && !o.dataset.natHide && o.dataset.internal == null && !(o.dataset.collHide != null && !isPartsList(state.current))).map(o => `<label class="moc-chk"><input type="radio" name="sortopt" value="${esc(o.value)}" ${o.value === so.value ? "checked" : ""}> ${esc(o.textContent)}</label>`).join("");
+  const c = $("#sortCur"); if (c) c.textContent = so.selectedOptions[0]?.textContent || "";
+  { const rl = $("#trendRefLine"), rf = state.trendRef;   /* tri de variation ou d'écart : la date de référence, et « Changer la période » (21/11) */
+    const tr = ["variation", "hausse", "ecart", "hausse_eur"].includes(so.value) && !isWish(state.current) && !isPartsList(state.current) && !!rf?.day;
+    const up = ["added_old", "name", "number", "theme"].includes(so.value);   // (ordre habituel croissant ; les autres : décroissant — du plus grand, du plus récent)
+    const dir = so.value === "random" ? "" : (up !== rev) ? `<span class="tri-sens" title="Croissant">↗</span>` : `<span class="tri-sens" title="Décroissant">↘</span>`;   // (le sens en flèche — 21/11)
+    if (rl) { rl.hidden = [STATS, NOV].includes(state.current);   /* (toujours visible : le tri en cours et son sens — 21/11) */
+      rl.innerHTML = `<b>${esc(so.selectedOptions[0]?.textContent || "")}</b>${dir ? " " + dir : ""}`   /* (sans le mot « Tri » ; la période : bouton 📅 de la barre — 21/11) */
+        + (tr ? ` · par rapport au <b>${esc(rf.day.split("-").reverse().join("/"))}</b> <span class="muted">(${esc(trendDaysLbl(+state.trend?.period || 1))})</span>` : ""); } }   // (ordinateur : le tri en cours est rappelé sur le bouton)
+  { const tp = $("#trPeriod"); if (tp) tp.hidden = isWish(state.current) || isPartsList(state.current); }   /* (période : pas pour les souhaits ni les pièces) */
+  const rb = $("#sortRev"); if (rb) { const ico = so.value === "random" ? `<svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h3.5c4.5 0 6.5 10 11 10H21M3 17h3.5c1.8 0 3.1-1.6 4.3-3.5M13.2 9.5C14.4 8 15.7 7 17.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>` : `<svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`; if (rb._ico !== ico) { rb._ico = ico; rb.innerHTML = ico; } }   /* (Aléatoire : remélanger ; sinon : inverser — 21/11) */
+  if (rb) { rb.setAttribute("aria-pressed", rev); rb.title = so.value === "random" ? "Remélanger" : rev ? "Tri inversé : remettre l'ordre habituel" : "Renverser le tri (ordre inverse)"; rb.setAttribute("aria-label", so.value === "random" ? "Remélanger" : "Renverser le tri"); }   // (aucun aspect « actif » : demande du 17/11)
 }
 document.addEventListener("change", e => {   // « Définir par défaut » : le tri en cours devient celui d'office (↺ y revient)
   if (!e.target.matches?.("#sortPop [data-sortdef]")) return;
@@ -1976,7 +2014,7 @@ function itemsOf(listId) {   // les minifigs rattachées à un set sont montrée
 /* minifig à collectionner : le socle noir 88646 retiré ne compte ni comme modification ni comme perte (le serveur le marque « free ») */
 const CMF_THEMES = ["Minifigure Series", "Collectible Minifigures"];
 const cmfStand = (info, p) => CMF_THEMES.includes(info?.theme) && p?.color_id === 0 && [p.part, p.part_num].includes("88646");
-const realSwaps = l => (l || []).filter(x => !x.free);
+const realSwaps = l => (l || []).filter(x => !x.free && !x.fix);   // (fix : pièce d'origine corrigée — pas une modification, 20/11)
 const removals = l => realSwaps(l).filter(x => x.orig && !(x.acc && !x.new));   // accessoire retiré : prix déduit, sans décote   // décote « modifié » : seulement des pièces d'origine retirées ou remplacées, pas ajoutées
 const hasAddedParts = it => [it?.set_mod?.fig_swaps, it?.fig_swaps, ...Object.values(it?.fig_mods || {}).map(m => m?.fig_swaps)]
   .some(l => realSwaps(l).some(x => !x.orig));   // pièce en plus (sans pièce d'origine)
@@ -2163,7 +2201,7 @@ const catUsed = i => i._virt ? i._cat : isCustom(i) || isWish(i.list_id) || i.ki
    réglable dans Réglages → Estimations (afficher, seuils en %, « ~ », pourcentage) */
 const trendCfg = () => { let o = null; try { o = window.BO?._?.cfg?.()?.behav?.trend; } catch {} const { up, down, ...rest } = o && typeof o === "object" ? o : {}; return { ...(state.trend || {}), ...rest }; };   // (seuils : Réglages seulement)   // (aperçu du back office : le brouillon s'applique en direct)
 /* vue générale : montrées ou cachées à la volée par le bouton 📈 (retenu sur l'appareil ; d'office : le réglage du back office) */
-const trendShown = () => !boBehav("noTrend") && (state.trendOn ?? (trendCfg().on !== false));
+const trendShown = () => !boBehav("noTrend") && trendCfg().on !== false;   // (bouton 📈 retiré le 21/11 : le réglage décide, toujours)
 try { const v = localStorage.getItem("bq-trend"); if (v === "1" || v === "0") state.trendOn = v === "1"; } catch {}
 function trendSync() {   // taille des flèches (--trend-k) et état du bouton 📈
   document.documentElement.style.setProperty("--trend-k", String((trendCfg().size || 100) / 100));
@@ -2171,15 +2209,20 @@ function trendSync() {   // taille des flèches (--trend-k) et état du bouton �
   b.hidden = boBehav("noTrend") || isPartsList(state.current) || isWish(state.current) || [STATS, NOV].includes(state.current);
   b.classList.toggle("on", trendShown()); b.setAttribute("aria-pressed", trendShown());
 }
-const trendMark = (pct, force = false) => {   // force : dans une fiche, la variation est toujours affichée
+/* « Comparer les variations à » (Réglages) : crans du curseur, en jours — 30 / 90 / 180 / 365 : même jour, 1 / 3 / 6 / 12 mois avant (20/11) */
+const TREND_DAYS = [1, 7, 15, 30, 90, 180, 365];
+const trendDaysLbl = n => n === 1 ? "la veille" : n === 30 ? "il y a 1 mois" : n === 90 ? "il y a 3 mois" : n === 180 ? "il y a 6 mois" : n === 365 ? "il y a 1 an" : `il y a ${n} jours`;
+const trendMark = (pct, force = false, eur = null) => {   // force : dans une fiche, la variation est toujours affichée ; eur : écart en € à montrer (tri « Variation de prix (€) »)
   const t = trendCfg();
   if (pct == null || isNaN(pct) || boBehav("noTrend") || (!force && !trendShown())) return "";   // (back office → Comportements : jamais de flèches)
   const k = pct >= (t.up ?? 3) ? "up" : pct <= -(t.down ?? 3) ? "down" : "eq";
   if (k === "eq" && t.stable === false) return "";
-  const p = t.pct && k !== "eq" && Math.abs(pct) >= 0.05 ? `<i>${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0).replace(".", ",")} %</i>` : "";
+  const p = eur != null && k !== "eq" && Math.abs(eur) >= 0.005 ? `<i>${eur > 0 ? "+" : "−"}${money(Math.abs(eur))}</i>`   // (en euros : tri « Variation de prix (€) », 20/11)
+    : t.pct && k !== "eq" && Math.abs(pct) >= 0.05 ? `<i>${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0).replace(".", ",")} %</i>` : "";
   return `<span class="trend ${k}" title="${k === "up" ? "En hausse" : k === "down" ? "En baisse" : "Stable"} depuis le dernier relevé">${k === "up" ? "↑" : k === "down" ? "↓" : "~"}${p}</span>`;
 };
-const trendOf = (i, force = false) => i && i.chg != null && !isWish(i.list_id) ? trendMark(i.chg, force) : "";
+const trendOf = (i, force = false) => i && i.chg != null && !isWish(i.list_id)
+  ? trendMark(i.chg, force, ["ecart", "hausse_eur"].includes($("#sort")?.value) && !force ? (v => v - v / (1 + i.chg / 100))(i.total_value ?? 0) : null) : "";   // (tri en € : l'écart en euros, comme le tri)
 const trendTot = ids => { let a = 0, b = 0; for (const id of ids) { const x = state.trendLists?.[id]; if (x) { a += x[0]; b += x[1]; } } return a > 0 ? trendMark((b - a) / a * 100) : ""; };
 /* MOC / set partiel : valeur des figurines rangées dedans (sa carte l'ajoute, comme sa fiche — affichage seulement) */
 const mocKidsV = i => i.kind === "custom" && i.custom_type !== "fig" ? (i._att || []).reduce((a, x) => a + (x.total_value || 0), 0) : 0;
@@ -2205,7 +2248,8 @@ window.bqRandSeed = window.bqRandSeed || Math.random().toString(36).slice(2);
 function sortRand(x) { let h = 2166136261; for (const c of String(x.id || x.number || x.part_num || "") + "|" + (x._img || "") + "|" + window.bqRandSeed) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
 const PART_SORTS = ["added", "added_old", "name", "number", "qty", "random"];   // « À commander » : seuls tris utiles (dernier ajout d'abord)
 try { state.sortDef = localStorage.getItem("bq-sort-def") || ""; } catch { state.sortDef = ""; }   // « Définir par défaut » (menu ⇅ Tri)
-const defaultSort = id => isWish(id) ? "year" : id === UNBUILT ? "added_old" : isPartsList(id) ? "added" : state.sortDef || (views.figs && !views.sets ? "value" : "modified");   // un tri choisi reste retenu par liste
+const COLL_HIDE = ["added", "name", "number", "year", "qty", "theme"];   // tris retirés du menu de la collection (21/11)
+const defaultSort = id => isWish(id) ? "year" : id === UNBUILT ? "added_old" : isPartsList(id) ? "added" : (state.sortDef && !COLL_HIDE.includes(state.sortDef) ? state.sortDef : "") || (views.figs && !views.sets ? "value" : "modified");   // un tri choisi reste retenu par liste
 /* couleur du thème d'une liste (list.color) : la sienne, sinon celle de la plus proche liste parente qui en a une ; null : le rouge de l'appli */
 const themeOf = (lid, lists) => { const seen = new Set(); let l = lists.find(x => x.id === lid);
   while (l && !seen.has(l.id)) { seen.add(l.id); if (l.color) return l.color; l = lists.find(x => x.id === (l.parent_id || "")); } return null; };
@@ -2250,9 +2294,9 @@ function render() {
     const parts = isPartsList(state.current);
     $$("#sort option").forEach(o => o.hidden = o.disabled = parts && !PART_SORTS.includes(o.value));   // pièces : tris sans objet masqués (et désactivés : certains téléphones montrent les options cachées)
     const saved = state.sortBy[state.current] === "added_old" && state.current !== UNBUILT ? "added" : state.sortBy[state.current];   // (« Ajout le plus ancien » retiré du menu : « Ajout récent » ; « À construire » le garde d'office)
-    $("#sort").value = isWish(state.current) ? "year" : (saved && (!parts || PART_SORTS.includes(saved)) ? saved : defaultSort(state.current));   // souhaits : toujours par année, du plus récent
+    $("#sort").value = isWish(state.current) ? "year" : (saved && (!parts || PART_SORTS.includes(saved)) && (parts || state.current === UNBUILT || !COLL_HIDE.includes(saved)) ? saved : defaultSort(state.current));   // souhaits : toujours par année, du plus récent
     state.sortFor = state.current;
-    if (["variation", "hausse", "ecart"].includes($("#sort").value) && !trendShown() && !boBehav("noTrend")) state.trendOn = true;   // (tri de variation revenu tout seul : 📈 allumé)
+    if (["variation", "hausse", "ecart", "hausse_eur"].includes($("#sort").value) && !trendShown() && !boBehav("noTrend")) state.trendOn = true;   // (tri de variation revenu tout seul : 📈 allumé)
   }
   syncSortMenu();   // (menu « ⇅ Tri » : les tris de cette liste, celui en cours coché)
   trendSync();   // (bouton 📈 : allumé ou non ; taille des flèches)
@@ -2476,6 +2520,9 @@ function render() {
     value: (a, b) => (b.total_value ?? 0) - (a.total_value ?? 0),   // le prix affiché en gros (état actuel)
     variation: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : Math.abs(b.chg) - Math.abs(a.chg) || b.chg - a.chg; },
     hausse: (a, b) => { const na = a.chg == null, nb = b.chg == null; return na || nb ? rev * (na - nb) : b.chg - a.chg; },   // « Augmentation / baisse (%) » : + puis ~ puis − (🔃 : − puis ~ puis +) ; sans relevé : à la fin   // la plus grosse variation en %, hausse ou baisse (à égalité : la hausse) ; sans relevé : toujours à la fin
+    hausse_eur: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Écart de prix (€) » : la plus forte hausse en euros d'abord… jusqu'à la plus forte baisse (21/11)
+      const eur = x => { const v = x.total_value ?? 0; return v - v / (1 + x.chg / 100); };
+      return eur(b) - eur(a); },
     ecart: (a, b) => { const na = a.chg == null, nb = b.chg == null; if (na || nb) return rev * (na - nb);   // « Variation de prix (€) » : le plus gros écart EN EUROS d'abord, hausse ou baisse
       const eur = x => { const v = x.total_value ?? 0; return Math.abs(v - v / (1 + x.chg / 100)); };   // (valeur actuelle − valeur d'avant, d'après la variation en %)
       return eur(b) - eur(a); },
@@ -3026,7 +3073,7 @@ $("#btnEditList").onclick = () => {
       <button type="button" class="btn le-cpick" data-cpick title="Prendre la couleur dans le logo ou une image">🎯</button>
       <label class="todo-chk" style="margin:0"><input type="checkbox" name="nocolor" ${l0.color ? "" : "checked"}> par défaut</label></div>
     <table class="le-show"><thead><tr><th>Afficher</th><th>Émoji</th><th>Logo</th><th>Nom</th></tr></thead><tbody>
-      ${[["menu", "Menu latéral"], ["bar", "Barre supérieure"], ["title", "Titre"], ["view", "Vignettes"]].map(([c, t]) => `<tr><th scope="row">${t}</th>${["e", "l", "n"].map(k => c === "view" && k === "n" ? `<td class="muted" title="Le nom de la liste sur les vignettes : ⚙️ Filtres → Sur les cartes">—</td>`   /* (vignettes : seulement le petit logo) */
+      ${[["menu", "Menu latéral"], ["bar", "Barre supérieure"], ["title", "Titre"], ["view", "Vignettes"]].map(([c, t]) => `<tr><th scope="row">${t}</th>${["e", "l", "n"].map(k => c === "view" && k === "n" ? `<td class="muted" title="Le nom de la liste sur les vignettes : Filtres (entonnoir) → Sur les cartes">—</td>`   /* (vignettes : seulement le petit logo) */
         : `<td><input type="checkbox" data-show="${c}.${k}" aria-label="${t} : ${{ e: "émoji", l: "logo", n: "nom" }[k]}"></td>`).join("")}</tr>`).join("")}
     </tbody></table>
     <p class="hint" style="margin:4px 0 0">Barre supérieure : la liste et ses pastilles de sous-listes, en haut. Titre : le grand titre de la page de la liste. Vignettes : le petit logo en bas à droite des cartes. Sans émoji ni logo coché, le nom s'affiche toujours.</p>
@@ -3198,7 +3245,7 @@ $("#filter").oninput = () => {   // une recherche tapée : les étiquettes coch�
 $("#sort").onchange = () => {
   const v = $("#sort").value;
   if (v === "random") window.bqRandSeed = Math.random().toString(36).slice(2);   // (Aléatoire choisi : un nouveau tirage)
-  if (["variation", "hausse", "ecart"].includes(v) && !trendShown() && !boBehav("noTrend")) { state.trendOn = true; try { localStorage.setItem("bq-trend", "1"); } catch {} }   // (tri de variation : les flèches s'affichent)
+  if (["variation", "hausse", "ecart", "hausse_eur"].includes(v) && !trendShown() && !boBehav("noTrend")) { state.trendOn = true; try { localStorage.setItem("bq-trend", "1"); } catch {} }   // (tri de variation : les flèches s'affichent)
   if (v === defaultSort(state.current)) delete state.sortBy[state.current]; else state.sortBy[state.current] = v;
   try { localStorage.setItem("bq-sort", JSON.stringify(state.sortBy)); } catch {}
   render();
@@ -3927,7 +3974,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       <div class="choice nov-tabs"><label><input type="radio" name="novs" value="" checked><span>Tout</span></label><label><input type="radio" name="novs" value="soon"><span>À venir</span></label><label><input type="radio" name="novs" value="new"><span>Sorties récentes</span></label></div><span class="nov-br"></span>
       <div class="nov-filters"><select data-theme aria-label="Thème" hidden><option value="">Tous les thèmes</option></select><!-- (retirée de l'écran le 20/11 ; lue par les filtres : reste sur « tous ») -->
       <button type="button" class="btn small-btn" data-exth>🎯 Thèmes suivis</button>
-      <details class="filt-menu nov-filt"><summary class="btn small-btn" title="Filtres" aria-label="Filtres">⚙️ Filtres <b class="filt-n" data-novfn hidden></b></summary>   <!-- (cases regroupées : menu déroulant — 20/11) -->
+      <details class="filt-menu nov-filt"><summary class="btn small-btn" title="Filtres" aria-label="Filtres"><svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18l-7 8.2v5.6l-4 2.2v-7.8z" fill="currentColor"/></svg> Filtres <b class="filt-n" data-novfn hidden></b></summary>   <!-- (cases regroupées : menu déroulant — 20/11) -->
         <div class="filt-pop">
       <label class="moc-chk"><input type="checkbox" data-hidden> Afficher les masqués</label>
       <label class="moc-chk"><input type="checkbox" data-noimg> Afficher sans image</label>
@@ -5184,7 +5231,7 @@ function renderPartsView(items) {
 }
 
 /* fenêtre d'ajout / modification d'une pièce */
-function openPart({ item = null, list_id = null, pick = null, pickTitle = "", part: prePart = null, similarTo = null, refImage = "" } = {}) {   // refImage : photo de la fiche (cadrer la pièce dessus)
+function openPart({ item = null, list_id = null, pick = null, pickTitle = "", part: prePart = null, similarTo = null, refImage = "", fixOpt = false } = {}) {   // fixOpt : case « Corriger l'originale » (remplacement d'une pièce de figurine)   // refImage : photo de la fiche (cadrer la pièce dessus)
   /* recherche lancée depuis une fiche ouverte : « À partir de la photo actuelle » propose sa photo (celle en cours de modification) */
   if (!refImage && pick && !modal.hidden && state.draft) refImage = state.draft.photoUrl || (state.draft.item?.id ? curPhoto(state.draft.item.id) : "") || "";
   if (item && !DEMO) api("/api/consult", { method: "POST", body: { id: item.id } }).then(r => r?.changed && load()).catch(() => {});   // pièce consultée : son prix BrickLink relu s'il a plus de 24 h
@@ -5195,6 +5242,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     <div class="modal-head"><button class="icon-btn" data-back hidden aria-label="Retour">←</button>
       <h2 data-title>${pick ? esc(pickTitle || "Ajouter une pièce") : item ? "Modifier la pièce" : "Ajouter une pièce à commander"}</h2>
       ${!pick && !item && list_id ? `<button type="button" class="btn small-btn" data-addfig title="Une figurine à commander (recherche, photo…)">🟡 Une figurine</button>` : ""}<button type="button" class="icon-btn" data-topsave hidden title="Enregistrer" aria-label="Enregistrer">💾</button><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
+    ${fixOpt ? `<label class="todo-chk fix-opt"><input type="checkbox" data-fix> <span><b>✔ Corriger l'originale</b> <span class="muted small">— cette figurine n'est pas la bonne : la pièce choisie devient celle d'origine (pas une modification, estimation inchangée)</span></span></label>` : ""}
     <div data-find>
       <div data-pane="find">
         ${refImage ? `<button type="button" class="ref-pick" data-ref title="Cadrer la pièce cherchée sur la photo de la fiche"><img src="${esc(refImage.startsWith("blob:") ? refImage : img(refImage))}" alt=""><span>🖼️ À partir de la photo actuelle</span></button>` : ""}
@@ -5626,7 +5674,8 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     }
     const noColTodo = { cat: "Pièces", note: `Pièce ${part.part_num} : couleur à valider` };   // pièce ajoutée sans couleur : à revoir
     if (pick) {   // pièce choisie (minifig MOC, pièce en plus…) : rendue à l'appelant, une fois par couleur
-      ns.forEach(x => pick(x));
+      const fx = !!$("[data-fix]", d)?.checked;   // (« Corriger l'originale » cochée)
+      ns.forEach(x => pick(fx ? { ...x, _fix: true } : x));
       if (chosen?.noColor && state.draft && !(state.draft.todos || []).some(t => t.note === noColTodo.note)) {   // tâche sur la fiche ouverte (enregistrée avec elle)
         state.draft.todos = [...(state.draft.todos || []), noColTodo]; drawTodoBtn(); toast("Pièce ajoutée sans couleur : tâche « couleur à valider » ajoutée à la fiche");
       }
@@ -5862,7 +5911,9 @@ $("#btnSettings").onclick = async () => {
     <div class="set-row"><div><b>🔧 Exemplaire modifié</b><p class="hint">Pièces retirées ou remplacées : il se revend moins bien, sa valeur baisse de ce pourcentage.</p></div>
       <span class="set-num"><input type="number" data-md min="0" max="90" step="1" value="${st.mod_discount ?? 5}"> %</span></div>
     <p class="hint">Le livret de plans n'entre pas dans la valeur de la collection.</p>
-    <div class="set-row"><div><b>↑ Variation : en hausse</b><p class="hint">À partir de quel écart, depuis le dernier relevé, la flèche monte (sinon « ~ », stable).</p></div>
+    <div class="set-row"><div><b>📅 Comparer les variations à</b><p class="hint">Flèches et % de variation : par rapport à quand ? (une fiche plus récente : à son premier relevé)</p></div>
+      <span class="set-num tr-period"><input type="range" data-tr-period min="0" max="6" step="1" value="${Math.max(0, TREND_DAYS.indexOf(+state.trend?.period || 1))}"><b data-tr-plbl>${trendDaysLbl(+state.trend?.period || 1)}</b></span></div>
+    <div class="set-row"><div><b>↑ Variation : en hausse</b><p class="hint">À partir de quel écart, sur la période choisie, la flèche monte (sinon « ~ », stable).</p></div>
       <span class="set-num"><input type="number" data-tr-up min="0" max="100" step="0.5" value="${st.trend?.up ?? 3}"> %</span></div>
     <div class="set-row"><div><b>↓ Variation : en baisse</b><p class="hint">À partir de quel écart la flèche descend.</p></div>
       <span class="set-num"><input type="number" data-tr-down min="0" max="100" step="0.5" value="${st.trend?.down ?? 3}"> %</span></div>
@@ -5871,7 +5922,8 @@ $("#btnSettings").onclick = async () => {
     const one = async (u, body) => { try { await api(u, { method: "POST", body }); await load(); toast("✔ Enregistré"); } catch (e) { toast(e.message); } };
     $("[data-bx]", bxf).onchange = e => one("/api/settings/box", { pct: +e.target.value });
     $("[data-md]", bxf).onchange = e => one("/api/settings/discount", { pct: +e.target.value });
-    $$("[data-tr-up], [data-tr-down]", bxf).forEach(i => i.onchange = () => one("/api/settings/trend", { up: +$("[data-tr-up]", bxf).value, down: +$("[data-tr-down]", bxf).value }));
+    $$("[data-tr-up], [data-tr-down], [data-tr-period]", bxf).forEach(i => i.onchange = () => one("/api/settings/trend", { up: +$("[data-tr-up]", bxf).value, down: +$("[data-tr-down]", bxf).value, period: TREND_DAYS[+$("[data-tr-period]", bxf).value] }));
+    $("[data-tr-period]", bxf).oninput = e => { $("[data-tr-plbl]", bxf).textContent = trendDaysLbl(TREND_DAYS[+e.target.value]); };   /* (le libellé suit le curseur) */
   }
   const plf = document.createElement("fieldset");
   plf.innerHTML = `<legend>Sets avec leur livret de plans</legend>
@@ -7509,6 +7561,7 @@ function tarifsOf(info, fig) {
   return { fig, market, name: info.name || info.number, chg: info.cote_chg || {},   // (chg : variation de la cote neuve et d'occasion)
     retail: fig ? null : info.retail, upcoming: !fig && isUpcoming(info), retired: fig ? true : isRetired(info),
     new_now: fig ? info.value : info.new_value, used: fig ? info.used : isUpcoming(info) ? null : info.used_value,
+    sf: !fig && info.sf ? info.sf : null,   // (prix sans figurines : neuf, occasion — du serveur, 21/11)
     figs: !fig && info.minifig_count && !autoFigPhoto(info) && info.minifigs?.length ? info.minifigs.reduce((a, f) => a + (usedOf(f) || 0) * (f.qty || 1), 0) || null : null };
 }
 /* fiche ouverte = prix consultés à l'instant t : le serveur relit sur BrickLink ceux de plus de 24 h (l'élément et ses figurines),
@@ -8337,9 +8390,25 @@ function drawQtyLogo() {   /* logo de la liste (ou logo individuel de la fiche) 
   const own = it ? itemLogoOf(it) : "";
   const html = own ? (/^(\/|https?:|data:)/.test(own) ? `<img class="list-logo" src="${esc(own)}" alt="">` : `<span class="list-emo">${esc(own)}</span>`) : l && (l.logo || l.emoji) ? listLogo(l, "list-logo") : "";
   row.classList.toggle("has-logo", !!html);
-  if (!html) { el?.remove(); return; }
+  if (!html) { el?.remove(); row.style.paddingRight = ""; return; }   // (plus de logo : la marge du texte s'en va aussi)
   if (!el) { el = document.createElement("span"); el.id = "qtyLogo"; el.className = "qty-logo go-list"; el.setAttribute("role", "link"); row.append(el); }
   if (el._h !== html) { el._h = html; el.innerHTML = html; }
+  { const im = el.querySelector("img");   /* logo image : à surface égale (carré 60 × 60 ; allongé : plus large, jusqu'à 150 × 60) ; recalculé à chaque affichage — 21/11 */
+    const fit = (n = 0) => { if (!im.naturalWidth || !im.naturalHeight) return;
+      if (!row.offsetWidth) { if (n < 30) setTimeout(() => fit(n + 1), 100); return; }   // (fiche pas encore à l'écran : un peu plus tard)
+      const r = im.naturalWidth / im.naturalHeight, A = 60 * 60;
+      const busy = [...row.children].filter(x => x !== el && x.offsetParent).reduce((t, x) => t + x.offsetWidth + 8, 0);   // (largeurs de mise en page : justes même pendant l'animation d'ouverture)
+      const room = Math.max(60, row.offsetWidth - busy - 24);   // (place vraiment libre dans la ligne : le texte ne passe jamais à la ligne)
+      let w = Math.sqrt(A * r), h = w / r;
+      if (w > Math.min(150, room)) { w = Math.min(150, room); h = w / r; }
+      const H = Math.min(60, Math.max(34, row.offsetHeight - 4));   // (jamais plus haut que la ligne : sinon coupé — 21/11)
+      if (h > H) { h = H; w = h * r; }
+      im.style.maxWidth = "none"; im.style.width = Math.round(w) + "px"; im.style.height = Math.round(h) + "px";   // (sans la limite générale des logos, 6 em)
+      row.style.paddingRight = Math.round(w + 16) + "px"; };   // (le texte de la ligne garde sa place)
+    if (im) { im.complete ? fit() : im.addEventListener("load", () => fit(), { once: true });
+      setTimeout(fit, 400); setTimeout(fit, 1200);   // (la ligne se met en place : cases Boîte / Plan masquées pour une figurine…)
+      if (!row._ro) { row._ro = new ResizeObserver(() => { const i2 = row.querySelector("#qtyLogo img"); if (i2 && i2._fit) i2._fit(); }); row._ro.observe(row); }
+      im._fit = fit; } else row.style.paddingRight = ""; }
   el.dataset.golist = l?.id || lid; el.title = l ? `Liste « ${l.name} »` : "";
 }
 function drawAddBar() {
@@ -8481,7 +8550,7 @@ function pickAttach(set) {
     <p class="hint" style="margin-top:0">Cochez les figurines, puis « Ajouter ». Une figurine ajoutée est rangée dans ce set.</p>
     <div class="fe-title">🔎 Une figurine que je n'ai pas encore</div>
     <div data-sb>${searchBlock("Ex : Darth Vader, sw0001, Pilote…", { form: "data-cf" })}</div><div class="results" data-cr></div>
-    <div class="fe-title" style="margin-top:12px">Dans ma collection</div>
+    <div class="fe-title" style="margin-top:12px">Dans ma collection <span class="muted" style="font-weight:400">(figurines sans set)</span></div>
     <input type="search" data-q placeholder="Filtrer : nom, référence…" style="width:100%;margin-bottom:8px"><div data-l></div>
     <div class="pick-foot"><span class="muted small" data-cnt></span><button type="button" class="btn primary" data-addsel disabled>Ajouter</button></div></div>`;
   document.body.append(d);
@@ -8544,7 +8613,7 @@ function pickAttach(set) {
         <div class="s">${isCustom(i) ? mocWord(i) : esc(i.number)} · ${esc(state.lists.find(l => l.id === i.list_id)?.name || "")}${sel.get("own:" + i.id)?.qty > 1 ? ` · <b>${sel.get("own:" + i.id).qty} cochées</b>` : ""}</div></div></button>`).join("")}</div>` : "";
     const same = cands.filter(i => i.list_id === set.list_id && ok(i)), other = cands.filter(i => i.list_id !== set.list_id && ok(i));
     $("[data-l]", d).innerHTML = group(`Dans la liste « ${esc(state.lists.find(l => l.id === set.list_id)?.name || "")} »`, same) + group("Autres listes", other)
-      || `<div class="loading">${cands.length ? "Aucune figurine ne correspond." : "Aucune figurine seule ni MOC disponible (celles déjà rangées dans un set ne sont pas proposées)."}</div>`;
+      || `<div class="loading">${cands.length ? "Aucune figurine sans set ne correspond." : "Aucune figurine seule ni MOC disponible (celles déjà rangées dans un set ne sont pas proposées)."}</div>`;
     $$("[data-pick]", d).forEach(b => b.onclick = async () => {
       const k = b.dataset.key; if (sel.has(k)) { sel.delete(k); draw(); return upd(); }
       const f = state.items.find(i => i.id === b.dataset.pick), have = f?.quantity || 1;
@@ -8859,6 +8928,31 @@ function fillListSelect(selected) {
   if (selected) { $("#cfgList").value = selected; $("#listErr").hidden = true; $("#cfgList").classList.remove("invalid"); }
 }
 $("#cfgList").addEventListener("change", () => { $("#listErr").hidden = true; $("#cfgList").classList.remove("invalid"); });
+/* choix de la liste : bouton et menu à soi, logos en petit avant le nom (la liste déroulante cachée garde la valeur) — 21/11 */
+(() => {
+  const sel = $("#cfgList"); if (!sel || sel._pick) return; sel._pick = true;
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "list-pick-btn"; sel.after(btn); sel.classList.add("list-pick-native"); sel.tabIndex = -1;
+  const lab = o => { const l = state.lists.find(x => x.id === o.value), m = o.textContent.match(/^([\s\u00a0]*(?:↳ )?)(.*)$/s);
+    return `<span class="lp-ind">${esc(m[1])}</span>${!l ? "" : l.logo ? `<img class="list-logo lp-logo" src="${esc(l.logo)}" alt="" onerror="this.remove()">` : l.emoji ? `<span class="list-emo">${esc(l.emoji)}</span>` : ""}<span class="lp-nm">${esc(m[2].trim())}</span>`; };
+  const show = () => { const o = sel.selectedOptions[0]; btn.innerHTML = o && o.value ? lab(o) : `<span class="lp-nm muted">Choisir une liste…</span>`;
+    btn.classList.toggle("invalid", sel.classList.contains("invalid")); btn.disabled = sel.disabled; };
+  const pd = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  Object.defineProperty(sel, "value", { get() { return pd.get.call(this); }, set(v) { pd.set.call(this, v); show(); } });   // (valeur changée par le code : le bouton suit)
+  sel.addEventListener("change", show);
+  new MutationObserver(show).observe(sel, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "disabled"] });
+  btn.onclick = () => {
+    const d = document.createElement("div"); d.className = "modal over";
+    const groups = [...sel.children].map(g => g.tagName === "OPTGROUP" ? { t: g.label, o: [...g.children] } : { t: "", o: [g] }).filter(g => g.o.some(o => o.value && !o.hidden));
+    d.innerHTML = `<div class="modal-box lp-box" style="width:min(420px,100%)"><div class="modal-head"><h2>Liste</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
+      ${groups.map(g => `${g.t ? `<div class="fe-title">${esc(g.t)}</div>` : ""}<div class="lp-list">${g.o.filter(o => o.value && !o.hidden).map(o => `<button type="button" class="lp-opt${o.value === sel.value ? " on" : ""}" data-v="${esc(o.value)}">${lab(o)}</button>`).join("")}</div>`).join("")}</div>`;
+    document.body.append(d);
+    const close = () => d.remove();
+    $("[data-x]", d).onclick = close; d.onclick = e => { if (e.target === d) close(); };
+    $$("[data-v]", d).forEach(b2 => b2.onclick = () => { close(); if (sel.value !== b2.dataset.v) { sel.value = b2.dataset.v; sel.dispatchEvent(new Event("change", { bubbles: true })); } });
+    $(".lp-opt.on", d)?.scrollIntoView({ block: "center" });
+  };
+  show();
+})();
 $("#btnCfgNewList").onclick = async () => {
   const name = await ask("Nom de la nouvelle liste", "Ex : Star Wars, À vendre…");
   if (!name) return;
@@ -10012,13 +10106,14 @@ async function openFigParts(itemId, figId = "", opts = {}) {
           <small>${esc(p.part)} · ${esc(p.color_fr || "")}</small><small class="muted">gardée${kept > 1 ? "s" : ""} (d'origine)</small></span><span class="ml-val"></span></div>` : "";
         const was = keptRow + (n ? `<div class="moc-lot removed replaced-orig" data-txt="${esc(`${p.name} ${p.part} ${p.color_fr}`.toLowerCase())}">
           <img src="${img(p.image)}" alt="" loading="lazy" class="tap" data-zpart="${esc(img(p.image))}" data-zalt="${esc(p.name || p.part || "")}" title="Agrandir la photo"><span class="ml-txt"><span><b>${esc(p.name)}</b>${qtyTag(out)}</span>
-          <small>${esc(p.part)} · ${esc(p.color_fr || "")}</small><small class="sw-from">remplacée par ${esc(n.name || n.part)}</small></span>
+          <small>${esc(p.part)} · ${esc(p.color_fr || "")}</small><small class="sw-from">${s.fix ? "corrigée : la pièce d'origine est" : "remplacée par"} ${esc(n.name || n.part)}</small></span>
           <span class="ml-val"></span><button type="button" class="btn small-btn ml-back" data-undo="${k}" title="Remettre la pièce d'origine">↩ Remettre</button></div>` : "");
         return was + `<div class="moc-lot ${gone ? "removed" : s ? "swapped" : ""}" data-txt="${esc(`${p.name} ${p.part} ${p.part_num} ${p.color_fr} ${n ? n.name + " " + n.part : ""}`.toLowerCase())}"><img src="${img(n ? n.image || p.image : p.image)}" alt="" loading="lazy" class="tap" data-pinfo="${k}" title="Détails de la pièce">
           <span class="ml-txt tap" data-pinfo="${k}" title="Détails de la pièce et sets où elle apparaît"><span><b>${esc(n ? n.name || n.part : p.name)}</b>${qtyTag(s ? out : p.qty)}</span>
             <small>${esc(n ? n.part : p.part)} · ${esc(n ? n.color_fr || n.color : p.color_fr)}</small>
             ${p.acc && !s ? `<small class="muted">accessoire</small>` : ""}
             ${gone ? `<small class="sw-from">${p.acc ? "accessoire retiré" : "pièce retirée"}${s.free ? " · socle de figurine à collectionner, sans décote" : sp.done ? ` · −${price(s.orig)}` : ` · ${pend}`}</small>`
+              : s?.fix ? `<small class="sw-from">pièce d'origine corrigée (à la place de ${esc(p.name)}) · pas une modification</small>`
               : s ? `<small class="sw-from">remplace ${esc(p.name)} (${esc(p.color_fr)})${sp.done ? ` · ${price(s.orig)} → ${price(n)}` : ` · ${pend}`}</small>` : ""}</span>
           <span class="ml-val" data-mlv="${vk}">${gone ? "" : tilePrice(mlObjs[vk])}</span>
           ${gone ? `<button type="button" class="btn small-btn ml-back" data-undo="${k}" title="Remettre la pièce d'origine">↩ Remettre</button>`
@@ -10083,7 +10178,7 @@ async function openFigParts(itemId, figId = "", opts = {}) {
     $("[data-savesw]", body).onclick = async e => {
       e.currentTarget.disabled = true;
       try {
-        await post({ swaps: draft.map(({ k, orig, new: n }) => ({ k, orig: orig || null, new: n || null })) });
+        await post({ swaps: draft.map(({ k, orig, new: n, fix }) => ({ k, orig: orig || null, new: n || null, ...(fix ? { fix: true } : {}) })) });
         draft = null; await load(); toast("Modifications enregistrées, chiffrage en cours");
         shut();   // enregistré : la fenêtre se ferme (la fiche se met à jour, le chiffrage continue en arrière-plan)
         maybeDoneTodo(itemId, ["Pièces"]);
@@ -10112,9 +10207,10 @@ async function openFigParts(itemId, figId = "", opts = {}) {
       openPart({ pickTitle: `Remplacer « ${p.name} »`, similarTo: p, refImage: curPhoto(itemId, figId), pick: async n => {   // (photo de la figurine elle-même)
         const q = await howMany(p); if (q == null) return;   // (combien : ex. 1 torse sur 9)
         const orig = { part: p.part, part_num: p.part_num, color_id: p.color_id, color_fr: p.color_fr, qty: q, name: p.name, image: p.image };
-        save([...swaps.filter(x => x.k !== k), { k, orig, new: { ...n, qty: q } }]);
-        toast(`${p.name} remplacée par ${n.name || n.part}`);
-      } });
+        const fix = !!n._fix; delete n._fix;
+        save([...swaps.filter(x => x.k !== k), { k, orig, new: { ...n, qty: q }, ...(fix ? { fix: true } : {}) }]);
+        toast(fix ? `Pièce d'origine corrigée : ${n.name || n.part} (pas une modification)` : `${p.name} remplacée par ${n.name || n.part}`);
+      }, fixOpt: true });
     });
     if (opts.swapK != null) { const k = opts.swapK; opts.swapK = null; $(`[data-rp="${k}"]`, body)?.click(); }   // venu du bouton 🔁 d'une pièce
     if (opts.colorK != null) { const k = opts.colorK; opts.colorK = null; $(`[data-rc="${k}"]`, body)?.click(); }   // venu de « 🎨 Changer la couleur » d'une pièce
