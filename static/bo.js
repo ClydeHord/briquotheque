@@ -695,7 +695,7 @@ function mvMove(e) {
   if (d) Object.assign(mv.bar.style, d.horiz ? { display: "block", left: (d.pos === "before" ? d.r.left - 4 : d.r.right) + "px", top: d.r.top + "px", width: "4px", height: d.r.height + "px" }
     : { display: "block", left: d.r.left + "px", top: (d.pos === "before" ? d.r.top - 4 : d.r.bottom) + "px", width: d.r.width + "px", height: "4px" });
   else mv.bar.style.display = "none";
-  pk.tip.textContent = d ? `${describe(mv.src)} → ${d.pos === "before" ? "avant" : "après"} ${describe(d.t)}` : "Déposez à côté d'un autre élément";
+  pk.tip.textContent = d ? `${describe(mv.src)} → ${d.pos === "before" ? "avant" : "après"} ${describe(d.t)}` : "Déposer à côté d'un autre élément";
   Object.assign(pk.tip.style, { display: "block", left: Math.min(e.clientX + 14, innerWidth - 320) + "px", top: Math.min(e.clientY + 18, innerHeight - 30) + "px" });
   return true;
 }

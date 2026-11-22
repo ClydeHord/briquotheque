@@ -41,33 +41,33 @@
 <form id="f" autocomplete="off">
   <div class="brand"><span class="brick"><i></i><i></i></span>Briquothèque</div>
   <p>Bienvenue ! Trois étapes, une seule obligatoire. Des <b>fiches de démo</b> (un exemple de chaque type) et un inventaire
-     vous attendent dans la liste « Exemples » : modifiez-les ou supprimez-les librement.</p>
+     attendent dans la liste « Exemples » : à modifier ou supprimer librement.</p>
 
-  <h2>1. Votre mot de passe <small>(obligatoire)</small></h2>
-  <p>Il protège toute modification de votre collection. 10 caractères au moins ; une phrase est plus sûre qu'un mot.</p>
+  <h2>1. Le mot de passe <small>(obligatoire)</small></h2>
+  <p>Il protège toute modification de la collection. 10 caractères au moins ; une phrase est plus sûre qu'un mot.</p>
   <div class="grid">
     <div><label for="p1">Mot de passe</label><input type="password" id="p1" autocomplete="new-password" required minlength="10"></div>
     <div><label for="p2">Confirmation</label><input type="password" id="p2" autocomplete="new-password" required minlength="10"></div>
   </div>
   <div id="codeRow" hidden><label for="code">Code d'installation</label>
     <input id="code" inputmode="text" autocomplete="off" placeholder="affiché dans la console du serveur au démarrage">
-    <p>Vous installez depuis Internet : ce code, écrit dans la console du serveur (et dans <code>data/setup_code.txt</code>), prouve que l'installation est la vôtre.</p></div>
+    <p>Installation depuis Internet : ce code, écrit dans la console du serveur (et dans <code>data/setup_code.txt</code>), prouve que l'installation est la vôtre.</p></div>
 
   <h2>2. Clé API Rebrickable <small>(facultatif, recommandé)</small></h2>
   <p><b>Pourquoi ?</b> Le catalogue LEGO : recherche des sets et des pièces, images, inventaires, pièces des figurines.</p>
   <details><summary>Comment l'obtenir (gratuit, 2 minutes)</summary><ol>
-    <li>Créez un compte sur <a href="https://rebrickable.com/" target="_blank" rel="noopener">rebrickable.com</a>.</li>
-    <li>Ouvrez <i>Profil → Paramètres → API</i>, puis « Générer une nouvelle clé ».</li>
-    <li>Copiez la clé et collez-la ici.</li></ol></details>
+    <li>Créer un compte sur <a href="https://rebrickable.com/" target="_blank" rel="noopener">rebrickable.com</a>.</li>
+    <li>Ouvrir <i>Profil → Paramètres → API</i>, puis « Générer une nouvelle clé ».</li>
+    <li>Copier la clé et la coller ici.</li></ol></details>
   <label for="rb">Clé Rebrickable</label><input id="rb" autocomplete="off" spellcheck="false" placeholder="facultatif">
 
   <h2>3. Codes de l'API BrickLink <small>(facultatif)</small></h2>
   <p><b>Pourquoi ?</b> Les prix réels des annonces (neuf et occasion), en France d'abord, sinon en Europe, sinon dans le monde.
      Sans eux, les prix viennent de BrickOwl quand c'est possible.</p>
   <details><summary>Comment les obtenir (gratuit)</summary><ol>
-    <li>Connectez-vous à BrickLink, puis ouvrez <a href="https://www.bricklink.com/v2/api/register_consumer.page" target="_blank" rel="noopener">la page de l'API</a>.</li>
-    <li>Acceptez les conditions : BrickLink donne la <b>ConsumerKey</b> et le <b>ConsumerSecret</b>.</li>
-    <li>Créez un « Access Token » avec l'<b>adresse IP publique de votre serveur</b> (IP Mask 255.255.255.255) :
+    <li>Se connecter à BrickLink, puis ouvrir <a href="https://www.bricklink.com/v2/api/register_consumer.page" target="_blank" rel="noopener">la page de l'API</a>.</li>
+    <li>Accepter les conditions : BrickLink donne la <b>ConsumerKey</b> et le <b>ConsumerSecret</b>.</li>
+    <li>Créer un « Access Token » avec l'<b>adresse IP publique de le serveur</b> (IP Mask 255.255.255.255) :
         BrickLink donne le <b>TokenValue</b> et le <b>TokenSecret</b>.</li></ol></details>
   <div class="grid">
     <div><label for="ck">ConsumerKey</label><input id="ck" autocomplete="off" spellcheck="false"></div>
@@ -75,7 +75,7 @@
     <div><label for="tk">TokenValue</label><input id="tk" autocomplete="off" spellcheck="false"></div>
     <div><label for="ts">TokenSecret</label><input id="ts" type="password" autocomplete="off" spellcheck="false"></div>
   </div>
-  <p>Les clés restent sur votre serveur et ne sont jamais réaffichées. Vous pourrez les ajouter ou les changer plus tard dans ⚙️ Réglages.</p>
+  <p>Les clés restent sur le serveur et ne sont jamais réaffichées. Elles s'ajoutent ou se changent plus tard dans ⚙️ Réglages.</p>
 
   <button id="b">Terminer l'installation</button>
   <div class="err" id="err"></div>
@@ -108,7 +108,7 @@ $("f").onsubmit = async e => {
       notes.push(k.ok ? "✅ Codes BrickLink enregistrés." : "⚠️ BrickLink : " + (k.d.erreur || "refusé") + " (à corriger dans les Réglages).");
     }
     if (notes.some(n => n.startsWith("⚠️"))) {   // mot de passe créé : on montre ce qui reste à corriger, puis on entre
-      err.textContent = notes.join("\n") + "\nMot de passe créé : ouverture de votre collection…";
+      err.textContent = notes.join("\n") + "\nMot de passe créé : ouverture de la collection…";
       setTimeout(() => location.href = "/", 4500);
     } else location.href = "/";
   } catch { err.textContent = "Serveur injoignable"; b.disabled = false; }

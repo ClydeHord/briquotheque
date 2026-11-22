@@ -193,12 +193,12 @@ function tagsPass() {
   }
   if (PUBLIC || !app() || !P() || !P().itemOf) return;
   const box = D.getElementById("items");
-  if (box && (mine.length || box.querySelector(".bo-ctag"))) {   // vos étiquettes, sur les cartes
+  if (box && (mine.length || box.querySelector(".bo-ctag"))) {   // les étiquettes, sur les cartes
     for (const card of all(".card[data-id], .card[data-altof]", box)) {
       const it = P().itemOf(card.dataset.id || card.dataset.altof), ts = it && mine.length ? tagsOf(it) : [], body = card.querySelector(":scope > .body"), pic = card.querySelector(":scope > .pic");
       if (body) put(body, ":scope > .bo-ctags", ts.filter(t => t.kind !== "badge" && t.card !== false).map(t => tagHtml(t, it)).join(""),
         () => { const d = D.createElement("div"); d.className = "bo-ctags bo-x"; (body.querySelector(":scope > .tagline") || body.querySelector(":scope > .name") || body.firstElementChild)?.after(d); return d.isConnected ? d : null; });
-      if (pic) put(pic, ":scope > .bo-cbadges", ts.filter(t => t.kind === "badge" && t.card !== false).map(t => tagHtml(t, it)).join(""),   // vos pastilles : dans leur propre coin de l'image (l'application masque les siennes sur les cartes de la collection)
+      if (pic) put(pic, ":scope > .bo-cbadges", ts.filter(t => t.kind === "badge" && t.card !== false).map(t => tagHtml(t, it)).join(""),   // les pastilles : dans leur propre coin de l'image (l'application masque les siennes sur les cartes de la collection)
         () => { const d = D.createElement("div"); d.className = "bo-cbadges bo-x"; pic.append(d); return d; });
     }
   }
@@ -472,7 +472,7 @@ function behavPass() {
     const first = mergeOff === null; mergeOff = b.noMerge === true;
     if (!first || mergeOff) try { mergeFigs(); render(); } catch {}
   }
-  const so = obj(b.sorts), sel = D.getElementById("sort");   // tri par défaut selon le genre de liste (tant que vous n'en avez pas choisi un pour cette liste)
+  const so = obj(b.sorts), sel = D.getElementById("sort");   // tri par défaut selon le genre de liste (tant qu'aucun n'a été choisi pour cette liste)
   if (sel && sortFor !== state.current) {
     sortFor = state.current;
     try {

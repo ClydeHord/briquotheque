@@ -3459,3 +3459,112 @@ html[data-ui="verre"] #topViews2.is-stuck, html[data-ui="pastel"] #topViews2.is-
 .inv-row.blc .bl-links a { padding: 0; margin: 0; background: none; border: 0; box-shadow: none; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 600px) { .inv-row.blc { grid-template-columns: minmax(0, 28%) minmax(0, 1fr) auto; } }
 @media (max-width: 380px) { .inv-row.blc { grid-template-columns: minmax(0, 22%) minmax(0, 1fr) auto; } .inv-row.blc .bl-links a { font-size: 11.5px; } .inv-row.blc .inv-need { font-size: 26px; } }
+
+/* (« Commandes » : commandées en plus, attribuées à aucune fiche — un bleu à part, tout en bas — 22/11) */
+.extra-head { margin: 18px 0 8px; font-size: 16px; color: #0e7490; }
+.inv-row.extra { border-color: #0891b2; background: color-mix(in srgb, #0891b2 9%, var(--panel)); }
+.inv-row.extra .inv-need { color: #0e7490; }
+.extra-txt { color: #0e7490; font-weight: 700; }
+@media (prefers-color-scheme: dark) { .extra-head, .inv-row.extra .inv-need, .extra-txt { color: #22d3ee; } }
+
+/* (« Remplacer une couleur » : listes de couleurs maison — carré de couleur, ordre alphabétique, recherche — 22/11) */
+.cpick { position: relative; margin: 4px 0 10px; }
+.cp-btn { width: 100%; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); color: inherit; font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.cp-btn .cp-caret { margin-left: auto; opacity: .6; }
+.cp-list { margin-top: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); padding: 6px; }   /* (dans la fenêtre : jamais coupée) */
+.cp-q { width: 100%; margin: 0 0 6px; }
+.cp-items { max-height: min(280px, 45vh); overflow-y: auto; display: grid; gap: 2px; }
+.cp-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cp-item:hover, .cp-item.on { background: color-mix(in srgb, var(--accent, #d01012) 12%, transparent); }
+.cp-item .swatch, .cp-btn .swatch { flex: 0 0 auto; }
+
+/* (« Commandes » : ☑ Sélection — case sur chaque ligne, barre d'actions collée en bas — 22/11) */
+.inv-row.blc { position: relative; }
+.bl-chk { position: absolute; top: 8px; left: 8px; z-index: 2; background: var(--panel); border-radius: 6px; padding: 3px; line-height: 0; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.bl-chk input { width: 20px; height: 20px; margin: 0; }
+.inv-row.picked { outline: 3px solid var(--accent, #d01012); outline-offset: -1px; }
+.bl-selbar { position: sticky; bottom: 72px; z-index: 30; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; padding: 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.bl-selbar .sb-n { margin-right: auto; }
+
+/* (« Commandes » : filtres dans la barre collée en haut — 22/11) */
+.toolbar .blf-bar { flex: 1 1 100%; order: 10; margin: 2px 0 0; }
+
+/* (« Commandes » sur ordinateur : deux par ligne, carte équilibrée — photo | infos | ×N, boutons dessous — 22/11) */
+@media (min-width: 1000px) {
+  #items .bl-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+  #items .bl-rows > .inv-row { margin: 0; }
+  .inv-row.blc, .inv-row.blc:not(.bl-row) { grid-template-columns: 112px minmax(0, 1fr) auto; grid-template-areas: "pic info need" "act act act";
+    align-items: start; gap: 8px 14px; padding: 10px 12px; }
+  .inv-row.blc .inv-pic { grid-area: pic; width: 112px; height: 92px; align-self: start; }
+  .inv-row.blc .inv-info { grid-area: info; align-self: start; min-width: 0; }
+  .inv-row.blc .inv-act { grid-area: act; justify-content: flex-start; align-self: end; gap: 6px; flex-wrap: wrap; }
+  .inv-row.blc .inv-act button { flex: 0 0 auto; min-height: 32px; padding: 5px 10px; font-size: 12.5px; }
+  .inv-row.blc .inv-act .inv-cmd { flex: 0 0 auto; max-width: 100%; margin-right: 100%; }   /* (« Commandée le … » seule sur sa ligne, boutons dessous — 22/11) */
+  .inv-row.blc .inv-need, .inv-row.blc:not(.bl-row) .inv-need, .inv-row.blc.order:not(.bl-row) .inv-need, .inv-row.blc.cmd:not(.bl-row) .inv-need { grid-area: need; font-size: 28px; justify-self: end; align-self: start; }
+  .inv-row.blc .bl-chk { top: 6px; left: 6px; }
+}
+@media (min-width: 1400px) {   /* (trois par ligne — 22/11) */
+  #items .bl-rows { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1700px) {   /* (grand écran : quatre par ligne, photo un peu réduite — 22/11) */
+  #items .bl-rows { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .inv-row.blc, .inv-row.blc:not(.bl-row) { grid-template-columns: 96px minmax(0, 1fr) auto; gap: 6px 12px; }
+  .inv-row.blc .inv-pic { width: 96px; height: 80px; }
+  .inv-row.blc .inv-act { gap: 4px; }
+  .inv-row.blc .inv-act button { min-height: 30px; padding: 4px 7px; font-size: 11.5px; }
+  .inv-row.blc .inv-act .inv-cmd { font-size: 11.5px; padding: 3px 8px; }
+  .inv-row.blc .inv-need, .inv-row.blc:not(.bl-row) .inv-need, .inv-row.blc.order:not(.bl-row) .inv-need, .inv-row.blc.cmd:not(.bl-row) .inv-need { font-size: 24px; }
+}
+/* (« Commandes » : sans fond de couleur — seul le liseré dit l'état — 22/11) */
+.inv-row.blc.cmd, .inv-row.blc.extra, .inv-row.blc.ok { background: var(--panel); }
+
+/* (« Commandes » : sections séparées — 22/11) */
+.grp-head { margin: 18px 0 8px; font-size: 16px; }
+.grp-head:first-child { margin-top: 4px; }
+.grp-head.g-cmd { color: #2f6fa8; }
+.grp-head.g-ok { color: var(--green, #1f8a4c); }
+
+/* (téléphone : ✔ OK plus étroit, « ↩ À commander » sur une seule ligne — 22/11) */
+@media (max-width: 600px) {
+  .inv-act button.inv-ok { flex: 0 0 auto; padding: 8px 9px; }
+  .inv-act button[data-uncmd], .inv-act button[data-cmdq] { flex: 1 0 auto; white-space: nowrap; }
+  .inv-act button[data-again] { flex: 1 1 100%; order: 9; }   /* (Commander à nouveau : sa propre ligne, en dessous) */
+}
+
+/* (boutons cachés de « Commandes » : jamais affichés — 22/11) */
+.inv-act button[hidden] { display: none !important; }
+
+/* (fenêtres de choix : ligne sans photo sur toute la largeur ; sur ordinateur, plus gros — 22/11) */
+.link-row.noimg { grid-template-columns: minmax(0, 1fr) auto; }
+.pick-list .link-row .rn small { display: block; }
+@media (min-width: 900px) {
+  .pick-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .pick-list > .loading { grid-column: 1 / -1; }
+  .pick-list .link-row { grid-template-columns: 110px minmax(0, 1fr); gap: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; min-height: 76px; }
+  .pick-list .link-row.noimg { grid-template-columns: minmax(0, 1fr); padding: 16px 18px; }
+  .pick-list .link-row img { width: 110px; height: 84px; border-radius: 8px; }
+  .pick-list .link-row .rn { font-size: 17px; font-weight: 700; line-height: 1.3; }
+  .pick-list .link-row .rn small { font-size: 14px; font-weight: 400; margin-top: 4px; }
+  .pick-list .link-row:hover { border-color: var(--accent, #2f6fa8); }
+  .modal.top .modal-box.wide h2 { font-size: 22px; }
+}
+
+/* (lisibilité : rien sous 11 px, petits boutons agrandis ; ordinateur plus gros — 22/11) */
+.card .tagline .tg.tg-moc, .card .tagline .tg.tg-mod { font-size: 11px; }
+.tf-mini .tf-sf { font-size: 12px; }
+.side-ico { min-height: 30px; min-width: 30px; padding: 5px 9px; }
+.pub-share { min-height: 30px; }
+.swap-chip button { min-width: 28px; min-height: 28px; }
+html .links-row .gift-btn, html[data-ui] .links-row .gift-btn { height: 30px; min-width: 34px; font-size: 14px; padding: 0 9px; }
+@media (max-width: 600px) { .stat .lbl { font-size: 11.5px; } }
+@media (min-width: 900px) {
+  #figList .fq-txt .fv, .fe-list .fq-txt .fv, .pc-row .fv { font-size: 13px; }
+  .card .tagline .tg.tg-moc, .card .tagline .tg.tg-mod { font-size: 12px; }
+  .tf-mini .tf-sf { font-size: 13px; }
+}
+
+/* (souhait : « État souhaité » — boutons à leur taille, plus petits — 22/11) */
+#wishBox .choice label { flex: 0 0 auto; }
+#wishBox .choice span { padding: 6px 16px; font-size: 14px; min-height: 0; }

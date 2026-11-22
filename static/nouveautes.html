@@ -39,7 +39,7 @@
     <select id="theme" aria-label="Thème" hidden><option value="">Tous les thèmes</option></select>
     <button type="button" class="btn small-btn" id="thBtn">🎯 Thèmes (tous)</button>
   </div>
-  <p class="hint nov-keep">💾 Vos choix (onglet, Sets / Figurines, filtres, thème) sont gardés sur cet appareil.</p>
+  <p class="hint nov-keep">💾 Les choix (onglet, Sets / Figurines, filtres, thème) sont gardés sur cet appareil.</p>
   <section id="b"><div class="loading"><span class="spinner"></span>Chargement…</div></section>
 </main>
 <script>
@@ -172,7 +172,7 @@ $("#thBtn").onclick = () => {   /* thèmes : cases à cocher (cochés = affiché
   const all = [...new Set(data.items.map(x => x.theme).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   const m = document.createElement("div"); m.className = "modal top";
   m.innerHTML = `<div class="modal-box" style="width:min(460px,100%)"><div class="modal-head"><h2>🎯 Thèmes</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-    <p class="hint" style="margin-top:0">Les thèmes cochés s'affichent (sets et figurines). Votre choix est gardé sur cet appareil.</p>
+    <p class="hint" style="margin-top:0">Les thèmes cochés s'affichent (sets et figurines). Le choix est gardé sur cet appareil.</p>
     <div class="exth-list">${all.map(t => `<label class="todo-chk"><input type="checkbox" value="${esc(t)}" ${exTh.has(t) ? "" : "checked"}> ${esc(t)}</label>`).join("") || `<p class="muted">Aucun thème pour l'instant.</p>`}</div>
     <div class="est-actions" style="justify-content:space-between;margin-top:12px"><span style="display:flex;gap:6px"><button type="button" class="btn small-btn" data-all>Tout cocher</button><button type="button" class="btn small-btn" data-none>Tout décocher</button></span><button type="button" class="btn primary" data-ok>OK</button></div></div>`;
   document.body.append(m);

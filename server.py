@@ -318,7 +318,8 @@ def parts_merge_same(db):
     groups = {}
     for it in db.get("items") or []:
         if isinstance(it, dict) and it.get("kind") == "part" and it.get("part_num"):
-            groups.setdefault((it.get("list_id"), str(it.get("part_num")), str(it.get("color_id")), bool(it.get("got"))), []).append(it)
+            groups.setdefault((it.get("list_id"), str(it.get("part_num")), str(it.get("color_id")), bool(it.get("got")),
+                               bool(it.get("ordered") or it.get("cmd_m"))), []).append(it)   # (commandée : jamais fondue avec une nouvelle ligne — 22/11)
     gone = set()
     for same in groups.values():
         if len(same) < 2:
@@ -794,6 +795,8 @@ def brickset_one(number):
         _save(BRICKSET_FILE, cur)
 
 
+ORDERS_EXTRA_DONE = os.path.join(DATA, "orders_extra_done.json")   # « commandées en plus » traitées (OK, attribuées, vers un inventaire) : {clé: {t, how}} (22/11)
+ORDERS_EXTRA = os.path.join(DATA, "orders_extra.json")   # commandées en plus (non attribuées), refait à chaque lecture des commandes (22/11)
 ORDERS_FILE = os.path.join(DATA, "orders_seen.json")   # {"BrickOwl:<n°>": {"date", "status", "items": [[éléments, références, couleur, qté, nom]]}}
 _ord = {"t": 0, "busy": False}
 
@@ -826,7 +829,8 @@ def orders_bl_read(seen):
                         continue
                     rows.append([[], [str(it.get("no") or "").lower()], "", int(x.get("quantity") or 0), it.get("name") or "",
                                  "Part" if typ == "PART" else "Minifigure", float(x.get("disp_unit_price_final") or x.get("unit_price_final") or 0),
-                                 str(x.get("color_id")) if typ == "PART" else None])
+                                 str(x.get("color_id")) if typ == "PART" else None,
+                                 f"https://img.bricklink.com/ItemImage/PN/{x.get('color_id')}/{it.get('no')}.png" if typ == "PART" else f"https://img.bricklink.com/ItemImage/MN/0/{it.get('no')}.png"])   # (image — 22/11)
             rec["items"] = rows
         seen[key] = rec
 
@@ -851,12 +855,12 @@ def orders_sync(force=False):
                 continue
             rec = seen.get(key) or {}
             rec.update(date=int(o.get("order_date") or 0), status=o.get("status") or "", status_id=int(o.get("status_id") or 0))
-            if "items" not in rec or any(len(x) < 7 for x in rec["items"]):   # (le détail : lu une seule fois ; relu une fois pour le prix payé — 21/11 nuit)
+            if "items" not in rec or any(len(x) < 9 for x in rec["items"]):   # (le détail : lu une seule fois ; relu une fois pour le prix payé, puis l'image — 22/11)
                 items = sources.bo_api("order/items", {"order_id": oid}) or []
                 rec["items"] = [[sorted({str(i.get("id")) for i in x.get("ids") or [] if i.get("type") == "item_no"}),
                                  sorted({str(i.get("id")).lower() for i in x.get("ids") or [] if i.get("type") == "design_id"}),
                                  str(x.get("color_name") or "").lower(), int(x.get("ordered_quantity") or 0) - int(x.get("refunded_quantity") or 0),
-                                 x.get("name") or "", x.get("type") or "", float(x.get("base_price") or 0)] for x in items]   # (prix unitaire payé)
+                                 x.get("name") or "", x.get("type") or "", float(x.get("base_price") or 0), None, x.get("image_small") or ""] for x in items]   # (prix unitaire payé ; image)
             seen[key] = rec
         _save(ORDERS_FILE, seen)
         cmap = {k: str(v).lower() for k, v in (moc_color_maps().get("rb") or {}).items()}
@@ -870,7 +874,7 @@ def orders_sync(force=False):
             refs_ = lambda nm: {x.strip().lower() for x in ((re.search(r"\(([^()]*)\)\s*$", nm or "") or [None, ""])[1]).split("/") if x.strip()}   # (références du nom)
             oitems = [{"site": key.split(":", 1)[0], "order": key.split(":", 1)[1], "date": int(rec.get("date") or 0), "els": set(els),
                        "des": set(des) | refs_(name), "cn": cn, "left": q, "q": q, "name": name, "price": (rest or [None])[0],
-                       "fig": fnorm(name) if typ == "Minifigure" else None, "blc": rest[1] if len(rest) > 1 else None}
+                       "fig": fnorm(name) if typ == "Minifigure" else None, "blc": rest[1] if len(rest) > 1 else None, "img": rest[2] if len(rest) > 2 else ""}
                       for key, rec in seen.items() if rec.get("status_id") != 8   # (annulée : écartée)
                       for els, des, cn, q, name, typ, *rest in rec.get("items") or [] if q > 0 and typ in ("Part", "Minifigure")]
             cons = []   # ce qui peut recevoir une commande : (date, sorte, objet, éléments, références, couleur, quantité, commandes écartées, dès le)
@@ -898,7 +902,7 @@ def orders_sync(force=False):
                     base = {}
                 sw = {str(k_): str(v_) for k_, v_ in (inv.get("swaps") or {}).items()}   # (règle de couleur de l'inventaire)
                 for rk, st in (inv.get("rows") or {}).items():
-                    if not (st.get("s") == "order" or (st.get("s") in ("cmd", "ok") and st.get("o"))) or (ikey, rk) in linked:
+                    if st.get("o_lock") or not (st.get("s") == "order" or (st.get("s") in ("cmd", "ok") and st.get("o"))) or (ikey, rk) in linked:   # (o_lock : attribuée à la main — 22/11)
                         continue   # (« Commandée » à la main, ou de l'ancienne façon — copiée dans « À commander » — : laissée telle quelle)
                     r = base.get(rk) or {}
                     pn = st.get("p") or r.get("part_num") or rk.split("|")[0]
@@ -964,6 +968,32 @@ def orders_sync(force=False):
                     inv["updated"] = int(time.time())
                     changed += 1
             unmatched = [o["name"] for o in oitems if o["left"] == o["q"]]
+            try:   # commandées EN PLUS : ce qui reste une fois tout réparti (surplus, ou rien d'équivalent) — affichées dans « Commandes » (22/11)
+                cfr, inv_bo = colors_fr(), {v: k for k, v in cmap.items()}
+                done_ = _load(ORDERS_EXTRA_DONE, {})
+                blrb = {str(k): str(v) for k, v in (moc_color_maps().get("blrb") or {}).items()}
+                ext = []
+                for o in oitems:
+                    if o["left"] <= 0:
+                        continue
+                    rbc = blrb.get(str(o["blc"])) if o.get("blc") is not None else inv_bo.get(o.get("cn") or "")
+                    nm = re.sub(r"\s*\([^()]*\)\s*$", "", re.sub(r"^LEGO\s+", "", o["name"] or "")).replace(" Minifigure", "").strip()
+                    if o.get("cn") and nm.lower().startswith(o["cn"] + " "):   # (la couleur est déjà à côté — 22/11)
+                        nm = nm[len(o["cn"]) + 1:]
+                    ref = min(o["des"], key=lambda x: (len(x), x)) if o["des"] else ""   # (la plus courte : 3069b plutôt que 113477)
+                    img = o.get("img") or (f"https://cdn.rebrickable.com/media/parts/elements/{sorted(o['els'])[0]}.jpg" if o["els"] else "")
+                    pn_ = next((d for d in sorted(o["des"], key=lambda x: (len(x), x)) if d in names), ref)   # (référence Rebrickable)
+                    key_ = f'{o["site"]}:{o["order"]}:{",".join(sorted(o["des"])) or o.get("fig") or nm}:{rbc}'
+                    if key_ in done_:
+                        continue
+                    ext.append({"key": key_, "part_num": pn_, "bl": (names.get(pn_) or {}).get("bl") or ref, "color_id": int(rbc) if str(rbc or "").lstrip("-").isdigit() else None,
+                                "price": o.get("price"), "site": o["site"], "order": o["order"], "date": o["date"], "name": nm, "ref": ref, "qty": o["left"],
+                                "fig": o.get("fig") is not None, "color_fr": (cfr.get(str(rbc)) or {}).get("fr") or (o.get("cn") or "").capitalize(),
+                                "rgb": (cfr.get(str(rbc)) or {}).get("rgb") or "", "paid": round(o["left"] * o["price"], 2) if o.get("price") else None, "image": img})
+                ext.sort(key=lambda x: (-(x["date"] or 0), x["name"]))
+                _save(ORDERS_EXTRA, {"t": int(time.time()), "items": ext})
+            except Exception as e_:
+                print("Commandées en plus :", e_, flush=True)
             if changed:
                 _save(DB_FILE, db)
         _ord["t"] = time.time()
@@ -1011,6 +1041,21 @@ def ref_site():
     return "brickowl" if _ref["v"] == "brickowl" or bl_down() else "bricklink"   # (BrickLink muet depuis 24 h : BrickOwl en attendant — 21/11 soir)
 
 
+def bo_first():
+    """BrickOwl passe AVANT BrickLink seulement s'il est choisi dans les Réglages ; en secours automatique (BrickLink muet), les prix
+    BrickLink déjà connus restent et BrickOwl ne comble que les manques (22/11)."""
+    ref_site()
+    return _ref["v"] == "brickowl"
+
+
+def bo_solid(rec):
+    """Relevé BrickOwl (set, figurine) assez fourni pour s'y fier : au moins le minimum de ventes / annonces réglé (3), comme BrickLink (22/11)."""
+    try:
+        return bool(rec) and bool(rec.get("unit")) and (rec.get("offers") is None or int(rec.get("offers") or 0) >= bl_min_sales())
+    except (TypeError, ValueError):
+        return False
+
+
 def part_cond_view(bl_rec, bo_rec):
     """Prix d'une pièce pour chaque état voulu (N neuf, U occasion, X n'importe), selon le site de référence (21/11)."""
     def bl_u(c):
@@ -1038,7 +1083,7 @@ def ref_mix(bl, bo):
         if bl and bo:
             return round((bl + bo) / 2, 3), ""
         return (bl or bo), ("BrickLink" if bl else "BrickOwl" if bo else "")   # (un seul des deux : signalé)
-    a, b, other = (bl, bo, "BrickOwl") if s == "bricklink" else (bo, bl, "BrickLink")
+    a, b, other = (bo, bl, "BrickLink") if s == "brickowl" and bo_first() else (bl, bo, "BrickOwl")   # (secours automatique : BrickLink connu d'abord — 22/11)
     return (a, "") if a else (b, other) if b else (None, "")
 
 
@@ -1396,14 +1441,16 @@ def market_combine(bl, bo):
              for nm, r in (("BrickLink", bl), ("BrickOwl", bo)) if r}
     if s == "bricklink" and bl and not bo:   # (comme avant)
         return {**bl, "sites": sites}
-    base = dict(bl if (s != "brickowl" and bl) or not bo else bo)
+    base = dict(bl if (not bo_first() and bl) or not bo else bo)
     for k in ("new", "used"):
         a, b = ((bl or {}).get(k) or {}), ((bo or {}).get(k) or {})
+        if b.get("unit") and not bo_solid(b):   # (BrickOwl trop mince : pas retenu — 22/11)
+            b = {}
         u, fb = ref_mix(a.get("unit"), b.get("unit"))
         if u is None:
             base[k] = a or b or None
             continue
-        src_rec = b if fb == "BrickOwl" or (s == "brickowl" and not fb) else a if a.get("unit") else b
+        src_rec = b if fb == "BrickOwl" or (bo_first() and not fb) else a if a.get("unit") else b
         base[k] = {**src_rec, "unit": u, **({"fb": fb} if fb else {}), **({"mix": True} if s == "both" and a.get("unit") and b.get("unit") else {})}
     base["src"] = {"both": "both", "brickowl": "BrickOwl"}.get(s, base.get("src") or "BrickLink")
     base["sites"] = sites
@@ -3536,7 +3583,8 @@ def _fu_cache():
 
 def fig_used(fid):
     """Prix d'occasion relevé (cache seulement, sans requête) ou None — selon le site de référence (21/11)."""
-    return ref_mix((fig_bl_rec(fid) or {}).get("unit"), (fig_bo_rec(fid) or {}).get("unit"))[0]
+    bo = fig_bo_rec(fid)
+    return ref_mix((fig_bl_rec(fid) or {}).get("unit"), bo.get("unit") if bo_solid(bo) else None)[0]   # (BrickOwl trop mince : pas retenu — 22/11)
 
 
 def fig_bl_rec(fid):
@@ -3603,9 +3651,9 @@ def fig_used_stats(fid):
     """Annonces d'occasion relevées : {min, max, avg, offers, zone} ou None — du site de référence (secours : l'autre ; les deux : la moyenne).
     « sites » : le prix de chaque site ; « fb » : site de secours (21/11)."""
     bl, bo = fig_bl_rec(fid), fig_bo_rec(fid)
-    u, fb = ref_mix((bl or {}).get("unit"), (bo or {}).get("unit"))
+    u, fb = ref_mix((bl or {}).get("unit"), (bo or {}).get("unit") if bo_solid(bo) else None)   # (BrickOwl trop mince : pas retenu — 22/11)
     s = ref_site()
-    r = dict((bo if (fb == "BrickOwl" or (s == "brickowl" and bo and bo.get("unit"))) else bl or bo) or {})
+    r = dict((bo if (fb == "BrickOwl" or (bo_first() and bo_solid(bo))) else bl or bo) or {})
     if u is not None:
         r.update(unit=u, **({"fb": fb} if fb else {}), **({"mix": True} if s == "both" and not fb else {}))
     r["sites"] = {nm: {"used": (x or {}).get("unit"), "url": (x or {}).get("url")} for nm, x in (("BrickLink", bl), ("BrickOwl", bo)) if x}
@@ -6670,11 +6718,22 @@ def trend_until():
     return (ref + datetime.timedelta(days=1)).isoformat()
 
 
+_tep = {"t": 0, "v": ""}
+
+
+def trend_epoch():
+    """Date de départ des variations (réglage « trend_epoch », AAAA-MM-JJ) : les relevés d'avant ne servent jamais de comparaison (22/11)."""
+    if time.time() - _tep["t"] > 30:
+        _tep.update(v=str(_load(sources.SETTINGS_FILE, {}).get("trend_epoch") or ""), t=time.time())
+    return _tep["v"]
+
+
 def trend_ref_row(rows, today, until, ok=lambda x: True, unit=None):
     """Relevé de comparaison : le dernier d'avant « until » ; sinon (fiche plus récente que la période) le tout premier d'avant aujourd'hui.
     unit (valeur à l'unité d'un relevé) : un relevé qui vaut moins du quart d'un des deux suivants (prix pas encore connu à l'ajout…)
     n'est jamais pris — c'est le relevé fiable suivant qui sert (20/11)."""
-    rows = [x for x in rows or [] if ok(x)]
+    ep = trend_epoch()
+    rows = [x for x in rows or [] if ok(x) and (not ep or x[0] >= ep)]   # (rien d'avant la date de départ des variations — 22/11)
     if unit:
         def sure(k):
             u = unit(rows[k])
@@ -6718,7 +6777,8 @@ def vl_ref():
     """Relevé auquel les variations sont comparées : le dernier d'avant aujourd'hui → {"day": "AAAA-MM-JJ", "t": heure (epoch) ou None}."""
     log, today, until = _load(VALUE_LOG_FILE, {}), time.strftime("%Y-%m-%d"), trend_until()
     times = log.get("times") or {}
-    days = [d for d in times if d < today] + [d for d in (_load(HISTORY_FILE, {}).get("collection") or {}) if d < today]
+    ep = trend_epoch()
+    days = [d for d in times if ep <= d < today] + [d for d in (_load(HISTORY_FILE, {}).get("collection") or {}) if ep <= d < today]   # (date de départ des variations — 22/11)
     if not days:
         return None
     d = max([x for x in days if x < until] or [min(days)])   # (période choisie ; sinon le premier relevé)
@@ -6732,7 +6792,7 @@ def comp_chg(e, cache, ih, today):
     def last(pts, col):
         ref = None
         for p_ in pts or []:
-            if p_[0] < today and p_[col] is not None:
+            if trend_epoch() <= p_[0] < today and p_[col] is not None:   # (date de départ des variations — 22/11)
                 ref = p_[col]
         return ref
     q = max(1, int(e.get("quantity", 1) or 1))
@@ -6741,7 +6801,7 @@ def comp_chg(e, cache, ih, today):
         return None
     kind = e.get("kind") or "set"
     if kind == "custom":
-        vh = [x for x in (e.get("value_hist") or []) if x[0] < today]
+        vh = [x for x in (e.get("value_hist") or []) if trend_epoch() <= x[0] < today]   # (date de départ des variations — 22/11)
         u0 = vh[-1][1] if vh else None
         return round((v / q - u0) / u0 * 100, 1) if u0 else None
     if kind not in ("set", "fig"):
@@ -7345,10 +7405,12 @@ def inventories_with_part(db, part_num, color_id):
         num = it["number"] if it else inv.get("set")
         if not num:   # inventaire d'un élément supprimé : ignoré
             continue
-        rows = [r for r in (pc.get("inv:" + num) or []) if r.get("part_num") == part_num]
+        rows = [r for r in (pc.get("inv:" + num) or []) + (inv.get("extra") or []) if r.get("part_num") == part_num]   # (lignes ajoutées comprises — 22/11)
         if not rows:
             continue
-        same = next((r for r in rows if str(r.get("color_id")) == str(color_id)), None)
+        sw, stt = {str(k): str(v) for k, v in (inv.get("swaps") or {}).items()}, inv.get("rows") or {}
+        eff = lambda r: str((stt.get(f"{part_num}|{r['color_id']}") or {}).get("c")) if (stt.get(f"{part_num}|{r['color_id']}") or {}).get("c") is not None else sw.get(str(r["color_id"]), str(r["color_id"]))   # (couleur effective — 22/11)
+        same = next((r for r in rows if eff(r) == str(color_id)), None)
         out.append({"key": key, "set": num, "name": inv.get("label") or fr_name(num) or inv.get("name") or num,
                     "row": f"{part_num}|{(same or rows[0])['color_id']}", "same_color": bool(same)})
     out.sort(key=lambda x: (not x["same_color"], x["name"]))
@@ -8635,6 +8697,19 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     if os.path.isfile(path) and not (k == "technique" and DEMO):
                         out[k] = {"t": int(os.path.getmtime(path)), "size": os.path.getsize(path)}
                 return self.send_json(out)
+            if p == "/api/orders/extra":   # « Commandes » : les pièces / figurines commandées en plus (non attribuées) — 22/11
+                ext_ = [] if DEMO else (_load(ORDERS_EXTRA, {}).get("items") or [])
+                pc_, miss_ = _parts_cache(), set()   # (zoom : grande photo Rebrickable de la pièce dans sa couleur — 22/11)
+                for e_ in ext_:
+                    if e_.get("part_num") and e_.get("color_id") is not None:
+                        l_ = pc_.get("pc:" + str(e_["part_num"]))
+                        if l_ is None:
+                            miss_.add(str(e_["part_num"]))
+                        else:
+                            e_["hd"] = next((x.get("image") for x in l_ if str(x.get("color_id")) == str(e_["color_id"]) and x.get("image")), "") or ""
+                if miss_ and sources.rebrickable_key():
+                    threading.Thread(target=lambda m=sorted(miss_): [part_colors(x) for x in m if not time.sleep(0.3)], daemon=True).start()
+                return self.send_json({"items": ext_})
             if p == "/api/visits":   # compteur de la page publique (partie privée uniquement)
                 return self.send_json(visit_stats())
             if p == "/api/settings":
@@ -8686,7 +8761,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                                 "ok": sum(1 for v in st.values() if v.get("s") == "ok"),
                                 "order": sum(1 for v in st.values() if v.get("s") == "order"), "updated": inv.get("updated"),
                                 "pieces": sum(keep.values()),
-                                "pieces_done": sum(n for k, n in keep.items() if (st.get(k) or {}).get("s") == "ok")})
+                                "pieces_done": sum(n for k, n in keep.items() if (st.get(k) or {}).get("s") == "ok"),
+                                "image": inv.get("photo") or ((it or {}).get("photo_url")) or (_load(CACHE_FILE, {}).get(num) or {}).get("image") or ""})   # (photo : celle de l'inventaire, sinon le set — 22/11)
                 out.sort(key=lambda x: -(x["updated"] or 0))
                 return self.send_json(out)
             m = re.fullmatch(r"/api/inventory/([\w.-]+)", p)
@@ -8706,6 +8782,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 except Exception as e:
                     return self.error(f"Rebrickable ne répond pas pour le moment : {e}", 502)
                 inv = (db.get("inventories") or {}).get(it["id"], {})
+                _keys = {r["key"] for r in rows}
+                rows = rows + [{**x, "added": True} for x in inv.get("extra") or [] if x.get("key") not in _keys]   # (lignes ajoutées, hors set — 22/11)
                 if it["number"].startswith("xml-"):   # inventaire importé d'un XML : pas un set du catalogue
                     pc, missing = _parts_cache(), []
                     for r in rows:
@@ -8765,7 +8843,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 if site != "bricklink":
                     u, fb = ref_mix(bp_unit(bl_rec) if bl_rec else None, (bo_rec or {}).get("unit"))
                     if u is not None:
-                        one = bo_rec if fb == "BrickOwl" or (site == "brickowl" and not fb) else None
+                        one = bo_rec if fb == "BrickOwl" or (bo_first() and not fb) else None
                         return self.send_json({"unit": u, "src": "both" if site == "both" and not fb else ("BrickOwl" if one else "BrickLink"),
                                                **({"fb": fb} if fb else {}), "zone": (one or {}).get("zone") or ((bl_rec or {}).get("used") or {}).get("zone"),
                                                "offers": (one or {}).get("offers"), "url": (bo_rec or {}).get("url") if site == "brickowl" else None,
@@ -9921,6 +9999,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                             q = 1
                         link = {"inv": key, "row": row, "q": q}
                         same = next((i for i in db["items"] if i["list_id"] == lst["id"] and i.get("kind") == "part" and not i.get("bl_qty")   # exportée : on n'y touche plus
+                                     and not i.get("got") and not i.get("ordered") and not i.get("cmd_m")   # (commandée ou reçue : une nouvelle ligne — 22/11)
                                      and i.get("part_num") == x["part_num"] and str(i.get("color_id")) == str(x["color_id"])), None)
                         if same:
                             same["quantity"] = min(9999, same.get("quantity", 1) + q)
@@ -9993,11 +10072,34 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 return self.send_json({"ok": True, "left": max(0, have - n), "rows_ok": done})
             m = re.fullmatch(r"/api/inventory/([\w.-]+)/supprimer", p)
             if m:
+                b, moved = self.json_body(), 0
                 with lock:
                     db = load_db()
+                    inv = (db.get("inventories") or {}).get(m.group(1)) or {}
+                    mv = [x for x in (b.get("moves") or [])[:3000] if isinstance(x, dict)]   # (pièces COMMANDÉES → « Commandes » — 22/11)
+                    if inv and mv:
+                        pls = [l for l in db["lists"] if l.get("kind") == "parts"]
+                        lst = next((l for l in pls if l.get("default")), None) or next((l for l in pls if re.search(r"command", l.get("name", ""), re.I)), None) or (pls[0] if pls else None)
+                        linked = {str(lk.get("row")) for i in db["items"] for lk in i.get("inv_links") or [] if lk.get("inv") == m.group(1)}
+                        for x in mv if lst else []:
+                            row = str(x.get("row") or "")[:60]
+                            rs = (inv.get("rows") or {}).get(row) or {}
+                            if rs.get("s") != "cmd" or row in linked or not x.get("part_num") or x.get("color_id") in (None, ""):
+                                continue
+                            try:
+                                q = max(1, min(9999, int(x.get("quantity") or rs.get("q") or 1)))
+                            except (TypeError, ValueError):
+                                q = 1
+                            it = self.clean_item({**x, **part_img_fix(x), "kind": "part", "number": x["part_num"], "list_id": lst["id"], "quantity": q,
+                                                  "set_number": b.get("set_number") or inv.get("set") or "",
+                                                  "ordered": [{**o, "qty": min(int(o.get("qty") or 0), q) or q} for o in rs.get("o") or [] if isinstance(o, dict)],
+                                                  "cmd_m": rs.get("m") or (0 if rs.get("o") else int(time.time())), "o_off": rs.get("o_off") or []})
+                            it.update(id=uuid.uuid4().hex[:12], added_at=int(time.time()))
+                            db["items"].append(it)
+                            moved += 1
                     (db.get("inventories") or {}).pop(m.group(1), None)
                     _save(DB_FILE, db)
-                return self.send_json({"ok": True})
+                return self.send_json({"ok": True, "moved": moved})
             m = re.fullmatch(r"/api/inventory/([\w.-]+)", p)
             if m:   # enregistre l'état d'une ou plusieurs lignes : {"rows": {"3001|5": {"s": "ok"|"order"|"", "q": 2}}}
                 b = self.json_body()
@@ -10064,6 +10166,8 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         prow = inv["rows"].get(str(k)) or {}   # (ce que mes commandes ont posé : gardé — 21/11 soir)
                         if st in ("cmd", "ok") and prow.get("o"):
                             row["o"] = prow["o"]
+                            if prow.get("o_lock"):
+                                row["o_lock"] = True   # (attribuée à la main depuis « Commandées en plus » — 22/11)
                         if st in ("cmd", "ok") and not row.get("o"):   # « Commandée » à la main : sa date (m) — gardée jusqu'à OK compris
                             try:
                                 mm = int(v.get("m") or prow.get("m") or 0)
@@ -10444,6 +10548,51 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     _save(sources.SETTINGS_FILE, st)
                     os.chmod(sources.SETTINGS_FILE, 0o600)
                 return self.send_json({"ok": True, "trend": trend_cfg()})
+            if p in ("/api/orders/extra/done", "/api/orders/extra/to-inventory"):   # « Commandées en plus » : traitée (OK, attribuée) / vers un inventaire (22/11)
+                b = self.json_body()
+                key = str(b.get("key") or "")[:300]
+                with lock:
+                    ext = _load(ORDERS_EXTRA, {"items": []})
+                    e = next((x for x in ext.get("items") or [] if x.get("key") == key), None)
+                    if not e:
+                        return self.error("Ligne introuvable (déjà traitée ?)", 404)
+                    if p.endswith("/to-inventory"):
+                        db = load_db()
+                        inv = (db.get("inventories") or {}).get(str(b.get("inv") or ""))
+                        rk = str(b.get("row") or "")[:60]
+                        if inv and not rk and b.get("add"):   # inventaire qui ne contient pas la pièce : une ligne AJOUTÉE (hors set) — 22/11
+                            pn_, cid_ = str(e.get("part_num") or e.get("ref") or ""), e.get("color_id")
+                            if not pn_ or cid_ is None:
+                                return self.error("Référence ou couleur inconnue : impossible de l'ajouter")
+                            rk = f"{pn_}|{cid_}"
+                            cc_ = colors_fr().get(str(cid_)) or {}
+                            snum_ = inv.get("set") or next((i["number"] for i in db["items"] if i["id"] == str(b.get("inv") or "")), "")
+                            base_ = {r["key"] for r in (inventory_rows(snum_) if snum_ else [])}
+                            ex_ = inv.setdefault("extra", [])
+                            if rk not in base_ and not any(x.get("key") == rk for x in ex_):
+                                ex_.append({"key": rk, "part_num": pn_, "name": e.get("name") or pn_, "color_id": cid_, "color_name": cc_.get("name") or "",
+                                            "color_fr": cc_.get("fr") or e.get("color_fr") or "", "rgb": cc_.get("rgb") or e.get("rgb") or "", "trans": bool(cc_.get("trans")),
+                                            "quantity": int(e.get("qty") or 1), "element_id": "", "image": e.get("image") or "", "part_image": e.get("image") or "",
+                                            "bricklink": e.get("bl") or pn_})
+                            elif rk not in base_:
+                                for x in ex_:
+                                    if x.get("key") == rk:
+                                        x["quantity"] = int(x.get("quantity") or 0) + int(e.get("qty") or 1)
+                        if not inv or not rk:
+                            return self.error("Inventaire introuvable", 404)
+                        st = inv.setdefault("rows", {}).get(rk) or {}
+                        o = {"site": e["site"], "order": e["order"], "date": e["date"], "qty": e["qty"], **({"paid": e["paid"]} if e.get("paid") is not None else {})}
+                        st.update(s="cmd", o=(st.get("o") or []) + [o], o_lock=True)
+                        st.pop("m", None)
+                        inv["rows"][rk] = st
+                        inv["updated"] = int(time.time())
+                        _save(DB_FILE, db)
+                    done = _load(ORDERS_EXTRA_DONE, {})
+                    done[key] = {"t": int(time.time()), "how": "inventaire" if p.endswith("/to-inventory") else str(b.get("how") or "ok")[:20]}
+                    _save(ORDERS_EXTRA_DONE, done)
+                    ext["items"] = [x for x in ext.get("items") or [] if x.get("key") != key]
+                    _save(ORDERS_EXTRA, ext)
+                return self.send_json({"ok": True})
             if p == "/api/orders/sync":   # « À commander » ouvert : mes commandes relues (au plus une fois par heure ; {force} : tout de suite)
                 return self.send_json(orders_sync(bool(self.json_body().get("force"))))
             if p == "/api/settings/brickowl":   # clé de l'API BrickOwl — vérifiée sur la liste de mes commandes (acheteur), puis enregistrée (21/11 soir)
@@ -11002,11 +11151,15 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     for x in (b.get("parts") or [])[:3000]:
                         if not x.get("part_num") or x.get("color_id") in (None, ""):
                             continue
+                        if not x.get("color_name") or not x.get("color_rgb"):   # (nom et teinte de la couleur, d'après son n° — 22/11)
+                            cc_ = colors_fr().get(str(x.get("color_id"))) or {}
+                            x = {**x, "color_name": x.get("color_name") or cc_.get("name") or "", "color_rgb": x.get("color_rgb") or cc_.get("rgb") or ""}
                         try:
                             q = max(1, min(9999, int(x.get("quantity") or 1)))
                         except (TypeError, ValueError):
                             q = 1
                         same = next((i for i in db["items"] if i["list_id"] == lst["id"] and i.get("kind") == "part" and not i.get("bl_qty")   # exportée : on n'y touche plus
+                                     and not i.get("got") and not i.get("ordered") and not i.get("cmd_m")   # (commandée ou reçue : une nouvelle ligne — 22/11)
                                      and i.get("part_num") == x["part_num"] and str(i.get("color_id")) == str(x["color_id"])), None)
                         if same:
                             same["quantity"] = min(9999, same.get("quantity", 1) + q)
@@ -11902,6 +12055,9 @@ def hd_candidates(u):
     m = re.fullmatch(r"(https://www\.brickeconomy\.com/resources/images/minifigs/[\w-]+?)_(?:thumb|small|medium)\.\w+", u)
     if m:
         return [m.group(1) + "_large.jpg"]
+    m = re.fullmatch(r"https://img\.brickowl\.com/files/image_cache/(?:small|medium|large)/([\w.-]+)", u)   # (BrickOwl : version « larger » — 22/11)
+    if m:
+        return [f"https://img.brickowl.com/files/image_cache/{z}/{m.group(1)}" for z in ("larger", "large") if z not in u]
     return []
 
 

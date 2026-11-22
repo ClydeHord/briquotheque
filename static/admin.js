@@ -56,17 +56,17 @@ const BOF = () => { try { return frame.contentWindow.BO || null; } catch { retur
 
 const PANELS = [
   ["accueil", "🏠", "Accueil", ""],
-  ["souris", "🖱️", "Modifier à la souris", "Cliquez sur n'importe quel élément du site pour le masquer, le renommer, le recolorer, le déplacer…"],
+  ["souris", "🖱️", "Modifier à la souris", "Cliquer sur n'importe quel élément du site pour le masquer, le renommer, le recolorer, le déplacer…"],
   ["apparence", "🎨", "Apparence", "Nom du site, logo, couleurs, arrondis, police, taille du texte."],
   ["textes", "🔤", "Textes", "Remplacer un mot ou une phrase partout sur le site."],
   ["fiches", "🧱", "Fiches", "Le squelette de chaque type de fiche : ordre des blocs, blocs masqués, titres."],
-  ["champs", "🧩", "Champs personnalisés", "Vos propres informations sur les fiches : texte, date, note, liens vers d'autres fiches…"],
+  ["champs", "🧩", "Champs personnalisés", "Les propres informations sur les fiches : texte, date, note, liens vers d'autres fiches…"],
   ["liens", "🔗", "Liens automatiques", "Des boutons sur chaque fiche vers d'autres sites, calculés avec le numéro ou le nom."],
   ["cartes", "🃏", "Cartes des listes", "Taille des vignettes et informations affichées dessus."],
   ["menu", "☰", "Menu", "Ordre du menu, entrées masquées, raccourcis vers une liste, une fiche ou un site."],
   ["donnees", "🗃️", "Données", "Corriger à la main n'importe quelle information enregistrée dans une fiche."],
-  ["modifs", "📋", "Mes modifications", "Tout ce que vous avez changé, au même endroit : retrouver, désactiver, supprimer."],
-  ["historique", "🕘", "Historique et secours", "Revenir à une version publiée ou au site d'origine, exporter vos réglages."],
+  ["modifs", "📋", "Mes modifications", "Tout ce qui a été changé, au même endroit : retrouver, désactiver, supprimer."],
+  ["historique", "🕘", "Historique et secours", "Revenir à une version publiée ou au site d'origine, exporter les réglages."],
 ];
 const PAGES = { "": "toutes les pages", app: "le site", public: "les pages publiques", nouveautes: "la page Nouveautés", partage: "les fiches partagées", connexion: "la page de connexion" };
 const SHEETS = [["set", "Set"], ["fig", "Figurine"], ["moc", "MOC"], ["partial", "Set partiel"], ["mocfig", "Figurine personnalisée"], ["set_wish", "Set en liste de souhaits"], ["fig_wish", "Figurine en liste de souhaits"]];
@@ -220,8 +220,8 @@ function countAll() {   // même décompte que les lignes de « Mes modification
 }
 async function publish() {
   if (!dirty()) return toast("Rien à publier : le site est déjà à jour.");
-  const n = await ask("Publier sur le site", "Vos modifications seront appliquées au site, pour tous ceux qui le consultent. Vous pourrez toujours revenir en arrière depuis « Historique et secours ».",
-    "Un mot pour vous y retrouver plus tard (facultatif)", { ph: "ex. : nouvelles couleurs", ok: "✔ Publier" });
+  const n = await ask("Publier sur le site", "Les modifications seront appliquées au site, pour tous ceux qui le consultent. Retour en arrière toujours possible depuis « Historique et secours ».",
+    "Un mot pour s'y retrouver plus tard (facultatif)", { ph: "ex. : nouvelles couleurs", ok: "✔ Publier" });
   if (n === null) return;
   clearTimeout(saveT); saveT = 0;
   try { const r = await api("/api/bo/publish", { cfg, note: n, count: countAll() }); published = clone(cfg); hist = r.history || hist; saveState = ""; status(); draw(); toast("✔ Publié : le site est à jour."); }
@@ -255,15 +255,15 @@ function setMode(m) {
   try { BOF()?.move?.(m === "move"); } catch {}   // mode « déplacer à la souris »
   for (const b of $("#pvMode").children) b.classList.toggle("on", b.dataset.mode === m);
   $(".prev").classList.toggle("picking", m !== "use");
-  $("#pvNote").innerHTML = m === "move" ? "✋ <b>Déplacer à la souris</b> : attrapez un élément de l'aperçu et déposez-le ailleurs — une barre verte montre où il se posera (Échap : annuler)." : m === "pick" ? "🖱️ Cliquez sur un élément de l'aperçu pour le modifier. Pour naviguer (ouvrir une fiche, un menu…), repassez sur « Utiliser le site »."
-    : "L'aperçu montre votre <b>brouillon</b> : vous seul le voyez tant que vous n'avez pas publié.";
+  $("#pvNote").innerHTML = m === "move" ? "✋ <b>Déplacer à la souris</b> : attraper un élément de l'aperçu et le déposer ailleurs — une barre verte montre où il se posera (Échap : annuler)." : m === "pick" ? "🖱️ Cliquer sur un élément de l'aperçu pour le modifier. Pour naviguer (ouvrir une fiche, un menu…), repasser sur « Utiliser le site »."
+    : "L'aperçu montre le <b>brouillon</b> : visible ici seulement, tant qu'il n'est pas publié.";
   if (panel === "souris") draw();
 }
 function flash(s, page, hidden) {   // montre un élément dans l'aperçu
   const b = BOF(); if (!b) return;
-  if (page && b.page !== page) return toast("Cet élément se trouve sur " + (PAGES[page] || page) + " : affichez d'abord cette page dans l'aperçu.");
+  if (page && b.page !== page) return toast("Cet élément se trouve sur " + (PAGES[page] || page) + " : afficher d'abord cette page dans l'aperçu.");
   if (hidden && !ghost) { ghost = true; $("#pvGhost").checked = true; b.ghost(true); }
-  if (!b.flash(s)) toast("Cet élément n'est pas à l'écran en ce moment : ouvrez dans l'aperçu l'endroit où il se trouve.");
+  if (!b.flash(s)) toast("Cet élément n'est pas à l'écran en ce moment : ouvrir dans l'aperçu l'endroit où il se trouve.");
 }
 window.BO_ADMIN = {   // ce que /bo.js (dans l'aperçu) appelle
   cfg: () => clone(cfg),
@@ -333,12 +333,12 @@ const VIEW = {};
 
 /* ---------- Accueil */
 VIEW.accueil = () => [
-  head("Bienvenue dans le back office", "Ici, vous changez l'apparence et l'organisation du site sans écrire une seule ligne de code."),
-  copie && note("🧪 Vous êtes sur la <b>copie de travail</b> : rien de ce que vous faites ici ne touche le vrai site."),
+  head("Bienvenue dans le back office", "Ici se changent l'apparence et l'organisation du site, sans écrire une seule ligne de code."),
+  copie && note("🧪 Ici, la <b>copie de travail</b> : rien de ce qui se fait ici ne touche le vrai site."),
   card("Comment ça marche",
     el("ol", { class: "steps" },
-      el("li", { html: "<b>Vous modifiez</b> avec les rubriques ci-dessous, ou en cliquant directement dans l'aperçu (« Modifier à la souris »)." }),
-      el("li", { html: "<b>L'aperçu à droite</b> montre le résultat tout de suite. C'est un brouillon : vous seul le voyez." }),
+      el("li", { html: "<b>Modifier</b> avec les rubriques ci-dessous, ou en cliquant directement dans l'aperçu (« Modifier à la souris »)." }),
+      el("li", { html: "<b>L'aperçu à droite</b> montre le résultat tout de suite. C'est un brouillon, visible ici seulement." }),
       el("li", { html: "<b>« ✔ Publier sur le site »</b>, en haut, l'applique pour de bon." })),
     hint("Rien n'est définitif : « ↶ Annuler », « Abandonner le brouillon » et la rubrique « Historique et secours » permettent toujours de revenir en arrière.")),
   el("div", { class: "tiles" }, PANELS.slice(1).map(([id, ic, nm, ds]) => el("button", { type: "button", onclick: () => show(id) }, el("b", {}, ic + " " + nm), el("span", {}, ds)))),
@@ -385,7 +385,7 @@ function styleRow([prop, label, kind, extra]) {
 function addEditor(a) {   // un élément ajouté (texte, bouton, image…)
   const set = (k, v, redraw) => change(c => { const x = (c.adds || []).find(x => x.id === a.id); if (x) { if (v === "" || v == null || v === false) delete x[k]; else x[k] = v; } }, { key: "add" + a.id + k, redraw: !!redraw });
   return el("div", { class: "ed" + (a.off ? " offed" : "") },
-    a.kind !== "sep" && a.kind !== "image" && fld(ADDK[a.kind], txt(a.text, v => set("text", v), a.kind === "bouton" ? "Texte du bouton" : "Votre texte")),
+    a.kind !== "sep" && a.kind !== "image" && fld(ADDK[a.kind], txt(a.text, v => set("text", v), a.kind === "bouton" ? "Texte du bouton" : "Le texte")),
     a.kind === "bouton" && fld("Adresse ouverte par le bouton", txt(a.url, v => set("url", v), "https://…"), ""),
     a.kind === "bouton" && chk("Ouvrir dans le même onglet", a.same, v => set("same", v, true)),
     a.kind === "image" && fld("Image", line(txt(/^data:/.test(a.url || "") ? "" : a.url, v => set("url", v), /^data:/.test(a.url || "") ? "(image choisie sur l'ordinateur)" : "Adresse de l'image, https://…"),
@@ -396,13 +396,13 @@ function addEditor(a) {   // un élément ajouté (texte, bouton, image…)
 }
 const POS = [["after", "juste après l'élément"], ["before", "juste avant l'élément"], ["end", "dans l'élément, à la fin"], ["start", "dans l'élément, au début"]];
 VIEW.souris = () => {
-  const top = head("Modifier à la souris", "Cliquez sur n'importe quel élément du site, dans l'aperçu à droite : vous pourrez le renommer, le masquer, changer son style, le déplacer ou ajouter quelque chose à côté.");
+  const top = head("Modifier à la souris", "Cliquer sur n'importe quel élément du site, dans l'aperçu à droite : le renommer, le masquer, changer son style, le déplacer ou ajouter quelque chose à côté.");
   if (mode !== "pick") return [top, el("div", { class: "empty" }, el("p", {}, "Le clic dans l'aperçu sert en ce moment à utiliser le site."), btn("🖱️ Activer « Cliquer pour modifier »", () => setMode("pick"), "primary big"))];
   if (!pick) return [top,
-    el("div", { class: "empty" }, el("p", { html: "👉 <b>Cliquez sur un élément dans l'aperçu.</b>" }), el("p", { class: "hint" }, "Il s'entoure de bleu au survol, puis d'orange une fois choisi.")),
+    el("div", { class: "empty" }, el("p", { html: "👉 <b>Cliquer sur un élément dans l'aperçu.</b>" }), el("p", { class: "hint" }, "Il s'entoure de bleu au survol, puis d'orange une fois choisi.")),
     card("Besoin d'aller ailleurs dans le site ?", para("Pour ouvrir une fiche, un menu ou une autre page avant de cliquer dessus :"),
-      el("ol", { class: "steps" }, el("li", {}, "passez l'aperçu sur « 👆 Utiliser le site » ;"), el("li", {}, "allez à l'endroit voulu ;"), el("li", {}, "revenez sur « 🖱️ Cliquer pour modifier »."))),
-    card("Bon à savoir", hint("Pour l'ordre des blocs d'une fiche ou du menu, les rubriques « Fiches » et « Menu » sont plus pratiques. Tout ce que vous faites ici se retrouve dans « Mes modifications »."))];
+      el("ol", { class: "steps" }, el("li", {}, "passer l'aperçu sur « 👆 Utiliser le site » ;"), el("li", {}, "aller à l'endroit voulu ;"), el("li", {}, "revenir sur « 🖱️ Cliquer pour modifier »."))),
+    card("Bon à savoir", hint("Pour l'ordre des blocs d'une fiche ou du menu, les rubriques « Fiches » et « Menu » sont plus pratiques. Tout ce qui se fait ici se retrouve dans « Mes modifications »."))];
   const r = getRule(cfg), hasSim = pick.sim && pick.sim !== pick.one && pick.nSim > 1;
   const tr = attr => (cfg.texts || []).find(t => sameT(t) && (t.attr || "") === attr);
   const adds = (cfg.adds || []).filter(sameT);
@@ -412,25 +412,25 @@ VIEW.souris = () => {
     el("div", { class: "picked" }, el("b", {}, pick.desc), el("div", { class: "crumbs", title: pick.crumbs.join(" ‹ ") }, pick.crumbs.length ? "dans : " + pick.crumbs.join(" ‹ ") : ""),
       el("div", { class: "btns" }, btn("⬆ Sélectionner ce qui l'entoure", () => BOF()?.pickParent(), "small", "Choisir l'élément qui contient celui-ci"),
         btn("✕ Désélectionner", () => { BOF()?.unpick(); pick = null; draw(); }, "small"))),
-    card("À quoi appliquer vos changements ?",
+    card("À quoi appliquer les changements ?",
       hasSim ? sel(scope.sim ? "sim" : "one", [["one", "Seulement cet élément"], ["sim", `Tous les éléments du même genre (${pick.nSim} à l'écran)`]], v => { scope.sim = v === "sim"; draw(); }) : null,
       el("div", { style: "height:6px" }),
       sel(scope.all ? "all" : "page", [["page", "Seulement sur " + (PAGES[pick.page] || "cette page")], ["all", "Sur toutes les pages du site"]], v => { scope.all = v === "all"; draw(); })),
     card("Texte",
-      pick.text ? textRow("Texte affiché", "", pick.text) : hint("Cet élément ne contient pas de texte directement. Pour changer un texte, cliquez précisément sur lui."),
+      pick.text ? textRow("Texte affiché", "", pick.text) : hint("Cet élément ne contient pas de texte directement. Pour changer un texte, cliquer précisément sur lui."),
       pick.placeholder ? textRow("Texte grisé dans le champ (avant de taper)", "placeholder", pick.placeholder) : null,
       pick.title ? textRow("Info-bulle (au survol)", "title", pick.title) : null),
     card("Afficher ou masquer",
       chk("Masquer cet élément", r?.hide, v => change(c => { const x = getRule(c, true); if (v) x.hide = true; else delete x.hide; })),
-      r?.hide ? hint("Masqué. Pour le revoir dans l'aperçu, cochez « Montrer ce qui est masqué » au-dessus de l'aperçu ; il reste aussi listé dans « Mes modifications ».") : null),
+      r?.hide ? hint("Masqué. Pour le revoir dans l'aperçu, cocher « Montrer ce qui est masqué » au-dessus de l'aperçu ; il reste aussi listé dans « Mes modifications ».") : null),
     pick.flexParent ? card("Position", para("Par rapport aux éléments voisins :"),
       el("div", { class: "btns" }, btn("⏮ Mettre en premier", () => change(c => { getRule(c, true).order = -1; }), r?.order === -1 ? "on" : ""), btn("Mettre en dernier ⏭", () => change(c => { getRule(c, true).order = 99; }), r?.order === 99 ? "on" : ""),
         btn("↺ Place d'origine", () => change(c => { const x = getRule(c); if (x) delete x.order; })))) : null,
-    card("Style", el("div", { class: "st" }, STYLES.map(styleRow)), hint("En gras : ce que vous avez changé. ↺ remet la valeur d'origine.")),
+    card("Style", el("div", { class: "st" }, STYLES.map(styleRow)), hint("En gras : ce qui a été changé. ↺ remet la valeur d'origine.")),
     card("Ajouter quelque chose à côté",
       fld("Où ?", sel(addPos, POS, v => { addPos = v; })),
       el("div", { class: "btns" }, Object.entries(ADDK).map(([k, l]) => btn("+ " + l, () => change(c => { (c.adds ||= []).push({ id: uid(), sel: pSel(), page: pPage(), pos: addPos, kind: k,
-        text: k === "texte" ? "Votre texte" : k === "titre" ? "Votre titre" : k === "bouton" ? "Mon lien" : undefined, label: pick.desc }); }), "small"))),
+        text: k === "texte" ? "Le texte" : k === "titre" ? "Le titre" : k === "bouton" ? "Mon lien" : undefined, label: pick.desc }); }), "small"))),
       adds.length ? el("div", { style: "margin-top:10px" }, adds.map(addEditor)) : null),
     card("Tout annuler pour cet élément", btn("↺ Remettre cet élément comme à l'origine", () => change(c => { for (const k of ["rules", "texts", "adds"]) c[k] = (c[k] || []).filter(o => !sameT(o)); }), "danger")),
   ];
@@ -453,11 +453,11 @@ VIEW.apparence = () => {
     card("Ambiances toutes prêtes", el("div", { class: "btns" }, PRESETS.map(([n, c, l, d]) => btn([el("span", { class: "sw", style: "background:" + (c || DEF.both.red) }), n], () => change(x => {
       x.theme ||= {}; for (const g of ["both", "light", "dark"]) x.theme[g] ||= {};
       if (!c) { delete x.theme.both.red; delete x.theme.light["accent-bg"]; delete x.theme.dark["accent-bg"]; } else { x.theme.both.red = c; x.theme.light["accent-bg"] = l; x.theme.dark["accent-bg"] = d; }
-    }), "small"))), hint("Un clic change la couleur principale ; vous pouvez ensuite tout affiner ci-dessous.")),
+    }), "small"))), hint("Un clic change la couleur principale ; tout s'affine ensuite ci-dessous.")),
     card("Couleurs communes", el("div", { class: "rowset" }, Object.keys(DEF.both).map(k => colorRow("both", k)))),
     card(el("span", {}, "Couleurs selon le mode de l'écran"),
       el("div", { class: "pills" }, [["light", "☀️ Mode clair"], ["dark", "🌙 Mode sombre"]].map(([k, l]) => el("button", { type: "button", class: themeTab === k ? "on" : "", onclick: () => { themeTab = k; draw(); } }, l))),
-      (themeTab === "dark") !== dark ? note(`Votre écran est en mode ${dark ? "sombre" : "clair"} : ces couleurs-ci ne se verront pas dans l'aperçu (elles servent aux écrans en mode ${dark ? "clair" : "sombre"}).`, "warn") : null,
+      (themeTab === "dark") !== dark ? note(`L'écran est en mode ${dark ? "sombre" : "clair"} : ces couleurs-ci ne se verront pas dans l'aperçu (elles servent aux écrans en mode ${dark ? "clair" : "sombre"}).`, "warn") : null,
       el("div", { class: "rowset" }, Object.keys(DEF[themeTab]).map(k => colorRow(themeTab, k)))),
     card("Formes et texte",
       fld("Arrondi des coins", line(el("input", { type: "range", min: 0, max: 26, value: th.radius ?? 14, oninput: e => { setTheme("radius", +e.target.value === 14 ? "" : +e.target.value); e.target.nextSibling.textContent = e.target.value + " px"; } }), el("span", { class: "hint" }, (th.radius ?? 14) + " px"))),
@@ -478,21 +478,21 @@ VIEW.textes = () => {
   const glob = (cfg.texts || []).filter(t => !t.sel), loc = (cfg.texts || []).filter(t => t.sel);
   const set = (t, k, v, redraw) => change(c => { const x = (c.texts || []).find(x => x.id === t.id); if (x) { if (v === false || v == null) delete x[k]; else x[k] = v; } }, { key: "t" + t.id + k, redraw: !!redraw });
   const del = t => change(c => { c.texts = (c.texts || []).filter(x => x.id !== t.id); });
-  return [head("Textes", "Remplacez n'importe quel mot ou phrase du site par le vôtre. Exemple : « Figurines » → « Personnages »."),
+  return [head("Textes", "Remplacer n'importe quel mot ou phrase du site par le vôtre. Exemple : « Figurines » → « Personnages »."),
     card("Remplacements",
       glob.length ? glob.map(t => el("div", { class: "tx" },
-        txt(t.from, v => set(t, "from", v), "Texte actuel"), el("span", {}, "→"), txt(t.to, v => set(t, "to", v), "Votre texte"),
+        txt(t.from, v => set(t, "from", v), "Texte actuel"), el("span", {}, "→"), txt(t.to, v => set(t, "to", v), "Le texte"),
         el("button", { type: "button", class: "x", title: "Supprimer ce remplacement", onclick: () => del(t) }, "✕"),
         el("div", { class: "opt" }, sel(t.mode === "mot" ? "mot" : "exact", [["mot", "partout, même au milieu d'une phrase"], ["exact", "seulement quand c'est le texte entier"]], v => set(t, "mode", v, true)),
           t.mode === "mot" ? chk("majuscules indifférentes", t.ci, v => set(t, "ci", v)) : null)))
         : el("p", { class: "hint" }, "Aucun remplacement pour l'instant."),
       el("div", { class: "btns" }, btn("+ Ajouter un remplacement", () => change(c => { (c.texts ||= []).push({ id: uid(), from: "", to: "", mode: "mot", ci: true }); }), "primary"),
         btn("🔍 Choisir un texte dans l'aperçu…", pickText)),
-      hint("Pensez au pluriel : « Figurine » et « Figurines » sont deux remplacements différents.")),
+      hint("Penser au pluriel : « Figurine » et « Figurines » sont deux remplacements différents.")),
     loc.length ? card("Textes changés à la souris", hint("Ils ne concernent qu'un élément précis."),
-      loc.map(t => el("div", { class: "tx" }, el("span", { class: "hint", title: t.from }, "« " + t.from.slice(0, 40) + " »"), el("span", {}, "→"), txt(t.to, v => set(t, "to", v), "Votre texte"),
+      loc.map(t => el("div", { class: "tx" }, el("span", { class: "hint", title: t.from }, "« " + t.from.slice(0, 40) + " »"), el("span", {}, "→"), txt(t.to, v => set(t, "to", v), "Le texte"),
         el("button", { type: "button", class: "x", title: "Supprimer", onclick: () => del(t) }, "✕")))) : null,
-    card("Autre façon de faire", para("Dans « 🖱️ Modifier à la souris », cliquez directement sur un texte du site pour le changer à cet endroit seulement."), btn("Ouvrir « Modifier à la souris »", () => show("souris"), "small")),
+    card("Autre façon de faire", para("Dans « 🖱️ Modifier à la souris », cliquer directement sur un texte du site pour le changer à cet endroit seulement."), btn("Ouvrir « Modifier à la souris »", () => show("souris"), "small")),
   ];
 };
 
@@ -526,7 +526,7 @@ VIEW.fiches = () => {
     const i = match?.blocks.find(x => x.key === k), custom = k.startsWith("x-"), hid = (conf.hidden || []).includes(k);
     const absent = !!match && !hid && (!i || !i.shown);
     return { key: k, name: custom ? "🧩 " + secName(k.slice(2)) : BLOCKS[k] || i?.legend || k, off: hid, absent,
-      sub: hid ? "masqué par vous" : absent ? "pas utilisé sur la fiche d'exemple" : conf.labels?.[k] ? "renommé" : i?.legend && BLOCKS[k] !== i.legend ? "« " + i.legend + " »" : "",
+      sub: hid ? "masqué ici" : absent ? "pas utilisé sur la fiche d'exemple" : conf.labels?.[k] ? "renommé" : i?.legend && BLOCKS[k] !== i.legend ? "« " + i.legend + " »" : "",
       below: i?.legend && !custom ? el("input", { type: "text", value: conf.labels?.[k] || "", placeholder: "Renommer « " + i.legend + " »…", title: "Nouveau titre du bloc (laisser vide pour garder le titre d'origine)",
         oninput: e => change(c => { const s = shConf(c); s.labels ||= {}; s.labels[k] = e.target.value.trim(); }, { key: "lab" + k, redraw: false }) }) : null,
       tools: [el("button", { type: "button", class: "eye", title: hid ? "Réafficher ce bloc" : "Masquer ce bloc", onclick: async () => {
@@ -536,11 +536,11 @@ VIEW.fiches = () => {
   });
   return [head("Fiches", "Le squelette d'une fiche : dans quel ordre viennent ses blocs, lesquels sont masqués, comment ils s'appellent. Chaque type de fiche a son propre squelette."),
     el("div", { class: "pills" }, SHEETS.map(([k, l]) => el("button", { type: "button", class: shType === k ? "on" : "", onclick: () => { shType = k; noSample = false; draw(); openSample(); } }, l, counts[k] ? el("span", { class: "n" }, counts[k]) : null))),
-    noSample ? note("Vous n'avez aucune fiche de ce type : pas d'exemple à montrer dans l'aperçu, mais vous pouvez régler son squelette quand même.", "warn")
+    noSample ? note("Aucune fiche de ce type : pas d'exemple à montrer dans l'aperçu, mais son squelette se règle quand même.", "warn")
       : !match ? el("div", { class: "note" }, "Pour voir le résultat en direct : ", btn("Ouvrir une fiche d'exemple dans l'aperçu", openSample, "small")) : null,
-    wish && !own ? note(`Tant que vous ne changez rien ici, cette fiche suit le squelette de « ${sheetName(base)} ».`) : null,
+    wish && !own ? note(`Tant que rien n'est changé ici, cette fiche suit le squelette de « ${sheetName(base)} ».`) : null,
     orderList(rows, (f, t) => change(c => { shConf(c).order = moved(keys, f, t); })),
-    hint("⠿ faites glisser, ou utilisez ▲ ▼. Les blocs grisés existent mais ne servent pas sur la fiche d'exemple (ils apparaissent sur d'autres fiches du même type)."),
+    hint("⠿ faites glisser, ou utiliser ▲ ▼. Les blocs grisés existent mais ne servent pas sur la fiche d'exemple (ils apparaissent sur d'autres fiches du même type)."),
     card("Aller plus loin",
       el("div", { class: "btns" }, btn("🧩 Ajouter mes propres champs et blocs", () => show("champs"), "small"), btn("🖱️ Modifier un détail à l'intérieur d'un bloc", () => show("souris"), "small"),
         cfg.sheets?.[shType] ? btn("↺ Remettre ce squelette d'origine", () => change(c => { delete c.sheets[shType]; }), "small danger") : null)),
@@ -569,7 +569,7 @@ VIEW.champs = () => {
   const fs = cfg.fields || [], secs = cfg.secs || [];
   const set = (f, k, v, redraw) => change(c => { const x = (c.fields || []).find(x => x.id === f.id); if (x) { if (v === "" || v == null || v === false || (Array.isArray(v) && !v.length)) delete x[k]; else x[k] = v; } }, { key: "f" + f.id + k, redraw: !!redraw });
   const secOpts = [["", secName("_")], ...secs.map(s => [s.id, s.label]), ["+", "+ Nouveau bloc…"]];
-  return [head("Champs personnalisés", "Ajoutez vos propres informations aux fiches. Chaque champ apparaît sur la fiche, prêt à remplir ; il peut aussi s'afficher sur les cartes des listes."),
+  return [head("Champs personnalisés", "Ajouter les propres informations aux fiches. Chaque champ apparaît sur la fiche, prêt à remplir ; il peut aussi s'afficher sur les cartes des listes."),
     fs.length ? fs.map((f, i) => el("div", { class: "ed" + (f.off ? " offed" : "") },
       el("div", { class: "cols" }, fld("Nom", txt(f.label, v => set(f, "label", v), "Nom du champ")), fld("Type", sel(f.type || "text", FTYPES, v => set(f, "type", v, true)))),
       ["choice", "multi"].includes(f.type) ? fld("Choix proposés", el("textarea", { rows: 3, value: (f.opts || []).join("\n"), placeholder: "Un choix par ligne", oninput: e => set(f, "opts", e.target.value.split("\n").map(s => s.trim()).filter(Boolean)) }), "Un choix par ligne.") : null,
@@ -582,7 +582,7 @@ VIEW.champs = () => {
       chk("Afficher aussi sur les cartes des listes", f.card, v => set(f, "card", v, true)),
       el("div", { class: "ed-foot" }, el("span", { class: "hint", title: "Sert dans « Liens automatiques » : {" + f.id + "}" }, "identifiant : " + f.id),
         btn("▲", () => change(c => { c.fields = moved(c.fields, i, i - 1); }), "small", "Monter"), btn("▼", () => change(c => { c.fields = moved(c.fields, i, Math.min(fs.length - 1, i + 1)); }), "small", "Descendre"),
-        btn("Supprimer", async () => { if (await sure("Supprimer le champ « " + f.label + " » ?", "Il disparaîtra des fiches. Les valeurs déjà saisies restent enregistrées dans les fiches (elles reviennent si vous recréez un champ du même nom).", "Supprimer")) change(c => { c.fields = c.fields.filter(x => x.id !== f.id); }); }, "small danger"))))
+        btn("Supprimer", async () => { if (await sure("Supprimer le champ « " + f.label + " » ?", "Il disparaîtra des fiches. Les valeurs déjà saisies restent enregistrées dans les fiches (elles reviennent si un champ du même nom est recréé).", "Supprimer")) change(c => { c.fields = c.fields.filter(x => x.id !== f.id); }); }, "small danger"))))
       : el("div", { class: "empty" }, "Aucun champ personnalisé pour l'instant."),
     el("div", { class: "btns", style: "margin-bottom:12px" }, btn("+ Ajouter un champ", newField, "primary big")),
     card("Blocs (groupes de champs)", hint("Sur la fiche, les champs sont regroupés en blocs. L'ordre des blocs dans la fiche se règle dans « Fiches »."),
@@ -590,7 +590,7 @@ VIEW.champs = () => {
       secs.map(s => line(txt(s.label, v => change(c => { const x = c.secs.find(x => x.id === s.id); if (x) x.label = v; }, { key: "sec" + s.id, redraw: false }), "Titre du bloc"),
         el("button", { type: "button", class: "x", title: "Supprimer ce bloc (ses champs retournent dans le bloc par défaut)", onclick: () => change(c => { c.secs = c.secs.filter(x => x.id !== s.id); }) }, "✕"))),
       el("div", { class: "btns", style: "margin-top:8px" }, btn("+ Nouveau bloc", () => newSec(), "small"))),
-    fs.length ? card("Où les voir ?", para("Ouvrez une fiche dans l'aperçu : vos champs sont en bas, avant les liens."), btn("Montrer mes champs sur une fiche d'exemple", showFields, "small")) : null,
+    fs.length ? card("Où les voir ?", para("Ouvrir une fiche dans l'aperçu : les champs sont en bas, avant les liens."), btn("Montrer mes champs sur une fiche d'exemple", showFields, "small")) : null,
   ];
 };
 
@@ -602,15 +602,15 @@ VIEW.liens = () => {
   return [head("Liens automatiques", "Un bouton ajouté en bas de chaque fiche, qui ouvre un autre site déjà positionné sur le bon set ou la bonne figurine."),
     ls.length ? ls.map(l => el("div", { class: "ed" + (l.off ? " offed" : "") },
       fld("Texte du bouton", txt(l.label, v => set(l, "label", v), "ex. : Notice")),
-      fld("Adresse", txt(l.url, v => set(l, "url", v), "https://…{numero}"), "Cliquez sur une information ci-dessous pour l'ajouter à l'adresse : elle sera remplacée par celle de la fiche."),
+      fld("Adresse", txt(l.url, v => set(l, "url", v), "https://…{numero}"), "Cliquer sur une information ci-dessous pour l'ajouter à l'adresse : elle sera remplacée par celle de la fiche."),
       el("div", { class: "btns", style: "margin:-6px 0 10px" }, vars.map(([k, n]) => btn("{" + n + "}", e => { const inp = e.target.closest(".ed").querySelectorAll("input[type=text]")[1]; inp.value += "{" + k + "}"; set(l, "url", inp.value); inp.focus(); }, "small", "Sera remplacé par : " + n + " de la fiche"))),
       fld("Sur quelles fiches ?", el("div", { class: "checks" }, KINDS.map(([k, n]) => chk(n, (l.types || []).includes(k), v => set(l, "types", v ? [...(l.types || []), k] : (l.types || []).filter(x => x !== k), true)))), (l.types || []).length ? "" : "Rien de coché = sur toutes les fiches."),
       el("div", { class: "ed-foot" }, el("span", { class: "hint" }, "Le bouton n'apparaît que si la fiche a l'information demandée."), btn("Supprimer", () => change(c => { c.links = c.links.filter(x => x.id !== l.id); }), "small danger"))))
       : el("div", { class: "empty" }, "Aucun lien automatique pour l'instant."),
     el("div", { class: "btns", style: "margin-bottom:12px" }, btn("+ Ajouter un lien", () => change(c => { (c.links ||= []).push({ id: uid(), label: "Mon lien", url: "https://" }); }), "primary big")),
     card("Modèles tout prêts", el("div", { class: "btns" }, LINK_PRESETS.map(([n, u]) => btn("+ " + n, () => change(c => { (c.links ||= []).push({ id: uid(), label: n, url: u }); }), "small"))),
-      hint("{numéro}, {nom}… sont remplacés par ceux de la fiche ouverte. Vos champs personnalisés peuvent servir aussi.")),
-    card("Relier une fiche à une autre", para("Pour relier une fiche à d'autres fiches ou à une liste, créez un champ personnalisé de type « Lien vers d'autres fiches » ou « Lien vers une liste »."), btn("🧩 Champs personnalisés", () => show("champs"), "small")),
+      hint("{numéro}, {nom}… sont remplacés par ceux de la fiche ouverte. Les champs personnalisés peuvent servir aussi.")),
+    card("Relier une fiche à une autre", para("Pour relier une fiche à d'autres fiches ou à une liste, créer un champ personnalisé de type « Lien vers d'autres fiches » ou « Lien vers une liste »."), btn("🧩 Champs personnalisés", () => show("champs"), "small")),
   ];
 };
 
@@ -626,9 +626,9 @@ VIEW.cartes = () => {
         fld("Format de l'image", sel(cd.ratio || "", [["", "4/3 (origine)"], ["1/1", "Carré"], ["3/4", "Portrait"], ["16/9", "Large"]], v => set("ratio", v, true))),
         fld("Nom du set", sel(cd.lines || "", [["", "en entier"], ["1", "1 ligne maximum"], ["2", "2 lignes maximum"], ["3", "3 lignes maximum"]], v => set("lines", v ? +v : "", true))))),
     card("Ce qui est affiché sur une carte", el("div", { class: "rowset" }, CARDP.map(([k, l]) => line(chk(l, !(cd.hide || []).includes(k), v => change(c => { c.cards ||= {}; c.cards.hide = v ? (c.cards.hide || []).filter(x => x !== k) : [...(c.cards.hide || []), k]; }))))),
-      hint("Décochez pour retirer une information de toutes les cartes.")),
-    card("Vos champs sur les cartes", shown.length ? para("Affichés : " + shown.map(f => "<b>" + f.label.replace(/</g, "&lt;") + "</b>").join(", ") + ".") : para("Aucun de vos champs n'est affiché sur les cartes."),
-      hint("Dans « Champs personnalisés », cochez « Afficher aussi sur les cartes des listes »."), btn("🧩 Champs personnalisés", () => show("champs"), "small")),
+      hint("Décocher pour retirer une information de toutes les cartes.")),
+    card("Les champs sur les cartes", shown.length ? para("Affichés : " + shown.map(f => "<b>" + f.label.replace(/</g, "&lt;") + "</b>").join(", ") + ".") : para("Aucun des champs n'est affiché sur les cartes."),
+      hint("Dans « Champs personnalisés », cocher « Afficher aussi sur les cartes des listes »."), btn("🧩 Champs personnalisés", () => show("champs"), "small")),
     cfg.cards ? card("", btn("↺ Remettre les cartes d'origine", () => change(c => { delete c.cards; }), "danger")) : null,
   ];
 };
@@ -646,18 +646,18 @@ VIEW.menu = () => {
   const rows = ord.map(k => { const i = (info || []).find(x => x.key === k), hid = (mn.hidden || []).includes(k), cu = k.startsWith("bo-"), sep = i?.sep || k === "pubSep";
     const sepAdded = cu && its.find(x => "bo-" + x.id === k)?.kind === "sep";
     return { key: k, name: sepAdded ? "──── trait de séparation (ajouté)" : cu ? "⭐ " + (its.find(x => "bo-" + x.id === k)?.label || "Raccourci") : sep ? "──── trait de séparation" : MENU[k] || i?.text || k, off: hid, absent: !hid && !!i?.empty,
-      sub: hid ? "masqué par vous" : i?.empty ? "vide pour l'instant" : cu || sep ? "" : (i?.text || "").slice(0, 46),
+      sub: hid ? "masqué ici" : i?.empty ? "vide pour l'instant" : cu || sep ? "" : (i?.text || "").slice(0, 46),
       tools: [el("button", { type: "button", class: "eye", onclick: () => change(c => { c.menu ||= {}; c.menu.hidden = hid ? (c.menu.hidden || []).filter(x => x !== k) : [...(c.menu.hidden || []), k]; }) }, hid ? "🚫 Masqué" : "👁 Affiché"),
         btn("Voir", () => flash(`.sidebar > [data-bo-key="${k}"]`, "app", hid), "small")] }; });
   const set = (it, k, v, redraw) => change(c => { const x = (c.menu?.items || []).find(x => x.id === it.id); if (x) { if (v === "" || v == null || v === false) delete x[k]; else x[k] = v; } }, { key: "m" + it.id + k, redraw: !!redraw });
   const nameOf = id => items.find(x => x.id === id)?.name || (id ? "(fiche introuvable)" : "aucune fiche choisie");
-  return [head("Menu", "Le menu latéral du site : son ordre, ce qui est masqué, et vos propres raccourcis."),
+  return [head("Menu", "Le menu latéral du site : son ordre, ce qui est masqué, et les propres raccourcis."),
     !info ? note("L'aperçu doit afficher le site (connecté) pour lister le menu.", "warn") : null,
     orderList(rows, (f, t) => change(c => { c.menu ||= {}; c.menu.order = moved(ord, f, t); })),
-    hint("L'ordre des listes elles-mêmes se règle dans le site, avec le bouton ⇅ du menu. Sur un petit écran d'aperçu, ouvrez le menu (☰) pour le voir."),
+    hint("L'ordre des listes elles-mêmes se règle dans le site, avec le bouton ⇅ du menu. Sur un petit écran d'aperçu, ouvrir le menu (☰) pour le voir."),
     (() => { let ents = []; try { ents = b?.navEntries() || []; } catch {}   /* chaque entrée : renommée, masquée — une à une */
       const L = mn.labels || {}, OFF = new Set(mn.off || []);
-      return card("Chaque entrée du menu", hint("Renommez (émoji compris) ou masquez chaque entrée, une à une. Vide : son texte d'origine. Les listes se renomment dans le site (✏️)."),
+      return card("Chaque entrée du menu", hint("Renommer (émoji compris) ou masquer chaque entrée, une à une. Vide : son texte d'origine. Les listes se renomment dans le site (✏️)."),
         ents.length ? ents.map(e => line(el("span", { class: "lab" }, e.text),
           txt(L[e.key] || "", v => change(c => { c.menu ||= {}; c.menu.labels ||= {}; if (v.trim()) c.menu.labels[e.key] = v; else delete c.menu.labels[e.key]; }, { key: "ml" + e.key }), e.text),
           el("button", { type: "button", class: "eye", onclick: () => change(c => { c.menu ||= {}; const o = new Set(c.menu.off || []); o.has(e.key) ? o.delete(e.key) : o.add(e.key); c.menu.off = [...o]; }) }, OFF.has(e.key) ? "🚫 Masquée" : "👁 Affichée")))
@@ -671,7 +671,7 @@ VIEW.menu = () => {
           : [fld("Adresse", txt(it.url, v => set(it, "url", v), "https://…")), chk("Ouvrir dans le même onglet", it.same, v => set(it, "same", v, true))],
         el("div", { class: "ed-foot" }, el("span", { class: "hint" }, ""), btn("Supprimer", () => change(c => { c.menu.items = c.menu.items.filter(x => x.id !== it.id); if (c.menu.order) c.menu.order = c.menu.order.filter(k => k !== "bo-" + it.id); }), "small danger")))),
       btn("+ Ajouter un raccourci", () => change(c => { c.menu ||= {}; (c.menu.items ||= []).push({ id: uid(), label: "⭐ Mon raccourci", kind: "url", url: "https://" }); }), "primary")),
-    card("Traits de séparation", hint("Un trait de plus dans le menu, comme ceux d'origine : ajoutez-le, puis glissez-le à sa place dans la liste ci-dessus."),
+    card("Traits de séparation", hint("Un trait de plus dans le menu, comme ceux d'origine : l'ajouter, puis le glisser à sa place dans la liste ci-dessus."),
       its.filter(it => it.kind === "sep").map((it, n) => line(el("span", { class: "lab" }, `──── trait ajouté n° ${n + 1}`), btn("Supprimer", () => change(c => { c.menu.items = c.menu.items.filter(x => x.id !== it.id); if (c.menu.order) c.menu.order = c.menu.order.filter(k => k !== "bo-" + it.id); }), "small danger"))),
       btn("+ Ajouter un trait de séparation", () => change(c => { c.menu ||= {}; (c.menu.items ||= []).push({ id: uid(), kind: "sep" }); }), "primary")),
     mn.order || mn.hidden || mn.labels || mn.off ? card("", btn("↺ Remettre le menu d'origine (ordre, noms et entrées masquées)", () => change(c => { delete c.menu.order; delete c.menu.hidden; delete c.menu.labels; delete c.menu.off; }), "danger")) : null,
@@ -702,13 +702,13 @@ async function saveItem() {
   catch (e) { toast("Enregistrement refusé : " + e.message); }
 }
 VIEW.donnees = () => {
-  const top = head("Données", "Pour corriger à la main une information que le site ne permet pas de modifier. Ici, vous voyez une fiche telle qu'elle est enregistrée, ligne par ligne.");
+  const top = head("Données", "Pour corriger à la main une information que le site ne permet pas de modifier. Ici, une fiche telle qu'elle est enregistrée, ligne par ligne.");
   if (!dataItem) {
     let items = [];
     try { items = BOF()?.items() || []; } catch {}
     const list = el("div", { class: "pickl", style: "max-height:52vh" });
     const fill = () => { const q = dataQ.toLowerCase(); list.replaceChildren(...items.filter(i => !q || i.name.toLowerCase().includes(q)).slice(0, 5000).map(i => el("button", { type: "button", onclick: () => loadItem(i.id) }, i.name, el("small", {}, sheetName(i.type)))),
-      items.length ? "" : el("p", { class: "hint" }, "L'aperçu doit afficher le site (connecté) pour lister vos fiches.")); };
+      items.length ? "" : el("p", { class: "hint" }, "L'aperçu doit afficher le site (connecté) pour lister les fiches.")); };
     fill();
     return [top, note("Ces changements touchent directement la collection, <b>sans passer par « Publier »</b>. Une sauvegarde automatique est faite avant chaque enregistrement.", "warn"),
       card("Choisir une fiche", el("input", { type: "search", value: dataQ, placeholder: "Nom ou numéro…", oninput: e => { dataQ = e.target.value.trim(); fill(); } }), el("div", { style: "height:8px" }), list)];
@@ -727,10 +727,10 @@ VIEW.donnees = () => {
         : el("input", { type: "text", value: r.v ?? "", placeholder: r.t === "z" ? "(vide)" : "", oninput: e => { r.v = e.target.value; } }),
       ["id", "list_id", "kind"].includes(r.k) ? el("span", {}) : el("button", { type: "button", class: "x", title: "Retirer cette information de la fiche", onclick: () => { r.del = true; draw(); } }, "✕"),
     ])),
-      hint("Les cases « structure » (entre accolades ou crochets) regroupent plusieurs informations : gardez bien leur forme, guillemets et virgules compris.")),
+      hint("Les cases « structure » (entre accolades ou crochets) regroupent plusieurs informations : garder bien leur forme, guillemets et virgules compris.")),
     card("Ajouter une information", line(btn("+ Ajouter une ligne", async () => { const k = await ask("Nouvelle information", "", "Nom de l'information (sans espace)", { ph: "ex. : emplacement" });
       if (!k) return; const key = slug(k); if (!key || dataItem.rows.some(r => r.k === key && !r.del)) return toast("Nom déjà utilisé ou vide."); dataItem.rows.push({ k: key, t: "s", v: "" }); draw(); }, "small")),
-      hint("Pour une information à remplir sur toutes les fiches, préférez un « champ personnalisé ».")),
+      hint("Pour une information à remplir sur toutes les fiches, préférer un « champ personnalisé ».")),
   ];
 };
 
@@ -752,7 +752,7 @@ VIEW.modifs = () => {
   for (const i of mn.items || []) rows.push({ ic: "⭐", name: "Raccourci « " + i.label + " »", sub: "dans le menu", open: "menu", del: c => { c.menu.items = c.menu.items.filter(x => x.id !== i.id); } });
   if (cfg.cards) rows.push({ ic: "🃏", name: "Cartes des listes", sub: "taille ou contenu modifiés", open: "cartes", del: c => { delete c.cards; } });
   if (cfg.css) rows.push({ ic: "⚙️", name: "Feuille de style libre", sub: "rubrique « Historique et secours », tout en bas", open: "historique", del: c => { delete c.css; } });
-  return [head("Mes modifications", "Tout ce que vous avez changé, rassemblé ici. Chaque ligne peut être retrouvée, mise en pause ou supprimée."),
+  return [head("Mes modifications", "Tout ce qui a été changé, rassemblé ici. Chaque ligne peut être retrouvée, mise en pause ou supprimée."),
     rows.length ? el("div", { class: "ord" }, rows.map(r => el("div", { class: "it" + (r.obj?.off ? " off" : "") },
       el("span", {}, r.ic), el("span", { class: "nm" }, el("b", { title: r.name }, r.name), el("span", { title: r.sub }, (r.obj?.off ? "en pause — " : "") + (r.sub || ""))),
       r.sel ? btn("Voir", () => flash(r.sel, r.page, r.hidden), "small", "Montrer dans l'aperçu") : null,
@@ -766,18 +766,18 @@ VIEW.modifs = () => {
 
 /* ---------- Historique et secours */
 VIEW.historique = () => [
-  head("Historique et secours", "Chaque publication est gardée. Vous pouvez reprendre n'importe laquelle : elle devient votre brouillon, à publier quand vous voulez."),
+  head("Historique et secours", "Chaque publication est gardée. N'importe laquelle peut être reprise : elle devient le brouillon, à publier au moment voulu."),
   card("Versions publiées", hist.length ? el("div", { class: "rowset" }, hist.map((h, i) => line(
     el("span", { class: "lab" }, el("b", {}, fmtId(h.id)), i === 0 ? " — en ligne" : "", el("div", { class: "hint" }, [h.note, h.count ? h.count + " modification(s)" : "aucune modification"].filter(Boolean).join(" · "))),
-    btn("Reprendre", async () => { try { const r = await api("/api/bo/version?id=" + h.id); replaceAll(r.cfg); toast("Version reprise comme brouillon : vérifiez l'aperçu, puis publiez."); } catch (e) { toast(e.message); } }, "small"))))
+    btn("Reprendre", async () => { try { const r = await api("/api/bo/version?id=" + h.id); replaceAll(r.cfg); toast("Version reprise comme brouillon : vérifier l'aperçu, puis publier."); } catch (e) { toast(e.message); } }, "small"))))
     : el("p", { class: "hint" }, "Aucune publication pour l'instant.")),
-  card("Revenir au site d'origine", para("Vide le brouillon de tous vos réglages : le site redevient comme avant le back office (après publication). Vos anciennes versions restent dans l'historique."),
-    btn("↺ Tout remettre d'origine", async () => { if (await sure("Tout remettre d'origine ?", "Le brouillon sera vidé de tous vos réglages. Le site ne changera que lorsque vous publierez.", "Tout remettre d'origine")) replaceAll({}); }, "danger")),
-  card("Garder une copie de mes réglages", para("Un fichier qui contient tous vos réglages (pas vos fiches). Utile avant un gros changement, ou pour les transférer."),
+  card("Revenir au site d'origine", para("Vide le brouillon de tous les réglages : le site redevient comme avant le back office (après publication). Les anciennes versions restent dans l'historique."),
+    btn("↺ Tout remettre d'origine", async () => { if (await sure("Tout remettre d'origine ?", "Le brouillon sera vidé de tous les réglages. Le site ne changera qu'à la publication.", "Tout remettre d'origine")) replaceAll({}); }, "danger")),
+  card("Garder une copie de mes réglages", para("Un fichier qui contient tous les réglages (pas les fiches). Utile avant un gros changement, ou pour les transférer."),
     el("div", { class: "btns" }, btn("⬇ Exporter dans un fichier", () => { const a = el("a", { href: URL.createObjectURL(new Blob([JSON.stringify(cfg, null, 1)], { type: "application/json" })), download: "briquotheque-backoffice-" + new Date().toISOString().slice(0, 10) + ".json" }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }),
       btn("⬆ Importer un fichier…", () => { const inp = el("input", { type: "file", accept: ".json,application/json", onchange: async () => { try { const o = JSON.parse(await inp.files[0].text()); if (!o || typeof o !== "object" || Array.isArray(o)) throw 0;
           const r = await api("/api/bo/normalize", { cfg: o });   // le serveur remet le fichier d'aplomb (types, adresses, tailles) avant qu'il n'entre dans le brouillon
-          replaceAll(r.cfg || {}); toast("Réglages importés dans le brouillon : vérifiez l'aperçu, puis publiez."); } catch { toast("Ce fichier n'est pas un export du back office."); } } }); inp.click(); }))),
+          replaceAll(r.cfg || {}); toast("Réglages importés dans le brouillon : vérifier l'aperçu, puis publier."); } catch { toast("Ce fichier n'est pas un export du back office."); } } }); inp.click(); }))),
   card("En cas de problème", para("Si un réglage rend le site inutilisable : cette page <code>/backoffice</code> reste toujours accessible pour le défaire. Et en ajoutant <code>?bo=off</code> à la fin de l'adresse du site, il s'affiche sans aucune personnalisation.")),
   el("details", { class: "card" }, el("summary", { style: "cursor:pointer;font-weight:600" }, "Avancé (facultatif) : feuille de style libre"),
     hint("Réservé à qui connaît le CSS ; tout le reste du back office s'en passe. Ce texte est ajouté tel quel aux styles du site."),

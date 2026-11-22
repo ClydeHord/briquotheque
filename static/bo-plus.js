@@ -2,7 +2,7 @@
 /* Briquothèque — BACK OFFICE, fonctions avancées.
    Chargé après bo.js, seulement sur le site connecté. Rien ici ne modifie les données : tout est calculé à l'affichage.
      1. FORMULES : un petit langage de calcul, en français, sans risque (aucun code exécuté) — ex. : {valeur} - {prix_achat}
-        variables : celles d'une fiche ({valeur}, {annee}, {theme}…), vos champs personnalisés, vos champs calculés, vos variables
+        variables : celles d'une fiche ({valeur}, {annee}, {theme}…), les champs personnalisés, les champs calculés, les variables
      2. CHAMPS CALCULÉS (cfg.calcs) : une formule affichée sur la fiche et, au choix, sur les cartes
      3. RÈGLES « si… alors » (cfg.auto) : étiquette ou pastille sur la carte, couleur de carte, message ou bloc masqué sur la fiche
      4. TUILES (cfg.tiles) : totaux personnalisés à côté de « Sets / Figurines / Pièces »
@@ -88,7 +88,7 @@ function parse(src) {
     if (k.t === "op" && k.v === "(") { const a = or(); if (!eat("op", ")")) throw new Err("Il manque une parenthèse fermante « ) »"); return a; }
     if (k.t === "id") {
       if (eat("op", "(")) { const args = [];
-        if (!eat("op", ")")) for (;;) { args.push(or()); if (eat("op", ")")) break; if (!eat("op", ";")) throw new Err(`Dans ${k.raw}(…) : séparez les valeurs par « ; » et fermez la parenthèse`); }
+        if (!eat("op", ")")) for (;;) { args.push(or()); if (eat("op", ")")) break; if (!eat("op", ";")) throw new Err(`Dans ${k.raw}(…) : séparer les valeurs par « ; » et fermer la parenthèse`); }
         if (!FN[k.v]) throw new Err(`La fonction « ${k.raw} » n'existe pas`);
         return { f: k.v, args }; }
       if (k.v === "vrai" || k.v === "oui") return { bool: true };
@@ -389,7 +389,7 @@ function sorts() {
     const t = "★ " + s.label; if (o.textContent !== t) o.textContent = t; }
   const saved = state.sortBy?.[state.current];   // tri personnalisé retenu pour cette liste (l'application ne le connaissait pas encore au chargement)
   if (saved && String(saved).startsWith("bo:") && sel.value !== saved && want.some(s => "bo:" + s.id === saved) && !g("isWish", state.current)) sel.value = saved;
-  try {   // le menu « ⇅ Tri » de l'application (rempli depuis cette liste) : tenu à jour quand vos tris changent (une seule tentative par état)
+  try {   // le menu « ⇅ Tri » de l'application (rempli depuis cette liste) : tenu à jour quand les tris changent (une seule tentative par état)
     const pop = D.getElementById("sortPop");
     if (pop && typeof syncSortMenu === "function") {
       const want2 = [...sel.options].filter(o => !o.hidden && !o.disabled).map(o => o.value + "\n" + o.textContent.trim()).join("|") + "||" + sel.value;
@@ -408,7 +408,7 @@ function sorts() {
   grid.dataset.boSort = sig;
 }
 function filters() {
-  const want = [...(cfg().filters || []).filter(f => f && f.id && f.label),   // vos filtres, puis vos étiquettes cochées « proposer dans ⚙️ Filtres »
+  const want = [...(cfg().filters || []).filter(f => f && f.id && f.label),   // les filtres, puis les étiquettes cochées « proposer dans ⚙️ Filtres »
     ...((cfg().tags || {}).add || []).filter(t => t && t.id && t.label && t.filter && !t.off).map(t => ({ id: "tag-" + t.id, label: (t.icon ? t.icon + " " : "") + t.label, cond: t.cond }))], pop = D.getElementById("filtPop"), box = D.getElementById("items");
   for (const id of [...filtOn]) if (!want.some(f => f.id === id)) filtOn.delete(id);
   if (pop) {   // cases « Mes filtres » dans le menu ⚙️ Filtres (redessiné par l'application à chaque affichage)

@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Briquothèque">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon.svg">
-<title>Briquothèque — Ma collection LEGO</title>
+<title>Briquothèque — Collection LEGO</title>
 <link rel="stylesheet" href="/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='10' width='28' height='18' rx='3' fill='%23e3000b'/><rect x='7' y='5' width='7' height='7' rx='2' fill='%23e3000b'/><rect x='18' y='5' width='7' height='7' rx='2' fill='%23e3000b'/></svg>">
 </head>
@@ -36,7 +36,7 @@
       <button class="icon-btn side-ico" id="btnSubLists" title="Afficher les sous-listes dans le menu" aria-label="Afficher les sous-listes dans le menu" aria-pressed="false">↳</button></span></div>
     <nav id="listNav"></nav>
     <nav id="todoNav"><div class="side-sep"></div><button class="nav-item" id="btnTodo"><span class="nm">📝 À faire</span><span class="ct"></span></button></nav>
-    <nav id="wishNav"></nav><!-- liste(s) de souhaits : toujours à la fin de « Mes listes » -->
+    <nav id="wishNav"></nav><!-- liste(s) de souhaits : toujours à la fin de « Les listes » -->
     <nav id="shareNav"></nav><!-- fiches partagées : ouvre la liste de tous les liens -->
     <div class="side-sep"></div>
     <div id="mocSection" hidden>
@@ -78,7 +78,7 @@
           <button class="btn small-btn" id="btnCleanParts" hidden title="Retirer de la liste les pièces reçues (✔ OK)">🧹 Nettoyer</button>
           <button class="btn nov-btn" id="btnNovelties" hidden>✨ Nouveautés</button>
           <button class="btn gift-nav" id="btnGiftList" hidden title="À surveiller" aria-label="À surveiller">👀</button>
-          <button class="btn small-btn" id="btnGiftLink" hidden title="Lien public de la liste « À surveiller » (sans vos notes)">🔗 Copier le lien public</button>
+          <button class="btn small-btn" id="btnGiftLink" hidden title="Lien public de la liste « À surveiller » (sans les notes)">🔗 Copier le lien public</button>
           <a class="link" id="lnkPublic" href="/wishlist" target="_blank" rel="noopener" hidden>🔗 Version publique</a>
           <span class="pub-visits" id="pubVisits" hidden></span>
         </div>
@@ -170,7 +170,7 @@
     <!-- Étape 2 : configuration de l'exemplaire -->
     <form id="stepConfig" hidden>
         <div class="new-banner" id="newBanner" hidden>✨ Créer une nouvelle fiche</div><!-- fiche pas encore enregistrée (ajout, ou copie ⧉) -->
-        <div class="sample-banner" id="sampleBanner" hidden>🧪 Fiche de démo — un exemple fourni avec Briquothèque : modifiez-la ou supprimez-la librement.</div>
+        <div class="sample-banner" id="sampleBanner" hidden>🧪 Fiche de démo — un exemple fourni avec Briquothèque : à modifier ou supprimer librement.</div>
       <div class="cfg-top">
         <div class="cfg-pic"><img id="cfgImg" alt="">
           <select id="cuKindSel" class="cu-kind-sel" hidden aria-label="Type de fiche">
@@ -201,7 +201,7 @@
         <legend id="listLegend" hidden>Liste</legend>
         <div class="list-row"><select id="cfgList"></select>
           <button type="button" class="btn" id="btnCfgNewList" title="Créer une nouvelle liste" aria-label="Créer une nouvelle liste">+</button></div>
-        <p class="field-err" id="listErr" hidden>Choisissez une liste pour enregistrer.</p>
+        <p class="field-err" id="listErr" hidden>Choisir une liste pour enregistrer.</p>
       </fieldset>
       <div class="qty-row">
         <div class="qty-box"><span class="lbl-like" id="qtyLabel">Quantité</span><input type="number" id="cfgQty" min="1" max="999" value="1">
@@ -251,7 +251,7 @@
           </div>
           <div id="mocSetRow">
           <div id="cuXmlBox" hidden>
-          <p class="hint" style="margin:2px 0 8px">Collez ici le contenu XML de la liste de pièces du MOC. Depuis Rebrickable : onglet <b>Inventory</b> → <b>Export</b> → <b>BrickLink XML</b>, puis copier. Un XML écrit à la main marche aussi — la couleur peut être son n° BrickLink ou son nom (ex. <code>Black</code>). Sans liste de pièces, pas d'estimation.</p>
+          <p class="hint" style="margin:2px 0 8px">Coller ici le contenu XML de la liste de pièces du MOC. Depuis Rebrickable : onglet <b>Inventory</b> → <b>Export</b> → <b>BrickLink XML</b>, puis copier. Un XML écrit à la main marche aussi — la couleur peut être son n° BrickLink ou son nom (ex. <code>Black</code>). Sans liste de pièces, pas d'estimation.</p>
           <textarea id="cuXml" class="moc-xml" rows="5" spellcheck="false" autocomplete="off" placeholder="<INVENTORY>&#10;  <ITEM><ITEMTYPE>P</ITEMTYPE><ITEMID>3001</ITEMID><COLOR>11</COLOR><MINQTY>4</MINQTY></ITEM>&#10;  …&#10;</INVENTORY>"></textarea>
           </div>
           <div class="cam-row" style="margin:8px 0 0">
@@ -271,7 +271,7 @@
         <legend>État souhaité</legend>
         <div class="choice">
           <label><input type="checkbox" name="wcond" value="neuf"><span>📦 Neuf</span></label>
-          <label><input type="checkbox" name="wcond" value="occ"><span>Occasion</span></label>
+          <label><input type="checkbox" name="wcond" value="occ"><span>♻️ Occasion</span></label>
         </div>
         <div class="wish-opts">
           <label hidden><input type="checkbox" id="wBox"><span>Boîte</span></label><!-- souhait : boîte et plan jamais cherchés (gardés cachés pour le code) -->
@@ -288,19 +288,19 @@
       </div>
       <fieldset id="figOnlyBox" hidden>
         <legend>Figurines à ajouter</legend>
-        <p class="ask">Choisissez combien de chaque figurine ajouter, en figurines seules :</p>
+        <p class="ask">Choisir combien de chaque figurine ajouter, en figurines seules :</p>
         <div id="figOnlyList" class="fig-list"></div>
       </fieldset>
 
       <fieldset id="figBox">
         <legend>Figurines <span class="muted" id="figCount"></span></legend>
-        <p class="ask">Voulez-vous enregistrer ce set <strong>avec</strong> ou <strong>sans</strong> ses figurines ?</p>
+        <p class="ask">Enregistrer ce set <strong>avec</strong> ou <strong>sans</strong> ses figurines ?</p>
         <div class="choice">
           <label><input type="radio" name="figs" value="avec" checked><span>🟡 Avec figurines</span></label>
           <label><input type="radio" name="figs" value="sans"><span>🚫 Sans figurines</span></label>
         </div>
         <div id="figList" class="fig-list"></div>
-        <p class="hint" id="figHint">Indiquez combien vous avez de chaque figurine avec − / + : en moins, leur valeur est déduite ; en plus (ex. 6 au lieu de 3), elle est ajoutée.</p>
+        <p class="hint" id="figHint">Combien de chaque figurine, avec − / + : en moins, leur valeur est déduite ; en plus (ex. 6 au lieu de 3), elle est ajoutée.</p>
       </fieldset>
       <div id="figExtra" class="fig-extra"></div>
       <div class="fig-side"><!-- figurine : ses pièces à gauche, ses accessoires montés à droite -->
@@ -338,7 +338,7 @@
       <div class="estimate">
         <div class="est-actions">
           <button type="button" class="btn danger-ghost" id="btnDeleteItem" hidden>Supprimer</button>
-          <button type="button" class="btn" id="btnAcquired" hidden>✔ Je l'ai acquis</button>
+          <button type="button" class="btn" id="btnAcquired" hidden>✔ Acquis</button>
           <button type="button" class="btn gift-cta" id="btnForGift" hidden>Ne pas ajouter, c'est à surveiller 👀</button>
           <button class="btn primary" id="btnSave">Enregistrer</button>
         </div>

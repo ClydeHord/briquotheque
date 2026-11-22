@@ -29,10 +29,10 @@ const emoji = (value, on, ph = "🙂") => el("input", { type: "text", class: "em
 const MORE = [
   ["boutons", "🔘", "Boutons et tailles", "L'allure de tous les boutons ; les grandes dimensions du site."],
   ["etiquettes", "🏷️", "Étiquettes et pastilles", "Renommer, recolorer, masquer les étiquettes (Modifié, MOC, Neuf…) ; créer les vôtres."],
-  ["pages", "📄", "Pages", "Créer vos propres pages : textes, images, boutons, listes de fiches, totaux, tableaux."],
+  ["pages", "📄", "Pages", "Créer les propres pages : textes, images, boutons, listes de fiches, totaux, tableaux."],
   ["reglages", "⚙️", "Page « Réglages » de l'appli", "L'ordre, les titres et la visibilité des sections de la page Réglages."],
   ["comportements", "🎮", "Comportements", "Page de départ, tri et vue par défaut, raccourcis clavier, action au clic."],
-  ["images", "🖼️", "Images", "Vos images (boutons, pages, logo) : envoyer, réutiliser, supprimer."],
+  ["images", "🖼️", "Images", "Les images (boutons, pages, logo) : envoyer, réutiliser, supprimer."],
   ["securite", "🔐", "Mots de passe et sécurité", "Changer le mot de passe du back office ou celui de la Briquothèque ; sessions."],
 ];
 for (const p of MORE) PANELS.push(p);
@@ -99,22 +99,22 @@ async function imgPick() {   // choisir une image : dans la bibliothèque, ou en
   return modal("Choisir une image", close => [
     el("div", { class: "btns", style: "margin-bottom:10px" }, btn("⬆ Envoyer une image depuis l'ordinateur…", () => pickFiles(async fs => { const u = await act(() => upload(fs[0]), "✔ Image envoyée."); if (u) close(u); }), "primary")),
     list.length ? el("div", { class: "imgs" }, list.map(i => el("button", { type: "button", class: "imgc", title: i.label || i.name, onclick: () => close(i.url) }, el("img", { src: i.url, alt: "", loading: "lazy" }), el("span", {}, i.label || sz(i.size)))))
-      : el("p", { class: "hint" }, "Aucune image pour l'instant : envoyez-en une.")], { ok: false, cancel: "Fermer", wide: true });
+      : el("p", { class: "hint" }, "Aucune image pour l'instant : en envoyer une.")], { ok: false, cancel: "Fermer", wide: true });
 }
 const imgField = (value, on) => line(txt(/^data:/.test(value || "") ? "" : value, v => on(v, false), /^data:/.test(value || "") ? "(image intégrée aux réglages)" : "Adresse de l'image (https://… ou /bo-img/…)"),
-  btn("🖼️ Choisir…", async () => { const u = await imgPick(); if (u) on(u, true); }, "small", "Choisir dans vos images, ou en envoyer une"));
+  btn("🖼️ Choisir…", async () => { const u = await imgPick(); if (u) on(u, true); }, "small", "Choisir dans les images, ou en envoyer une"));
 let imgBusy = false;
 VIEW.images = () => {
   const d = got("imgs", "images"), w = wait(d, "imgs"), used = JSON.stringify(cfg) + JSON.stringify(published);
   const send = fs => (async () => { imgBusy = true; draw(); let n = 0; for (const f of fs.slice(0, 500)) if (await act(() => upload(f))) n++; imgBusy = false; if (n) toast("✔ " + n + " image(s) envoyée(s)."); draw(); })();
-  return [head("Images", "Vos images, gardées sur le serveur : elles servent aux boutons, aux pages, aux éléments ajoutés. Une image envoyée ici a une adresse (/bo-img/…) à coller où vous voulez — ou à choisir avec « 🖼️ Choisir… »."),
+  return [head("Images", "Les images, gardées sur le serveur : elles servent aux boutons, aux pages, aux éléments ajoutés. Une image envoyée ici a une adresse (/bo-img/…) à coller où il faut — ou à choisir avec « 🖼️ Choisir… »."),
     card("Envoyer", el("div", { class: "btns" }, btn(imgBusy ? "Envoi en cours…" : "⬆ Envoyer des images…", () => pickFiles(send, true), "primary")),
       hint("PNG, JPEG, WebP, GIF, SVG (sans script), ICO, AVIF — 4 Mo au plus (une photo plus lourde est réduite toute seule). Effet immédiat : pas besoin de publier.")),
     w || card("Bibliothèque (" + d.images.length + ")", d.images.length ? el("div", { class: "imgs big" }, d.images.map(i => { const on = used.includes(i.url);
       return el("div", { class: "imgc" }, el("a", { href: i.url, target: "_blank", rel: "noopener" }, el("img", { src: i.url, alt: "", loading: "lazy" })),
         el("span", { title: i.name }, (i.label || i.name) + " · " + sz(i.size)), el("span", { class: "hint" }, on ? "✔ utilisée" : "pas utilisée"),
         el("div", { class: "btns" }, btn("Copier l'adresse", () => { navigator.clipboard?.writeText(i.url).then(() => toast("Adresse copiée : " + i.url), () => toast(i.url)); }, "small"),
-          btn("Supprimer", async () => { if (!await sure("Supprimer cette image ?", on ? "Elle est <b>utilisée</b> dans vos réglages : là où elle sert, il n'y aura plus d'image." : "Elle n'est utilisée nulle part.", "Supprimer")) return;
+          btn("Supprimer", async () => { if (!await sure("Supprimer cette image ?", on ? "Elle est <b>utilisée</b> dans les réglages : là où elle sert, il n'y aura plus d'image." : "Elle n'est utilisée nulle part.", "Supprimer")) return;
             const r = await act(() => xapi("image-delete", { name: i.name }), "Image supprimée."); if (r) { X.imgs = { images: r.images }; draw(); } }, "small danger"))); }))
       : el("p", { class: "hint" }, "Aucune image pour l'instant."))];
 };
@@ -162,7 +162,7 @@ function sourisCards() {
           row3("Place", sel(im.mode || "before", [["before", "avant le texte"], ["after", "après le texte"], ["only", "à la place du texte"], ["bg", "en fond (remplit l'élément)"], ["bgc", "en fond (image entière)"]], v => imgSet(x => { x.mode = v; }))),
           ["bg", "bgc"].includes(im.mode) ? null : row3("Largeur", dim("w", 20), el("span", { class: "u" }, "px")),
           ["bg", "bgc"].includes(im.mode) ? null : row3("Hauteur", dim("h", "= largeur"), el("span", { class: "u" }, "px"))),
-        hint(im.url ? "« À la place du texte » : seul le dessin se voit. Pour une image de fond, réglez aussi Largeur / Hauteur dans « Style »." : "Choisissez d'abord l'image : « 🖼️ Choisir… » (vos images, ou en envoyer une), ou collez son adresse.")] : null),
+        hint(im.url ? "« À la place du texte » : seul le dessin se voit. Pour une image de fond, régler aussi Largeur / Hauteur dans « Style »." : "Choisir d'abord l'image : « 🖼️ Choisir… » (les images, ou en envoyer une), ou coller son adresse.")] : null),
     card("Lien et action au clic",
       isLink ? [fld("Adresse du lien", line(txt(r.href ?? "", v => ruleSet(x => { x.href = v; }, { key: "href" + pSel(), redraw: false }), pick.href || "https://…"),
         el("button", { type: "button", class: "x", title: "Remettre l'adresse d'origine", onclick: () => ruleSet(x => { delete x.href; }) }, "↺")), pick.href ? "Adresse d'origine : " + esc(pick.href) : ""),
@@ -173,7 +173,7 @@ function sourisCards() {
       r.click?.k === "confirm" ? fld("Question posée", txt(r.click.msg, v => ruleSet(x => { x.click.msg = v; }, { key: "cmsg" + pSel(), redraw: false }), "Continuer ?")) : null),
     card("Décalage, échelle, rotation", el("div", { class: "st" },
       row3("Vers la droite", txIn("x", 0, -3000, 3000, "px")), row3("Vers le bas", txIn("y", 0, -3000, 3000, "px")), row3("Échelle", txIn("s", 100, 10, 500, "%")), row3("Rotation", txIn("r", 0, -360, 360, "°"))),
-      hint("Un nombre négatif décale vers la gauche ou vers le haut. Pour changer un élément de place parmi ses voisins, préférez « ✋ Déplacer ».")),
+      hint("Un nombre négatif décale vers la gauche ou vers le haut. Pour changer un élément de place parmi ses voisins, préférer « ✋ Déplacer ».")),
   ];
 }
 const souris0 = VIEW.souris;
@@ -196,7 +196,7 @@ VIEW.boutons = () => [
     fld("Boutons ordinaires", el("div", { class: "cols" }, colIn(["btn", "bg"], "fond"), colIn(["btn", "ink"], "texte"), colIn(["btn", "line"], "bordure"))),
     fld("Boutons principaux (« + Nouveau », « Enregistrer »)", el("div", { class: "cols" }, colIn(["btn", "primBg"], "fond"), colIn(["btn", "primInk"], "texte")), "Sans réglage ici, ils suivent la couleur principale (rubrique « Apparence »)."),
     fld("Boutons de suppression", el("div", { class: "cols" }, colIn(["btn", "dangBg"], "fond"), colIn(["btn", "dangInk"], "texte")))),
-  card("Un bouton en particulier", para("Son texte, ses couleurs, <b>son icône ou son image</b>, son lien, ce qu'il fait au clic : cliquez-le dans l'aperçu."),
+  card("Un bouton en particulier", para("Son texte, ses couleurs, <b>son icône ou son image</b>, son lien, ce qu'il fait au clic : cliquer dessus dans l'aperçu."),
     btn("🖱️ Cliquer un bouton dans l'aperçu", () => show("souris"), "primary")),
   card("Tailles générales", el("div", { class: "st" },
     row3("Largeur du menu latéral", numIn(["sizes", "menu"], 320, { min: 160, max: 600 })), row3("Largeur de la fenêtre d'une fiche", numIn(["sizes", "sheet"], 680, { min: 420, max: 1800 })),
@@ -222,7 +222,7 @@ function tagEditor(t) {
     t[k] ? el("button", { type: "button", class: "x", title: "Sans couleur", onclick: () => tagUpd(t.id, x => { delete x[k]; }) }, "↺") : null);
   return el("div", { class: "ed" + (t.off ? " offed" : "") },
     line(emoji(t.icon, setc("icon")), txt(t.label, setc("label"), "Texte de l'étiquette"), chip(t, t.kind)),
-    hint("Le texte peut reprendre une valeur de la fiche : <code>{annee}</code>, <code>{theme}</code>, un de vos champs…"),
+    hint("Le texte peut reprendre une valeur de la fiche : <code>{annee}</code>, <code>{theme}</code>, un des champs…"),
     fld("Genre", sel(t.kind || "tg", [["tg", "Étiquette, sous le nom (comme « Modifié »)"], ["badge", "Pastille, sur l'image (comme « Retiré »)"]], v => tagUpd(t.id, x => { x.kind = v; }))),
     fld("Couleurs", el("div", { class: "cols" }, colr("color", "texte"), colr("bg", "fond"), colr("border", "bordure"))),
     el("div", { class: "fl" }, "AFFICHÉE SI LA FICHE REMPLIT…"),
@@ -240,7 +240,7 @@ function overEditor(d) {
   const colr = (k, lab) => el("span", { class: "colset" }, el("input", { type: "color", value: /^#[0-9a-f]{6}$/i.test(o[k] || "") ? o[k] : "#888888", oninput: e => set(k, e.target.value), onchange: () => draw() }), el("span", { class: "hint" }, lab),
     o[k] ? el("button", { type: "button", class: "x", title: "Couleur d'origine", onclick: () => set(k, "", true) }, "↺") : null);
   return el("div", { class: "ed" },
-    fld("Nouveau texte", line(emoji(o.icon, v => set("icon", v)), txt(o.text, v => set("text", v), d.label)), /N/.test(d.label) ? "Écrivez <code>{n}</code> là où le nombre doit apparaître (ex. : « {n} fig. en plus »). Vide = texte d'origine." : "Vide = texte d'origine."),
+    fld("Nouveau texte", line(emoji(o.icon, v => set("icon", v)), txt(o.text, v => set("text", v), d.label)), /N/.test(d.label) ? "Écrire <code>{n}</code> là où le nombre doit apparaître (ex. : « {n} fig. en plus »). Vide = texte d'origine." : "Vide = texte d'origine."),
     fld("Couleurs", el("div", { class: "cols" }, colr("color", "texte"), colr("bg", "fond"), colr("border", "bordure"))),
     chk("Masquer complètement cette étiquette", o.hide === true, v => set("hide", v ? true : "", true)),
     o.hide ? null : [el("div", { class: "fl", style: "margin-top:8px" }, "L'AFFICHER SEULEMENT SI LA FICHE REMPLIT… (facultatif)"),
@@ -255,15 +255,15 @@ VIEW.etiquettes = () => {
     return [line(el("span", { class: "lab" }, chip({ ...(o || {}), label: o?.text ? o.text : d.label }, kind), " ", o?.hide ? el("span", { class: "hint" }, "masquée") : o ? el("span", { class: "hint" }, "modifiée") : null,
       seen[d.key] ? el("span", { class: "hint" }, " · " + seen[d.key] + " à l'écran") : null),
       btn(open ? "Fermer" : "Modifier", () => { tagOpen = open ? "" : d.key; draw(); }, "small"), o ? xbtn("Remettre comme à l'origine", () => change(c => { delete c.tags.over[d.key]; })) : null), open ? overEditor(d) : null]; })));
-  return [head("Étiquettes et pastilles", "Les petits mots posés sur les cartes et les fiches. Renommez-les, recolorez-les, masquez-les, montrez-les seulement dans certains cas — et créez les vôtres, affichées selon vos conditions."),
+  return [head("Étiquettes et pastilles", "Les petits mots posés sur les cartes et les fiches. Les renommer, les recolorer, les masquer, les montrer seulement dans certains cas — et en créer d'autres, affichées selon les conditions."),
     P() ? null : needPreview(),
-    card("Vos étiquettes", mine.length ? mine.map(tagEditor) : el("p", { class: "hint" }, "Aucune pour l'instant. Une étiquette à vous apparaît sur les fiches qui remplissent sa condition."),
+    card("Les étiquettes", mine.length ? mine.map(tagEditor) : el("p", { class: "hint" }, "Aucune pour l'instant. Une étiquette créée ici apparaît sur les fiches qui remplissent sa condition."),
       el("div", { class: "btns" }, btn("+ Nouvelle étiquette", () => newTag(), "primary"), TAG_PRESETS.map(([ic, lb, cond, col]) => btn(ic + " " + lb, () => newTag(ic, lb, cond, col), "small", "Exemple prêt à adapter")))),
     grp("tg", "Étiquettes de l'application (sous le nom)", "Celles que l'application pose d'elle-même."),
-    grp("badge", "Pastilles de l'application (sur l'image)", "Posées sur l'image : dans la liste de souhaits, les nouveautés, la recherche, les pages publiques. Sur les cartes de la collection, l'application les masque — sauf si vous cochez la case ci-dessous."),
+    grp("badge", "Pastilles de l'application (sur l'image)", "Posées sur l'image : dans la liste de souhaits, les nouveautés, la recherche, les pages publiques. Sur les cartes de la collection, l'application les masque — sauf si la case ci-dessous est cochée."),
     card("Pastilles sur les cartes de la collection", flag("Montrer aussi les pastilles de l'application sur les cartes de la collection", ["tags", "badges"]),
-      hint("Vos propres pastilles (genre « Pastille, sur l'image ») s'affichent toujours, en bas à gauche de l'image.")),
-    card("Bon à savoir", hint("Une étiquette qui dépend d'une case ou d'une note à vous ? Créez d'abord un champ personnalisé (rubrique « Champs personnalisés », par ex. une case « Coup de cœur »), puis utilisez-le dans la condition."))];
+      hint("Les propres pastilles (genre « Pastille, sur l'image ») s'affichent toujours, en bas à gauche de l'image.")),
+    card("Bon à savoir", hint("Une étiquette qui dépend d'une case ou d'une note perso ? Créer d'abord un champ personnalisé (rubrique « Champs personnalisés », par ex. une case « Coup de cœur »), puis l'utiliser dans la condition."))];
 };
 
 /* ------------------------------------------------------------------ Pages */
@@ -273,7 +273,7 @@ const BLOCKS = [["titre", "🔠", "Titre"], ["texte", "📝", "Texte"], ["note",
 const PUBLIC_OK = ["titre", "texte", "note", "image", "bouton", "sep", "espace", "html", "cadre"];
 const blkName = k => BLOCKS.find(b => b[0] === k)?.[2] || k;
 const NEWBLK = { titre: { text: "Mon titre" }, texte: { text: "Mon texte. **Gras**, *italique*, [un lien](https://exemple.fr).\n\n- une liste\n- à puces" }, note: { text: "Une information à mettre en avant.", color: "#2563eb" }, image: { url: "" },
-  bouton: { text: "Mon bouton", act: { k: "all" } }, fiches: { limit: 12, sort: "valeur" }, total: { text: "Nombre de fiches", agg: "count" }, tableau: { cols: ["numero", "nom", "valeur"], limit: 50, sort: "valeur" }, sep: {}, espace: { h: 24 }, html: { html: "<p>Votre HTML…</p>" }, cadre: { url: "", h: 480 } };
+  bouton: { text: "Mon bouton", act: { k: "all" } }, fiches: { limit: 12, sort: "valeur" }, total: { text: "Nombre de fiches", agg: "count" }, tableau: { cols: ["numero", "nom", "valeur"], limit: 50, sort: "valeur" }, sep: {}, espace: { h: 24 }, html: { html: "<p>Le HTML…</p>" }, cadre: { url: "", h: 480 } };
 const pgUpd = (id, fn, o) => change(c => { const p = (c.pages || []).find(x => x.id === id); if (p) fn(p); }, o);
 const blkUpd = (pid, bid, fn, o) => pgUpd(pid, p => { const b = (p.blocks || []).find(x => x.id === bid); if (b) fn(b); }, o);
 const showPage = id => whenApp(b => { try { b.max?.openPage(id); } catch {} });
@@ -290,9 +290,9 @@ function dataRows(pid, b) {   // réglages communs aux blocs de données : quell
 function blockEditor(pg, b) {
   const set = (k, rd) => v => blkUpd(pg.id, b.id, x => { if (v === "" || v == null) delete x[k]; else x[k] = v; }, { key: "blk" + b.id + k, redraw: !!rd }), k = b.k;
   const area = (key, rows, ph) => el("textarea", { rows, value: b[key] || "", placeholder: ph, spellcheck: key !== "html", oninput: e => set(key)(e.target.value) });
-  const body = k === "titre" ? [txt(b.text, set("text"), "Votre titre"), fld("Taille", sel(String(b.level || 2), [["2", "Grand"], ["3", "Moyen"], ["4", "Petit"]], v => set("level", true)(+v)))]
-    : k === "texte" ? [area("text", 6, "Votre texte"), hint("<code>**gras**</code>, <code>*italique*</code>, <code>[texte du lien](https://…)</code> ; une ligne vide = nouveau paragraphe ; des lignes qui commencent par <code>- </code> = liste.")]
-    : k === "note" ? [area("text", 3, "Votre message"), line(el("span", { class: "hint" }, "Couleur"), colorIn(b.color, set("color")))]
+  const body = k === "titre" ? [txt(b.text, set("text"), "Le titre"), fld("Taille", sel(String(b.level || 2), [["2", "Grand"], ["3", "Moyen"], ["4", "Petit"]], v => set("level", true)(+v)))]
+    : k === "texte" ? [area("text", 6, "Le texte"), hint("<code>**gras**</code>, <code>*italique*</code>, <code>[texte du lien](https://…)</code> ; une ligne vide = nouveau paragraphe ; des lignes qui commencent par <code>- </code> = liste.")]
+    : k === "note" ? [area("text", 3, "Le message"), line(el("span", { class: "hint" }, "Couleur"), colorIn(b.color, set("color")))]
     : k === "image" ? [imgField(b.url, (v, rd) => set("url", rd)(v)), line(el("span", { class: "hint" }, "Largeur"), el("input", { type: "number", class: "num", min: 10, max: 3000, value: b.width ?? "", placeholder: "auto", oninput: e => set("width")(e.target.value === "" ? "" : +e.target.value) }), el("span", { class: "u" }, "px")),
         fld("Légende (facultatif)", txt(b.text, set("text"), "")), fld("Lien ouvert au clic (facultatif)", txt(b.link, set("link"), "https://…"))]
     : k === "bouton" ? [txt(b.text, set("text"), "Texte du bouton"), el("div", { class: "checks" }, chk("Bouton principal (coloré)", b.primary === true, v => set("primary", true)(v ? true : ""))),
@@ -315,8 +315,8 @@ function pageEditor(pg) {
   return [btn("← Toutes les pages", () => { pgSel = ""; try { M()?.closePage(); } catch {} draw(); }, "small"), el("div", { style: "height:8px" }),
     card("La page", line(emoji(pg.icon, set("icon"), "📄"), txt(pg.title, set("title"), "Titre de la page")),
       el("div", { class: "checks", style: "margin:8px 0" }, chk("Dans le menu latéral", pg.menu !== false, v => pgUpd(pg.id, x => { if (v) delete x.menu; else x.menu = false; })), chk("Afficher son titre en haut", pg.head !== false, v => pgUpd(pg.id, x => { if (v) delete x.head; else x.head = false; })),
-        chk("Publique (visible sans connexion)", pg.pub === true, v => pgUpd(pg.id, x => { if (v) x.pub = true; else delete x.pub; }), "Une adresse à donner à qui vous voulez")),
-      pg.pub ? note(`Adresse publique (après publication) : <a href="/p/${esc(pg.slug || "")}" target="_blank" rel="noopener"><b>${esc(location.origin)}/p/${esc(pg.slug || "")}</b></a><br>Les visiteurs ne voient que les blocs sans données (titres, textes, images, boutons vers une adresse, HTML, cadres) — jamais vos fiches ni vos prix.`) : null,
+        chk("Publique (visible sans connexion)", pg.pub === true, v => pgUpd(pg.id, x => { if (v) x.pub = true; else delete x.pub; }), "Une adresse à donner à qui on veut")),
+      pg.pub ? note(`Adresse publique (après publication) : <a href="/p/${esc(pg.slug || "")}" target="_blank" rel="noopener"><b>${esc(location.origin)}/p/${esc(pg.slug || "")}</b></a><br>Les visiteurs ne voient que les blocs sans données (titres, textes, images, boutons vers une adresse, HTML, cadres) — jamais les fiches ni les prix.`) : null,
       fld("Adresse de la page (lettres, chiffres, tirets)", txt(pg.slug, v => set("slug")(v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 120)), "ma-page")),
       line(el("span", { class: "lab" }, "Largeur maximale de la page"), el("input", { type: "number", class: "num", min: 320, max: 4000, value: pg.width ?? "", placeholder: "toute", oninput: e => set("width")(e.target.value === "" ? "" : +e.target.value) }), el("span", { class: "u" }, "px"))),
     card("Les blocs de la page (" + blocks.length + ")", blocks.length ? orderList(blocks.map(b => ({ key: b.id, name: (BLOCKS.find(x => x[0] === b.k)?.[1] || "") + " " + blkName(b.k), off: !!b.off,
@@ -324,20 +324,20 @@ function pageEditor(pg) {
       tools: el("span", { class: "tools" }, btn(blkOpen === b.id ? "Fermer" : "Modifier", () => { blkOpen = blkOpen === b.id ? "" : b.id; draw(); }, "small"),
         btn("Copier", () => pgUpd(pg.id, x => { const i = x.blocks.findIndex(y => y.id === b.id); x.blocks.splice(i + 1, 0, { ...clone(b), id: uid() }); }), "small", "Dupliquer ce bloc (la copie se place juste en dessous)"),
         xbtn("Supprimer ce bloc", () => pgUpd(pg.id, x => { x.blocks = x.blocks.filter(y => y.id !== b.id); }))),
-      below: blkOpen === b.id ? el("div", { class: "blk" }, blockEditor(pg, b)) : null })), (f, t) => pgUpd(pg.id, x => { x.blocks = moved(x.blocks, f, t); })) : el("p", { class: "hint" }, "Page vide : ajoutez un premier bloc."),
+      below: blkOpen === b.id ? el("div", { class: "blk" }, blockEditor(pg, b)) : null })), (f, t) => pgUpd(pg.id, x => { x.blocks = moved(x.blocks, f, t); })) : el("p", { class: "hint" }, "Page vide : ajouter un premier bloc."),
       el("div", { class: "fl", style: "margin-top:10px" }, "AJOUTER UN BLOC"),
       el("div", { class: "btns" }, BLOCKS.map(([k, ic, nm]) => btn(ic + " " + nm, () => { const id = uid(); blkOpen = id; pgUpd(pg.id, x => { (x.blocks ||= []).push({ id, k, ...clone(NEWBLK[k] || {}) }); }); }, "small")))),
     card("Voir le résultat", el("div", { class: "btns" }, btn("👁 Afficher cette page dans l'aperçu", () => showPage(pg.id), "primary"), btn(pg.off ? "▶ Réactiver la page" : "⏸ Mettre en pause", () => pgUpd(pg.id, x => { if (x.off) delete x.off; else x.off = true; })),
       btn("Supprimer la page", async () => { if (await sure("Supprimer cette page ?", "« " + esc(pg.title || "Page") + " » et ses blocs seront retirés du brouillon.", "Supprimer")) { pgSel = ""; change(c => { c.pages = c.pages.filter(x => x.id !== pg.id); }); } }, "danger")),
-      hint("L'aperçu se met à jour à chaque changement. Les listes de fiches, totaux et tableaux se calculent sur votre collection.")),
+      hint("L'aperçu se met à jour à chaque changement. Les listes de fiches, totaux et tableaux se calculent sur la collection.")),
   ];
 }
 const PAGE_PRESETS = {
-  vide: () => ({ title: "Nouvelle page", icon: "📄", blocks: [{ id: uid(), k: "texte", text: "Écrivez ici." }] }),
+  vide: () => ({ title: "Nouvelle page", icon: "📄", blocks: [{ id: uid(), k: "texte", text: "Écrire ici." }] }),
   bord: () => ({ title: "Tableau de bord", icon: "📊", blocks: [{ id: uid(), k: "total", text: "Fiches", agg: "count", w: 3 }, { id: uid(), k: "total", text: "Valeur totale", agg: "sum", expr: "{valeur}", fmt: "euros", w: 3 },
     { id: uid(), k: "total", text: "Valeur moyenne", agg: "avg", expr: "{valeur}", fmt: "euros", w: 3 }, { id: uid(), k: "titre", text: "Les 12 fiches les plus chères", level: 3 }, { id: uid(), k: "fiches", sort: "valeur", limit: 12 },
     { id: uid(), k: "titre", text: "Derniers ajouts", level: 3 }, { id: uid(), k: "tableau", cols: ["numero", "nom", "date_ajout", "valeur"], sort: "date_ajout", limit: 15 }] }),
-  notes: () => ({ title: "Mes notes", icon: "📝", blocks: [{ id: uid(), k: "note", text: "Une page à vous : idées, liens utiles, choses à faire.", color: "#2563eb" }, { id: uid(), k: "texte", text: "- première idée\n- deuxième idée" },
+  notes: () => ({ title: "Mes notes", icon: "📝", blocks: [{ id: uid(), k: "note", text: "Une page perso : idées, liens utiles, choses à faire.", color: "#2563eb" }, { id: uid(), k: "texte", text: "- première idée\n- deuxième idée" },
     { id: uid(), k: "bouton", text: "Retour à la collection", act: { k: "all" } }] }),
 };
 VIEW.pages = () => {
@@ -345,11 +345,11 @@ VIEW.pages = () => {
   const create = kind => { const p = { id: uid(), ...PAGE_PRESETS[kind]() }; p.slug = slug(p.title).replace(/_/g, "-") || "page"; let n = 2; const b = p.slug; while (pages.some(x => x.slug === p.slug)) p.slug = b + "-" + n++;
     pgSel = p.id; change(c => { (c.pages ||= []).push(p); }); showPage(p.id); };
   if (pg) return [head("Page « " + (pg.title || "Page") + " »", "Une page se compose de blocs, empilés dans l'ordre. Chaque bloc peut prendre toute la largeur, la moitié ou un tiers."), P() ? null : needPreview(), pageEditor(pg)];
-  return [head("Pages", "Créez vos propres pages dans le site : un tableau de bord, une liste de sets à vendre, une page de notes, une page publique à partager… Elles apparaissent dans le menu latéral."),
-    card("Vos pages", pages.length ? orderList(pages.map(p => ({ key: p.id, name: (p.icon || "📄") + " " + (p.title || "Page"), off: !!p.off, sub: (p.blocks || []).length + " bloc(s)" + (p.pub ? " · publique : /p/" + (p.slug || "") : "") + (p.menu === false ? " · hors menu" : "") + (p.off ? " · en pause" : ""),
+  return [head("Pages", "Créer les propres pages dans le site : un tableau de bord, une liste de sets à vendre, une page de notes, une page publique à partager… Elles apparaissent dans le menu latéral."),
+    card("Les pages", pages.length ? orderList(pages.map(p => ({ key: p.id, name: (p.icon || "📄") + " " + (p.title || "Page"), off: !!p.off, sub: (p.blocks || []).length + " bloc(s)" + (p.pub ? " · publique : /p/" + (p.slug || "") : "") + (p.menu === false ? " · hors menu" : "") + (p.off ? " · en pause" : ""),
       tools: el("span", { class: "tools" }, btn("Modifier", () => { pgSel = p.id; blkOpen = ""; draw(); showPage(p.id); }, "small primary"), btn("👁", () => showPage(p.id), "small", "Voir dans l'aperçu")) })), (f, t) => change(c => { c.pages = moved(c.pages, f, t); }))
       : el("p", { class: "hint" }, "Aucune page pour l'instant.")),
-    card("Créer une page", el("div", { class: "tiles" }, el("button", { type: "button", onclick: () => create("vide") }, el("b", {}, "📄 Page vide"), el("span", {}, "Vous ajoutez les blocs un à un.")),
+    card("Créer une page", el("div", { class: "tiles" }, el("button", { type: "button", onclick: () => create("vide") }, el("b", {}, "📄 Page vide"), el("span", {}, "Les blocs s'ajoutent un à un.")),
       el("button", { type: "button", onclick: () => create("bord") }, el("b", {}, "📊 Tableau de bord"), el("span", {}, "Totaux, fiches les plus chères, derniers ajouts.")),
       el("button", { type: "button", onclick: () => create("notes") }, el("b", {}, "📝 Page de notes"), el("span", {}, "Un encadré, un texte, un bouton.")))),
     card("Bon à savoir", hint("L'ordre des pages dans le menu, et leur place parmi les autres entrées : rubrique « Menu ». Un bouton ou un raccourci clavier peut ouvrir une page (« Comportements »). Une page « publique » reçoit une adresse /p/… ; ses blocs de données n'y sont jamais montrés."))];
@@ -362,16 +362,16 @@ VIEW.reglages = () => {
   const s = cfg.settings || {}, base = (live || SETDEF.map(([key, label]) => ({ key, label }))), order = s.order || [], hidden = s.hidden || [];
   const rows = [...base].sort((a, b) => { const i = order.indexOf(a.key), j = order.indexOf(b.key); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); });
   const open = () => whenApp(b => { try { b.max?.openSettings(); } catch {} setTimeout(draw, 900); });
-  return [head("Page « Réglages » de l'appli", "La page ⚙️ Réglages du site : choisissez l'ordre de ses sections, renommez-les, masquez celles dont vous ne vous servez pas."),
-    live ? null : note("Pour voir le résultat en direct, ouvrez la page Réglages dans l'aperçu.", "warn"),
+  return [head("Page « Réglages » de l'appli", "La page ⚙️ Réglages du site : choisir l'ordre de ses sections, les renommer, masquer celles qui ne servent pas."),
+    live ? null : note("Pour voir le résultat en direct, ouvrir la page Réglages dans l'aperçu.", "warn"),
     el("div", { class: "btns", style: "margin-bottom:12px" }, btn("⚙️ Ouvrir la page Réglages dans l'aperçu", open, live ? "" : "primary"), live ? btn("Refermer", () => { try { M()?.closeSettings(); } catch {} setTimeout(draw, 300); }) : null),
     card("Sections", orderList(rows.map(r => ({ key: r.key, name: s.titles?.[r.key] || r.label, off: hidden.includes(r.key), sub: hidden.includes(r.key) ? "masquée" : s.titles?.[r.key] ? "à l'origine : " + r.label : "",
       below: el("input", { type: "text", class: "ren", value: s.titles?.[r.key] || "", placeholder: "Renommer cette section…", title: "Nouveau titre de la section (vide = titre d'origine)", oninput: e => setIn(["settings", "titles", r.key], e.target.value, { key: "sett" + r.key, redraw: false }) }),
       tools: el("span", { class: "tools" }, chk("visible", !hidden.includes(r.key), v => change(c => { const st = (c.settings ||= {}); st.hidden = (st.hidden || []).filter(k => k !== r.key); if (!v) st.hidden.push(r.key); }))) })),
       (f, t) => change(c => { (c.settings ||= {}).order = moved(rows.map(r => r.key), f, t); })),
-      hint("Glissez ⠿ ou utilisez ▲ ▼. Une section masquée garde ses réglages : elle est seulement cachée.")),
+      hint("Glisser ⠿ ou utiliser ▲ ▼. Une section masquée garde ses réglages : elle est seulement cachée.")),
     hidden.includes("securite") || hidden.includes("back_office") ? note("ℹ️ Section masquée : le back office reste accessible par son adresse <b>/backoffice</b>, et le mot de passe de la Briquothèque se change aussi dans « Mots de passe et sécurité ».") : null,
-    card("Une option en particulier", para("Pour masquer, renommer ou restyler <b>une ligne, un bouton, un texte</b> de la page Réglages — ou y ajouter un texte, un lien, une image : ouvrez-la dans l'aperçu, puis « 🖱️ Cliquer pour modifier »."),
+    card("Une option en particulier", para("Pour masquer, renommer ou restyler <b>une ligne, un bouton, un texte</b> de la page Réglages — ou y ajouter un texte, un lien, une image : l'ouvrir dans l'aperçu, puis « 🖱️ Cliquer pour modifier »."),
       btn("🖱️ Cliquer pour modifier", () => { open(); setTimeout(() => show("souris"), 1200); })),
     cfg.settings ? card("Revenir en arrière", btn("↺ Page Réglages d'origine", () => change(c => { delete c.settings; }), "danger")) : null];
 };
@@ -391,27 +391,27 @@ VIEW.comportements = () => {
         sk === "list" ? sel(sv, [["", "— choisir —"], ...lists.map(l => [l.id, l.name])], v => setIn(["behav", "start"], "list:" + v)) : sk === "view" ? sel(sv, [["", "— choisir —"], ...(cfg.views || []).map(v => [v.id, v.label || "vue"])], v => setIn(["behav", "start"], "view:" + v))
           : sk === "page" ? sel(sv, [["", "— choisir —"], ...(cfg.pages || []).map(p => [p.id, p.title || "page"])], v => setIn(["behav", "start"], "page:" + v)) : null)),
       fld("Ce qui est montré", sel(b.view || "", [["", "Comme la dernière fois"], ["all", "Tout (sets et figurines)"], ["sets", "Les sets"], ["figs", "Les figurines"]], v => setIn(["behav", "view"], v))),
-      hint("Appliqué à chaque ouverture du site (pas dans cet aperçu : utilisez « Ouvrir le site ↗ » pour l'essayer).")),
+      hint("Appliqué à chaque ouverture du site (pas dans cet aperçu : utiliser « Ouvrir le site ↗ » pour l'essayer).")),
     card("Tri par défaut", el("div", { class: "st" },
       row3("« Toute la collection »", sel(b.sorts?.all || "", sortOpts, v => setIn(["behav", "sorts", "all"], v))), row3("Une liste de la collection", sel(b.sorts?.collection || "", sortOpts, v => setIn(["behav", "sorts", "collection"], v))),
       row3("Une liste de souhaits", sel(b.sorts?.wishlist || "", sortOpts, v => setIn(["behav", "sorts", "wishlist"], v)))),
-      hint("Vaut tant que vous n'avez pas choisi un autre tri pour la liste (le site retient votre choix, liste par liste).")),
+      hint("Vaut tant qu'aucun autre tri n'a été choisi pour la liste (le site retient le choix, liste par liste).")),
     card("Raccourcis clavier", keys.length ? keys.map(k => el("div", { class: "ed" }, line(el("span", { class: "hint" }, "Touche"),
       el("input", { type: "text", class: "emo", maxLength: 12, value: k.key || "", placeholder: "n", title: "Une lettre, un chiffre, ou le nom d'une touche (F2, Enter, ArrowUp…)", oninput: e => kUpd(k.id, x => { x.key = e.target.value; }, { key: "key" + k.id, redraw: false }) }),
       chk("Ctrl", k.ctrl === true, v => kUpd(k.id, x => { if (v) x.ctrl = true; else delete x.ctrl; })), chk("Alt", k.alt === true, v => kUpd(k.id, x => { if (v) x.alt = true; else delete x.alt; })), el("span", { class: "grow" }),
       xbtn("Supprimer ce raccourci", () => change(c => { c.behav.keys = c.behav.keys.filter(x => x.id !== k.id); }))),
       actBox(k.act, (fn, rd) => kUpd(k.id, x => { x.act ||= {}; fn(x.act); }, { key: "keya" + k.id, redraw: !!rd }), [["", "— que fait ce raccourci ? —"]]))) : el("p", { class: "hint" }, "Aucun raccourci pour l'instant."),
       btn("+ Raccourci", () => change(c => { ((c.behav ||= {}).keys ||= []).push({ id: uid(), key: "", act: { k: "new" } }); }), "small"),
-      hint("Un raccourci n'agit pas pendant que vous tapez dans une case. Évitez les touches déjà prises par le navigateur (Ctrl + T, Ctrl + W…).")),
+      hint("Un raccourci n'agit pas pendant la frappe dans une case. Éviter les touches déjà prises par le navigateur (Ctrl + T, Ctrl + W…).")),
     card("Clics et liens modifiés (" + clicks.length + ")", clicks.length ? el("div", { class: "rowset" }, clicks.map(r => line(el("span", { class: "lab" }, el("b", {}, r.label || r.sel), el("div", { class: "hint" },
         [r.click?.k === "none" ? "clic désactivé" : r.click?.k === "confirm" ? "confirmation demandée" : actText(r.click), r.href ? "lien → " + r.href : "", r.blank ? "nouvel onglet" : ""].filter(Boolean).join(" · "))),
       btn("Montrer", () => flash(r.sel, r.page), "small"), xbtn("Retirer ce comportement", () => change(c => { const x = c.rules.find(y => y.id === r.id); if (x) { delete x.click; delete x.href; delete x.blank; } })))))
       : el("p", { class: "hint" }, "Aucun pour l'instant."),
-      para("Pour changer ce que fait <b>un bouton, un lien, une image, une carte</b> : cliquez-le dans l'aperçu, carte « Lien et action au clic »."), btn("🖱️ Cliquer un élément dans l'aperçu", () => show("souris"), "small")),
+      para("Pour changer ce que fait <b>un bouton, un lien, une image, une carte</b> : cliquer dessus dans l'aperçu, carte « Lien et action au clic »."), btn("🖱️ Cliquer un élément dans l'aperçu", () => show("souris"), "small")),
     card("Figurines identiques",
-      flag("Ne pas regrouper en une seule carte une figurine que vous avez à la fois seule et dans un set (ou dans plusieurs sets)", ["behav", "noMerge"]),
-      flag("Ne pas demander « est-ce celle de ce set ? » quand vous ajoutez un set dont vous avez déjà une figurine seule", ["behav", "noOffer"]),
-      hint("D'origine : une même figurine n'a qu'une carte (« ×N », seule et dans vos sets), et l'application propose de ranger dans le set ajouté la figurine seule que vous aviez déjà. La tâche automatique « Photo à faire » se règle dans <b>Paramètres du serveur</b> ; la décote « modifié », dans les Réglages de l'application.")),
+      flag("Ne pas regrouper en une seule carte une figurine présente à la fois seule et dans un set (ou dans plusieurs sets)", ["behav", "noMerge"]),
+      flag("Ne pas demander « est-ce celle de ce set ? » à l'ajout d'un set dont une figurine est déjà là, seule", ["behav", "noOffer"]),
+      hint("D'origine : une même figurine n'a qu'une carte (« ×N », seule et dans les sets), et l'application propose de ranger dans le set ajouté la figurine seule déjà présente. La tâche automatique « Photo à faire » se règle dans <b>Paramètres du serveur</b> ; la décote « modifié », dans les Réglages de l'application.")),
     card("Prix et variations",
       flag("Ne pas afficher les flèches de variation (↑ ↓ ~) à côté des prix", ["behav", "noTrend"]),
       flag("Masquer le bouton « 🔍 Comprendre les variations » des statistiques", ["behav", "noVariations"]),
@@ -437,7 +437,7 @@ VIEW.comportements = () => {
       flag("Réduire les animations et les transitions", ["behav", "noAnim"])),
     el("details", { class: "card", open: !!cfg.js }, el("summary", { style: "cursor:pointer;font-weight:600" }, "Avancé (facultatif) : script libre"),
       hint("Réservé à qui connaît le JavaScript. Ce script est exécuté une fois, au chargement de l'application (jamais sur les pages publiques). Il reçoit « BO » (les outils du back office) et voit tout ce que voit l'application. " +
-        "S'il casse l'affichage : ajoutez « ?bo=off » à l'adresse du site, puis videz cette case."),
+        "S'il casse l'affichage : ajouter « ?bo=off » à l'adresse du site, puis vider cette case."),
       el("textarea", { rows: 8, value: cfg.js || "", spellcheck: false, style: "font-family:ui-monospace,Consolas,monospace;font-size:12px", placeholder: "// ex. : console.log(state.items.length + \" fiches\");",
         oninput: e => change(c => { c.js = e.target.value; }, { key: "js", redraw: false }) }),
       hint("Pris en compte au prochain chargement de la page (dans l'aperçu : ↻ recharger).")),
@@ -454,14 +454,14 @@ VIEW.securite = () => {
   const bo = pwIn("Mot de passe du back office", "current-password"), a1 = pwIn("Nouveau mot de passe de la Briquothèque (" + d.min + " caractères au moins)"), a2 = pwIn("Le même, une seconde fois");
   const same = (a, b) => { if (a.value.length < d.min) { toast("Le mot de passe doit faire au moins " + d.min + " caractères."); return false; } if (a.value !== b.value) { toast("Les deux mots de passe ne sont pas identiques."); return false; } return true; };
   const opt = async body => { const r = await act(() => api("/api/bo/options", body)); if (r) { X.acc = { ...X.acc, ...r }; draw(); } return r; };
-  return [head("Mots de passe et sécurité", "Le back office a son propre mot de passe. Il ouvre aussi la Briquothèque : gardez-le précieusement."),
-    note("🔑 <b>Ne perdez pas le mot de passe du back office</b> : il ne peut pas être retrouvé depuis l'application. Perdu, il faut supprimer le fichier <code>data/backoffice_auth.json</code> sur le serveur, puis rouvrir /backoffice pour en créer un nouveau.", "warn"),
+  return [head("Mots de passe et sécurité", "Le back office a son propre mot de passe. Il ouvre aussi la Briquothèque : à garder précieusement."),
+    note("🔑 <b>Le mot de passe du back office ne doit pas se perdre</b> : il ne peut pas être retrouvé depuis l'application. Perdu, il faut supprimer le fichier <code>data/backoffice_auth.json</code> sur le serveur, puis rouvrir /backoffice pour en créer un nouveau.", "warn"),
     card("État", el("div", { class: "rowset" },
       line(el("span", { class: "lab" }, "Mot de passe du back office"), el("b", {}, d.same ? "le même que celui de la Briquothèque" : "différent de celui de la Briquothèque")),
       line(el("span", { class: "lab" }, "Créé le"), el("span", {}, dt(d.created)), el("span", { class: "hint" }, "· changé le " + dt(d.changed))),
       line(el("span", { class: "lab" }, "Sessions ouvertes du back office"), el("b", {}, String(d.sessions)), d.sessions > 1 ? btn("Fermer les autres", () => opt({ logout_all: true }).then(r => r && toast("✔ Les autres appareils sont déconnectés du back office.")), "small") : null),
       line(el("span", { class: "lab" }, "Durée d'une session"), el("span", {}, d.session_hours + " h (ou " + d.remember_days + " jours avec « Rester connecté »)")),
-      line(el("span", { class: "lab" }, "Vous êtes connecté depuis"), el("b", {}, d.local ? "le réseau local" : "Internet"))),
+      line(el("span", { class: "lab" }, "Connexion depuis"), el("b", {}, d.local ? "le réseau local" : "Internet"))),
       el("div", { class: "btns", style: "margin-top:8px" }, btn("Se déconnecter du back office", async () => { await act(() => api("/api/bo/logout", {})); location.href = "/"; }))),
     card("Changer le mot de passe du back office", fld("Actuel", cur), fld("Nouveau", n1), fld("Confirmation", n2),
       btn("✔ Changer le mot de passe du back office", async () => { if (!same(n1, n2)) return; const r = await act(() => api("/api/bo/password", { current: cur.value, new: n1.value }), "✔ Mot de passe du back office changé. Les autres appareils sont déconnectés.");
@@ -471,12 +471,12 @@ VIEW.securite = () => {
       btn("✔ Changer le mot de passe de la Briquothèque", async () => { if (!same(a1, a2)) return;
         if (!await sure("Changer le mot de passe de la Briquothèque ?", "Tous les appareils connectés à la Briquothèque devront se reconnecter avec le nouveau mot de passe.", "Changer")) return;
         const r = await act(() => api("/api/bo/app-password", { bo: bo.value, new: a1.value }), "✔ Mot de passe de la Briquothèque changé."); if (r) { delete X.acc; draw(); } }, "primary"),
-      hint("Astuce : pour que les deux mots de passe soient identiques, donnez ici le même que celui du back office.")),
-    card("Outils sensibles depuis Internet", para("Le <b>code de l'application</b>, les réglages de démarrage, la restauration d'un .zip et la page de secours peuvent casser le serveur : ils ne répondent que depuis le <b>réseau local</b> (chez vous)."),
-      chk("Les permettre aussi depuis Internet", d.remote_tools === true, async v => { if (v && !await sure("Permettre les outils sensibles depuis Internet ?", "Quiconque connaîtrait le mot de passe du back office pourrait alors modifier le code du serveur depuis n'importe où. À n'activer que si vous en avez besoin, avec un mot de passe long.", "Permettre")) return draw(); await opt({ remote_tools: v }); draw(); }),
-      hint(d.local ? "Vous êtes sur le réseau local : vous pouvez changer ce réglage." : "Ce réglage ne se change que depuis le réseau local (vous êtes vu comme venant d'Internet). Tout le reste du back office marche de partout.")),
+      hint("Astuce : pour que les deux mots de passe soient identiques, donner ici le même que celui du back office.")),
+    card("Outils sensibles depuis Internet", para("Le <b>code de l'application</b>, les réglages de démarrage, la restauration d'un .zip et la page de secours peuvent casser le serveur : ils ne répondent que depuis le <b>réseau local</b> (à la maison)."),
+      chk("Les permettre aussi depuis Internet", d.remote_tools === true, async v => { if (v && !await sure("Permettre les outils sensibles depuis Internet ?", "Quiconque connaîtrait le mot de passe du back office pourrait alors modifier le code du serveur depuis n'importe où. À n'activer qu'en cas de besoin, avec un mot de passe long.", "Permettre")) return draw(); await opt({ remote_tools: v }); draw(); }),
+      hint(d.local ? "Connexion depuis le réseau local : ce réglage peut être changé." : "Ce réglage ne se change que depuis le réseau local (la connexion est vue comme venant d'Internet). Tout le reste du back office marche de partout.")),
     card("En cas de problème", el("ul", { class: "steps" },
-      el("li", { html: "Le site s'affiche mal après un réglage : ajoutez <code>?bo=off</code> à son adresse (il s'affiche sans personnalisation), puis corrigez ici." }),
+      el("li", { html: "Le site s'affiche mal après un réglage : ajouter <code>?bo=off</code> à son adresse (il s'affiche sans personnalisation), puis corriger ici." }),
       el("li", { html: "Le site ne répond plus après une modification du code : <a href=\"/backoffice/secours\" target=\"_blank\" rel=\"noopener\">🛟 page de secours</a> (remettre une version, redémarrer)." }),
       el("li", { html: "Après 10 mots de passe faux, l'adresse est bloquée 15 minutes (bannie 4 h si elle vient d'Internet) : les adresses bannies se gèrent dans Réglages → Sécurité du site." })))];
 };
@@ -531,12 +531,12 @@ VIEW.origine = () => {
   const C = typeof calc0 === "object" ? calc0 : null;
   return [head("🧩 Éléments d'origine", "Ce qui existe déjà dans l'appli : le renommer, le masquer, changer son ordre (brouillon puis « Publier »). Les calculs d'origine : leur formule et leurs pourcentages (effet immédiat)."),
     P() ? null : needPreview(),
-    card("Tris — « Trier par »", natEditor("sorts", SORTS0), hint("Vide : le nom d'origine. Un tri masqué disparaît du menu « Trier par » (s'il était choisi, il reste actif jusqu'au prochain choix). Vos propres tris (★) se règlent dans « Vues, tris et filtres ».")),
+    card("Tris — « Trier par »", natEditor("sorts", SORTS0), hint("Vide : le nom d'origine. Un tri masqué disparaît du menu « Trier par » (s'il était choisi, il reste actif jusqu'au prochain choix). Les propres tris (★) se règlent dans « Vues, tris et filtres ».")),
     card("Filtres — « ⚙️ Filtres »", natEditor("filters", FILT0), hint("Les étiquettes et les options des cartes du menu Filtres.")),
     card("Tuiles du haut", ta.length || Object.keys(obj(getIn(["native", "tiles"]))).length ? natEditor("tiles", ta) : hint("Aucune tuile dans l'aperçu."),
-      hint("Les tuiles changent selon la page : ouvrez dans l'aperçu celle à régler (Toute la collection, une liste, une liste de souhaits, À construire…), puis ⟳ ci-dessous."),
+      hint("Les tuiles changent selon la page : ouvrir dans l'aperçu celle à régler (Toute la collection, une liste, une liste de souhaits, À construire…), puis ⟳ ci-dessous."),
       el("div", { class: "btns" }, btn("⟳ Relire les tuiles de l'aperçu", () => draw(), "small"))),
-    card("Calculs d'origine", !C ? hint("Chargement…") : C.err ? note("Impossible de lire les réglages de l'appli (ouvrez l'appli connecté dans ce navigateur).", "warn") : [
+    card("Calculs d'origine", !C ? hint("Chargement…") : C.err ? note("Impossible de lire les réglages de l'appli (ouvrir l'appli connecté dans ce navigateur).", "warn") : [
       fld("📦 Set d'occasion avec sa boîte", pct(C.box_bonus ?? 6, v => app("/api/settings/box", { pct: v }, "✔ Boîte : enregistré")), "Valeur = cote d'occasion + prix d'une <b>boîte vide</b> de ce set (BrickOwl, chaque mois) ; sans prix de boîte : cote × (1 + ce pourcentage)."),
       fld("📘 Avec son livret de plans", pct(C.plan_cut ?? 5, v => app("/api/settings/plan", { pct: v }, "✔ Livret : enregistré"), 90), "Valeur = cote + prix des <b>plans seuls</b> de ce set (BrickOwl) ; sinon : cote × (1 + ce pourcentage)."),
       fld("🔧 Exemplaire modifié", pct(C.mod_discount ?? 5, v => app("/api/settings/discount", { pct: v }, "✔ Décote : enregistré"), 90), "Seulement si une figurine d'<b>origine</b> est modifiée : valeur = cote × (1 − ce pourcentage). Pièces échangées, ajouts : leur écart de prix, pas de décote."),
@@ -556,16 +556,16 @@ const CTX_STYLE = ["color", "background-color", "font-size", "font-weight", "fon
 let invQ = "", invZone = "", invData = null;
 VIEW.tout = () => {
   const B = BOF();
-  if (!B || !B.inventory) return [head("🗂️ Tous les éléments", "Tout ce que l'appli affiche, même caché."), note("L'aperçu n'est pas prêt : attendez qu'il soit chargé, puis rouvrez ce panneau.", "warn")];
+  if (!B || !B.inventory) return [head("🗂️ Tous les éléments", "Tout ce que l'appli affiche, même caché."), note("L'aperçu n'est pas prêt : attendre qu'il soit chargé, puis rouvrir ce panneau.", "warn")];
   try { if (!invData) invData = B.inventory(); } catch (e) { invData = []; }
   const mine = x => (cfg.rules || []).some(r => r.sel === x.one && r.hide && (!r.page || r.page === B.page));
   const zones = [...new Set(invData.map(x => x.area))];
   const list = el("div", { class: "rowset" }), count = el("p", { class: "hint", style: "margin:0 0 6px" });
   const fill = () => {
     const q = invQ.trim().toLowerCase(), rows = invData.filter(x => (!invZone || x.area === invZone) && (!q || (x.text + " " + x.desc + " " + x.area).toLowerCase().includes(q)));
-    count.textContent = rows.length + " élément(s)" + (rows.length > 3000 ? " — les 3 000 premiers affichés : précisez la recherche" : "");
+    count.textContent = rows.length + " élément(s)" + (rows.length > 3000 ? " — les 3 000 premiers affichés : préciser la recherche" : "");
     list.replaceChildren(...rows.slice(0, 3000).map(x => { const hid = mine(x);
-      return line(el("span", { class: "lab", style: "min-width:0" }, el("b", {}, x.text || "(sans texte)"), el("br"), el("small", { class: "hint" }, x.area + " · " + x.desc + (hid ? " · 🙈 masqué par vous" : x.hidden ? " · caché pour l'instant (menu fermé, autre page…)" : ""))),
+      return line(el("span", { class: "lab", style: "min-width:0" }, el("b", {}, x.text || "(sans texte)"), el("br"), el("small", { class: "hint" }, x.area + " · " + x.desc + (hid ? " · 🙈 masqué ici" : x.hidden ? " · caché pour l'instant (menu fermé, autre page…)" : ""))),
         el("span", { style: "display:flex;gap:6px;flex:none" },
           btn("✏️ Modifier", () => { if (typeof setMode === "function" && mode !== "pick") setMode("pick"); if (!B.invPick(x.i)) { toast("Élément introuvable : ⟳ Relire l'aperçu."); } }, "small", "Ouvrir l'éditeur de cet élément (texte, style, lien, action, icône…)"),
           hid ? btn("👁 Afficher", () => change(c => { for (const r of c.rules || []) if (r.sel === x.one && (!r.page || r.page === B.page)) delete r.hide; }), "small", "Ne plus le masquer")
@@ -576,7 +576,7 @@ VIEW.tout = () => {
     card("Chercher", el("input", { type: "search", value: invQ, placeholder: "Un mot du bouton, du menu, du titre…", style: "width:100%", oninput: e => { invQ = e.target.value; fill(); } }),
       el("div", { class: "pills", style: "margin-top:8px" }, [["", "Toutes les zones"], ...zones.map(z => [z, z])].map(([k, l]) => el("button", { type: "button", class: invZone === k ? "on" : "", onclick: () => { invZone = k; draw(); } }, l))),
       el("div", { class: "btns" }, btn("⟳ Relire l'aperçu", () => { invData = null; draw(); }, "small")),
-      hint("L'inventaire est celui de la page affichée dans l'aperçu : ouvrez-y une fiche, les Réglages ou une autre page, puis ⟳ Relire l'aperçu pour en lister les éléments.")),
+      hint("L'inventaire est celui de la page affichée dans l'aperçu : y ouvrir une fiche, les Réglages ou une autre page, puis ⟳ Relire l'aperçu pour en lister les éléments.")),
     card("Éléments", count, list)];
 };
 
@@ -584,7 +584,7 @@ window.BO_ADMIN.ctxHas = k => k === "style" && !!ctxStyle;
 window.BO_ADMIN.onContext = (a, info, extra) => {
   const same = r => r.sel === info.one && (r.page || "") === (info.page || "");
   const rule = (c, make) => { let r = (c.rules || []).find(same); if (!r && make) { r = { id: uid(), sel: info.one, page: info.page, label: info.desc, css: {} }; (c.rules ||= []).push(r); } return r; };
-  const clip = t => { if (!t) return toast("Rien à copier ici."); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Copié : " + t.slice(0, 60)), () => prompt("Copiez ce texte :", t)); };
+  const clip = t => { if (!t) return toast("Rien à copier ici."); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Copié : " + t.slice(0, 60)), () => prompt("Copier ce texte :", t)); };
   if (a === "edit") { if (mode !== "pick") setMode("pick"); return; }
   if (a === "hide") { change(c => { rule(c, true).hide = true; }); return toast("Masqué : " + info.desc + " — « Montrer ce qui est masqué » (au-dessus de l'aperçu) le retrouve."); }
   if (a === "copystyle") {

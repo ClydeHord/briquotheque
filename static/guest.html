@@ -1025,7 +1025,7 @@ function openDetail(i, altK = null) {
           const g = (i._grp || []).length > 1 ? i._grp : [i], tot = g.reduce((a, x) => a + (x.quantity || 1), 0), sets = new Map(); let loose = 0;
           for (const x of g) { const h = hostOf(x); if (h) sets.set(h, (sets.get(h) || 0) + (x.quantity || 1)); else loose += x.quantity || 1; }
           return (tot > 1 ? `<div class="gs-qty">Quantité : <b>${nf.format(tot)}</b></div>` : "")
-            + (sets.size ? `<div class="gs-qty">${sets.size === 1 && !loose ? "Rangée dans " : "Dans mes sets : "}${[...sets].map(([h, n]) => `<button type="button" class="link" data-hostid="${esc(h.id)}">${esc(itemName(h))}</button>${n > 1 && (sets.size > 1 || loose) ? " ×" + nf.format(n) : ""}`).join(", ")}${loose ? ` · seule${loose > 1 ? "s" : ""} : ${nf.format(loose)}` : ""}</div>` : "");
+            + (sets.size ? `<div class="gs-qty">${sets.size === 1 && !loose ? "Rangée dans " : "Dans les sets : "}${[...sets].map(([h, n]) => `<button type="button" class="link" data-hostid="${esc(h.id)}">${esc(itemName(h))}</button>${n > 1 && (sets.size > 1 || loose) ? " ×" + nf.format(n) : ""}`).join(", ")}${loose ? ` · seule${loose > 1 ? "s" : ""} : ${nf.format(loose)}` : ""}</div>` : "");
         })()}
       </div>
     </div>
@@ -1049,7 +1049,7 @@ function openDetail(i, altK = null) {
     ${i.kind === "fig" && !wishItem ? `<div data-objs>${objsHtml(i.fig_objs)}</div>` : ""}
     ${(i.moc_lots || []).length ? `<fieldset><legend>Pièces (${nf.format(i.moc_lots.reduce((a, x) => a + (x.qty || 1), 0))})</legend><div class="gd-lots">${i.moc_lots.map(x => `<div class="gd-lot">
         ${x.image ? `<img src="${img(x.image)}" alt="${esc(x.name)}" loading="lazy" class="gd-zoom" title="Agrandir">` : `<span class="gd-noimg">🧱</span>`}<span><b>${esc(x.name)}</b>${(x.qty || 1) > 1 ? ` <em>×${x.qty}</em>` : ""}<small>${esc(x.part)}${x.color ? " · " + esc(x.color) : ""}</small></span></div>`).join("")}</div></fieldset>` : ""}
-    ${est ? `<div class="gs-est"><div class="gs-est-t">Estimation ${i.kind === "fig" ? "de ma figurine" : isCustom(i) ? "de mon MOC" : "de mon set"}</div><b>${moneyA(inf.estimate, i.approx)}</b>
+    ${est ? `<div class="gs-est"><div class="gs-est-t">Estimation ${i.kind === "fig" ? "de la figurine" : isCustom(i) ? "du MOC" : "du set"}</div><b>${moneyA(inf.estimate, i.approx)}</b>
       ${inf.used_value ? `<div class="gs-est-l"><span>${i.kind === "set" ? "Set complet d'occasion" : "Occasion (catalogue)"}</span><b>${zf(inf.zones?.used)}${money(inf.used_value * (i.quantity || 1))}</b></div>` : ""}
       ${inf.new_value ? `<div class="gs-est-l"><span>Neuf (catalogue)</span><b>${zf(inf.zones?.new)}${money(inf.new_value * (i.quantity || 1))}</b></div>` : ""}</div>` : ""}
     ${(() => {   /* prix en bulles au-dessus des liens, comme la page privée (prix publics seulement ; pas les MOC ni la liste de souhaits) — 21/11 */

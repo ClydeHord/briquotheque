@@ -4,6 +4,34 @@ Les nouveautés de Briquothèque, version par version (la plus récente en haut)
 
 ## 20 au 22 novembre 2026
 
+- **Variations de prix : repartir d'aujourd'hui** — une date de départ (22/11) : aucun relevé d'avant ne sert de comparaison (ils venaient d'autres sources) ; les courbes gardent tout l'historique.
+- **Inventaire : prix des pièces gardés sur l'appareil** (24 h) — la réouverture n'attend plus le chiffrage.
+- **« 🔁 Commander à nouveau » : plusieurs couleurs d'un coup** (chacune sa quantité, une ligne par couleur) ; dans **☑ Sélection**, « 🔁 Commander à nouveau » pour toutes les lignes cochées. Sur ordinateur, « Commandée le … » seule sur sa ligne, les boutons dessous ; sur téléphone, ✔ OK plus étroit. Sur une ligne commandée, **un seul bouton « 🛒 À commander »** qui demande : changer le statut de cette ligne, ou préparer une nouvelle commande.
+- **Fenêtres de choix plus lisibles** (« À commander », « Vers quel inventaire ? »…) : une ligne sans photo n'est plus écrasée ; sur ordinateur, deux grandes cartes par ligne, photo et texte plus gros.
+- **Inventaire : 🗑️ Supprimer toujours possible** — corbeille en haut (à côté de ✏️) et bouton en bas, ses pièces commandées sont déplacées dans « Commandes » (pas celles à commander).
+- **Lisibilité** : plus aucun texte sous 11 px (étiquettes des chiffres, « Modifiée », « sans figurines »), petits boutons agrandis ; un peu plus gros sur ordinateur.
+- **Souhait : « État souhaité »** — boutons 📦 Neuf / ♻️ Occasion plus petits.
+- **Un inventaire n'est rattaché à aucune fiche** : toujours rangé par numéro de set (plus de « Dans la collection »), quantités d'un set.
+- **« Commandées en plus » : zoom en grand** — la grande photo Rebrickable de la pièce dans sa couleur ; une figurine BrickOwl : sa grande photo BrickOwl (700 px).
+
+- **« À commander » devient « Commandes »** ; tout en bas, en bleu à part : <b>➕ Commandées en plus</b> — les pièces et figurines commandées qui ne sont attribuées à aucune fiche (surplus ou sans équivalent), avec photo, date et prix payé. Sur chacune : ✔ OK (une figurine : l'ajouter à la collection ?), 🧩 Attribuer à une fiche, 📋 Vers un inventaire (la ligne passe « Commandée »).
+- **« 🔁 Commander à nouveau »** (ligne commandée ou reçue de « Commandes ») : une nouvelle ligne à commander, dans la même couleur ou une autre ; une ligne commandée n'est plus fondue avec une nouvelle.
+- **« Commandes » en sections** (🛒 À commander · 📦 Commandées · ✔ Reçues) ; **sur ordinateur, jusqu'à quatre références par ligne** (trois dès 1 400 px, quatre dès 1 700 px ; photo, infos et ×N en haut, boutons dessous ; sans fond de couleur, seul le liseré dit l’état) ; la rangée Toutes / À commander / Commandées / OK / ☑ Sélection reste visible en haut pendant le défilement.
+- **« Commandes » : ☑ Sélection** — cases à cocher et actions groupées (✔ OK, 📦 Commandée, ↩ À commander, 🗑 Supprimer ; commandées en plus : ✔ OK, 🧩 Attribuer à une fiche, 📋 Vers un inventaire).
+- **« 📋 Vers un inventaire »** : tous les inventaires sont proposés ; un inventaire qui n'a pas la pièce la reçoit en ligne ajoutée (hors set), « Commandée ».
+- **« Remplacer une couleur »** (inventaire) : couleurs dans l'ordre alphabétique, avec un carré de chaque couleur et une recherche.
+- **Choix d'un inventaire** : chaque inventaire avec son nom et sa photo (celle de l'inventaire, sinon le set).
+- **Pièce rangée dans un inventaire** : la couleur effective de chaque ligne compte (règle de couleur, couleur choisie).
+
+- **Secours BrickOwl corrigé** : quand il se déclenche tout seul (BrickLink en panne), les prix BrickLink déjà connus restent prioritaires ; BrickOwl ne comble que les manques. Un prix BrickOwl de set ou de figurine n'est retenu que sur au moins 3 ventes ou annonces (une seule annonce à 14,54 € avait fait passer l'occasion d'une figurine au-dessus du neuf).
+
+- **Statistiques « 📈 Valeur dans le temps » lissée** : un relevé quotidien qui s'écarte de plus de 3 % de ses voisins (9 jours) est remplacé par leur médiane ; l'historique reconstitué est raccordé au premier vrai relevé (plus de marche). Le dernier jour reste la vraie valeur.
+
+- **Textes neutres partout** : ni « vous », ni « je », ni impératif — appli, aide « ? », aide-mémoire, installation, back office, guide utilisateur et notice du back office (« Dans la collection », « L'exemplaire », « ✔ Acquis », « 📍 Étape en cours », « Toucher une pièce… »).
+
+- **Inventaire complet → fiche créée directement** dans « À construire », avec la photo de l'inventaire, dans la liste où vous avez le plus de sets du même thème (plus de formulaire à compléter).
+- **Source des prix** : plus d'alerte « BrickLink ne répond pas » ; juste « Source : BrickLink » (ou BrickOwl pendant le secours), une fois par jour au plus.
+
 **Commandes et pièces à commander**
 - **Mes commandes lues automatiquement** (API officielles BrickLink et BrickOwl ; clé BrickOwl dans Réglages › 🦉 BrickOwl) : une pièce ou une figurine à commander trouvée dans une commande passe « 📦 Commandée le … » — jamais « ✔ OK » automatique (vous vérifiez à la réception). Relu à l'ouverture de « À commander » (une fois par heure au plus) et chaque jour ; commandes annulées écartées.
 - **Rapprochement** : pièce = référence (aussi celles du nom) + couleur, règles de couleur de l'inventaire comprises ; figurine = sa référence BrickLink, ou son nom exact (BrickOwl). Une même pièce dans plusieurs inventaires : la quantité commandée est partagée, du plus ancien au plus récent ; une ligne n'est « Commandée » que si toute sa quantité l'est. **Surplus → vrac** : une commande ne sert qu'aux lignes déjà « à commander » quand elle a été passée, jamais à un inventaire créé après.
@@ -16,7 +44,7 @@ Les nouveautés de Briquothèque, version par version (la plus récente en haut)
 
 **Prix et graphiques**
 - **BrickLink, médiane partout** : prix = médiane des ventes des 6 derniers mois (France, puis Europe, puis monde) ; « À commander » : médiane des annonces, sinon des ventes. Liens et exports : toujours BrickLink.
-- **Secours BrickOwl** : si BrickLink ne répond plus depuis 24 h, les prix viennent de BrickOwl (fiches ouvertes et actualisation du jour) — message court « BrickLink ne répond pas : BrickOwl en secours » ; arrêt tout seul à son retour.
+- **Secours BrickOwl** : si BrickLink ne répond plus depuis 24 h, les prix viennent de BrickOwl (fiches ouvertes et actualisation du jour) — arrêt tout seul à son retour.
 - **Brickset** (Réglages › 🗓️ Brickset) : dates de mise en vente et de retrait, prix magasin, pièces, figurines, code-barres. **Pages des thèmes LEGO.com** : prix public et lien des sets encore vendus.
 - **Graphique « 📈 Évolution » : du vrai uniquement** (un trou s'il n'y a pas de donnée) — 🟩 Neuf (magasin), 🟨 Neuf (après retrait), 🟧 Occasion dans l'état de mon set, 🟥 Mon exemplaire s'il est modifié ; relevés farfelus écartés. Écarts de prix calculés sur mon exemplaire.
 - **« Valeur de la liste »** quand une liste est ouverte (appli et pages publiques).

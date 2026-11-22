@@ -18,7 +18,7 @@
   <button type="button" class="b" id="btnUndo" title="Annuler la dernière modification (Ctrl + Z)">↶ Annuler</button>
   <button type="button" class="b" id="btnRedo" title="Refaire ce qui vient d'être annulé (Ctrl + Y)">↷ Rétablir</button>
   <button type="button" class="b" id="btnDiscard" title="Jeter tout ce qui n'est pas encore publié et revenir à la version du site">Abandonner le brouillon</button>
-  <button type="button" class="b primary" id="btnPublish" title="Appliquer vos modifications au site">✔ Publier sur le site</button>
+  <button type="button" class="b primary" id="btnPublish" title="Appliquer les modifications au site">✔ Publier sur le site</button>
   <a class="b" href="/" target="_blank" rel="noopener" title="Ouvrir le site dans un autre onglet">Ouvrir le site ↗</a>
 </header>
 <div class="main">
@@ -36,7 +36,7 @@
         <option value="/login?bo=apercu">Page de connexion</option>
       </select>
       <div class="seg" id="pvMode" role="group" aria-label="Que fait un clic dans l'aperçu ?">
-        <button type="button" data-mode="use" title="L'aperçu se comporte comme le site : naviguez jusqu'à l'endroit à modifier">👆 Utiliser le site</button>
+        <button type="button" data-mode="use" title="L'aperçu se comporte comme le site : naviguer jusqu'à l'endroit à modifier">👆 Utiliser le site</button>
         <button type="button" data-mode="pick" title="Un clic sur un élément de l'aperçu le sélectionne pour le modifier">🖱️ Cliquer pour modifier</button>
         <button type="button" data-mode="move" title="Attraper un élément de l'aperçu et le déposer ailleurs">✋ Déplacer</button>
       </div>
@@ -50,12 +50,12 @@
         <button type="button" data-z="0" title="Zoom normal (100 %)" id="pvZoomN">100 %</button>
         <button type="button" data-z="1" title="Zoomer l'aperçu">+</button>
       </div>
-      <label class="chk" title="Dans l'aperçu, ce que vous avez masqué reste visible en transparence (pour pouvoir le recliquer)"><input type="checkbox" id="pvGhost"> Montrer ce qui est masqué</label>
+      <label class="chk" title="Dans l'aperçu, ce qui est masqué reste visible en transparence (pour pouvoir le recliquer)"><input type="checkbox" id="pvGhost"> Montrer ce qui est masqué</label>
       <div class="grow"></div>
       <button type="button" class="b small" id="pvReload" title="Recharger l'aperçu">⟳</button>
     </div>
-    <div class="prev-wrap"><iframe id="preview" title="Aperçu du site avec vos modifications"></iframe></div>
-    <div class="prev-note" id="pvNote">L'aperçu montre votre <b>brouillon</b> : vous seul le voyez tant que vous n'avez pas publié.</div>
+    <div class="prev-wrap"><iframe id="preview" title="Aperçu du site avec les modifications"></iframe></div>
+    <div class="prev-note" id="pvNote">L'aperçu montre le <b>brouillon</b> : visible ici seulement, tant qu'il n'est pas publié.</div>
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>

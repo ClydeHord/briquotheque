@@ -107,11 +107,11 @@ async function pasteImage() {
       if (t) { const b = await it.getType(t); return new File([b], "image-collee." + (t.split("/")[1] || "png"), { type: t }); }
     }
     toast("Pas d'image dans le presse-papiers");
-  } catch { toast("Collage impossible : autorisez l'accès au presse-papiers"); }
+  } catch { toast("Collage impossible : autoriser l'accès au presse-papiers"); }
   return null;
 }
 const feedFile = (inp, f) => { const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true })); };
-/* menu : nombre de nouveautés (selon mes filtres) et combien sont apparues depuis ma dernière visite */
+/* menu : nombre de nouveautés (selon les filtres) et combien sont apparues depuis la dernière visite */
 async function loadNovCount() {
   try { state.novCount = await api("/api/novelties/count"); renderNav(); } catch {}
   if (state.novCount?.new && state.current === NOV) $("#novView").refresh?.();   // page Nouveautés ouverte : les nouvelles y apparaissent
@@ -226,7 +226,7 @@ async function api(path, opts = {}) {
     net.suspect();
     if (queueable) return outbox.add(path, method, opts.body);
     if (method === "GET") { const d = await offlinePack.find(path); if (d !== undefined) return d; }   // fiche jamais ouverte : le paquet hors ligne
-    throw new Error("Hors ligne : impossible pour le moment, réessayez une fois la connexion revenue");
+    throw new Error("Hors ligne : impossible pour le moment, réessayer une fois la connexion revenue");
   }
   if (r.headers.get("X-From-Cache") || r.headers.get("X-Offline")) net.suspect();   // copie gardée sur l'appareil (coupure à confirmer)
   else if (net.off && r.status < 500) net.check();
@@ -474,8 +474,8 @@ function cropImage(src, title = "Modifier l'image", opts = {}) {
     const d = document.createElement("div");
     d.className = "modal top" + (opts.alpha ? " crop-alpha" : "");   /* (logo transparent : fond en damier) */
     d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-      <p class="hint" style="margin-top:0" data-hint>${opts.hint ? esc(opts.hint) : opts.auto === undefined && !opts.ratio ? "Cadrage proposé automatiquement autour de l'objet. Ajustez si besoin : déplacez le cadre par le milieu, changez sa taille par ses coins (ou la molette)." : opts.auto ? "Cadrage proposé : la figurine entière, centrée, comme sur les autres vignettes (format " + (opts.ratio && opts.ratio < 1 ? "portrait 3:4" : "4:3") + "). Ajustez si besoin : déplacez le cadre par le milieu, changez sa taille par ses coins (ou la molette)."
-        : "Le cadre a le format des vignettes (4:3). Déplacez-le en le prenant par le milieu, agrandissez-le ou réduisez-le par ses coins (ou la molette)."}</p>
+      <p class="hint" style="margin-top:0" data-hint>${opts.hint ? esc(opts.hint) : opts.auto === undefined && !opts.ratio ? "Cadrage proposé automatiquement autour de l'objet. Ajuster si besoin : déplacer le cadre par le milieu, changer sa taille par ses coins (ou la molette)." : opts.auto ? "Cadrage proposé : la figurine entière, centrée, comme sur les autres vignettes (format " + (opts.ratio && opts.ratio < 1 ? "portrait 3:4" : "4:3") + "). Ajuster si besoin : déplacer le cadre par le milieu, changer sa taille par ses coins (ou la molette)."
+        : "Le cadre a le format des vignettes (4:3). Il se déplace en le prenant par le milieu, s'agrandit ou se réduit par ses coins (ou la molette)."}</p>
       <div class="crop-tools" hidden><!-- taille : par les coins du cadre ou la molette (curseur retiré) -->
         <button type="button" class="btn" data-minus aria-label="Réduire le cadre">−</button>
         <input type="range" data-size min="5" max="100" step="0.5" value="100" aria-label="Taille du cadre">
@@ -510,7 +510,7 @@ function cropImage(src, title = "Modifier l'image", opts = {}) {
       lockBtn.textContent = free ? "🔓 Format libre" : "🔒 Format fixe";
       lockBtn.title = free ? "Toucher pour garder les proportions des vignettes" : "Toucher pour recadrer librement";
       lockBtn.setAttribute("aria-pressed", String(!free));
-      $("[data-hint]", d).innerHTML = free ? "Cadre libre : déplacez-le en le prenant par le milieu, étirez-le par ses coins. 🔒 remet les proportions des vignettes." : hint0;
+      $("[data-hint]", d).innerHTML = free ? "Cadre libre : il se déplace en le prenant par le milieu, s'étire par ses coins. 🔒 remet les proportions des vignettes." : hint0;
     };
     let q = { x: 0, y: 0, s: 1 };   // cadre : coin haut-gauche et hauteur s (largeur s × R), en pixels de l'image
     const W = () => im.naturalWidth || 1, H = () => im.naturalHeight || 1, M = () => Math.min(H(), W() / R);   // hauteur maximale
@@ -742,17 +742,17 @@ function cropImage(src, title = "Modifier l'image", opts = {}) {
           if (!t) continue;
           const blob = await it.getType(t);
           await applyCut(blob); $("[data-cpaste]", d).classList.remove("pulse");
-          toast("Photo détourée collée : ajustez le cadre puis « Utiliser »");
+          toast("Photo détourée collée : ajuster le cadre puis « Utiliser »");
           return true;
         }
       } catch {}
-      if (!auto) toast("Rien à coller : copiez d'abord une image (sinon, « Importer une image »)");   // « Coller » colle, il n'ouvre jamais la galerie
+      if (!auto) toast("Rien à coller : copier d'abord une image (sinon, « Importer une image »)");   // « Coller » colle, il n'ouvre jamais la galerie
       return false;
     };
     const pickCutFile = () => {
       const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
       inp.onchange = async () => { const f = inp.files?.[0]; if (!f) return;
-        await applyCut(f); $("[data-cpaste]", d).classList.remove("pulse"); toast("Photo détourée chargée : ajustez le cadre puis « Utiliser »"); };
+        await applyCut(f); $("[data-cpaste]", d).classList.remove("pulse"); toast("Photo détourée chargée : ajuster le cadre puis « Utiliser »"); };
       inp.click();
     };
     $("[data-cpaste]", d).onclick = () => pasteCut(false);
@@ -830,7 +830,7 @@ async function cropForSearch(file, title = "Recadrer pour la recherche") {
   const src = URL.createObjectURL(file);
   try {
     const c = await cropImage(src, title, { free: true, ok: "Rechercher", no: "Sans recadrer", closeValue: false, max: 1600,
-      hint: "Cadre libre : entourez ce qu'il faut reconnaître. Déplacez-le par le milieu, étirez-le par ses coins. 🔒 garde les proportions." });
+      hint: "Cadre libre : entourer ce qu'il faut reconnaître. Il se déplace par le milieu, s'étire par ses coins. 🔒 garde les proportions." });
     return c === false ? null : c || file;
   } finally { setTimeout(() => URL.revokeObjectURL(src), 1000); }
 }
@@ -911,7 +911,7 @@ function editFreeTodo(t = null) {
     const done = v => { d.remove(); res(v); };
     $("[data-x]", d).onclick = $("[data-no]", d).onclick = () => done(null);
     $("[data-del]", d)?.addEventListener("click", () => done("delete"));
-    $("[data-ok]", d).onclick = () => { const note = $("[data-note]", d).value.trim(); if (!note) { toast("Écrivez la note"); return; } done({ cat, note }); };
+    $("[data-ok]", d).onclick = () => { const note = $("[data-note]", d).value.trim(); if (!note) { toast("Écrire la note"); return; } done({ cat, note }); };
     setTimeout(() => $("[data-note]", d).focus(), 50);
   });
 }
@@ -965,12 +965,12 @@ async function load() {
   setTimeout(() => fetchPartPrices(state.items.filter(i => i.kind === "part")), 1500);   // prix des pièces à commander (menu), en fond
   if (d.bl_alert && !state.blAlertShown) {   // BrickLink refuse : l'adresse IP du serveur a sans doute changé
     state.blAlertShown = true;
-    setTimeout(() => toast("⚠ BrickLink refuse l'accès : l'adresse IP a sans doute changé. Renouvelez vos jetons BrickLink (Réglages › BrickLink).", { label: "Réglages", run: () => $("#btnSettings").click() }), 1200);
+    setTimeout(() => toast("⚠ BrickLink refuse l'accès : l'adresse IP a sans doute changé. Jetons BrickLink à renouveler (Réglages › BrickLink).", { label: "Réglages", run: () => $("#btnSettings").click() }), 1200);
   }
   {   // clés API manquantes : bandeau (tarifs, images, recherche, inventaires) qui ouvre les Réglages
     const miss = d.keys_missing || [], kb = $("#keysBanner");
     kb.hidden = !miss.length;
-    kb.textContent = `🔑 Fournissez ${miss.length > 1 ? "vos clés API Rebrickable et BrickLink" : miss[0] === "bricklink" ? "vos codes API BrickLink" : "votre clé API Rebrickable"} pour obtenir les tarifs, les images, la recherche et les inventaires → Réglages`;
+    kb.textContent = `🔑 ${miss.length > 1 ? "Clés API Rebrickable et BrickLink" : miss[0] === "bricklink" ? "Codes API BrickLink" : "Clé API Rebrickable"} à fournir pour obtenir les tarifs, les images, la recherche et les inventaires → Réglages`;
     kb.onclick = () => $("#btnSettings").click();
   }
   state.demoOn = !!d.demo_on; state.sidePubHide = d.side_pub_hide || []; sidePubDraw();   // démo publique désactivée : pas de lien ; liens masqués (Réglages)
@@ -978,16 +978,13 @@ async function load() {
   if (d.bl_zones) state.blz = d.bl_zones;   // zones BrickLink réglées : drapeaux, noms, liens
   state.legoUrls = d.lego_urls || {};
   state.refSite = d.ref_site || "bricklink"; state.siteLogos = d.site_logos || {};
-  if (d.bl_back && !state.blBackShown) { let seen = 0; try { seen = +localStorage.getItem("bq-bl-back") || 0; } catch {}   // (secours désactivé tout seul : dit une fois)
-    if (seen < d.bl_back) { state.blBackShown = true; try { localStorage.setItem("bq-bl-back", String(d.bl_back)); } catch {}
-      setTimeout(() => toast("✔ BrickLink est revenu"), 1500); } }
-  if (d.bl_down && !state.blDownShown) { state.blDownShown = true;   // (BrickLink muet depuis 24 h : BrickOwl en attendant — 21/11 soir)
-    setTimeout(() => toast("BrickLink ne répond pas : BrickOwl en secours"), 1500); }   // (site de référence des prix, petits logos — 21/11)   // pages produits LEGO.com connues (liens « Voir sur » des fiches)
+  if (!state.srcShown) { state.srcShown = true; const day = new Date().toDateString(); let last = ""; try { last = localStorage.getItem("bq-src-day") || ""; } catch {}   /* « Source : … » : au plus une fois par jour (22/11) */
+    if (last !== day) { try { localStorage.setItem("bq-src-day", day); } catch {} setTimeout(() => toast("Source : " + (d.bl_down || d.ref_site === "brickowl" ? "BrickOwl" : "BrickLink")), 1500); } }
   offlinePack.refresh();   // fiches hors ligne : paquet relu une fois par jour
   state.appColor = d.app_color || null;   // (thème de l'application)
   state.hnData = d; try { window.PERSO?.load?.(d); } catch {}   /* (extensions locales, facultatives) */
   state.lists = d.lists; state.items = d.items; state.trend = d.trend || { on: true, up: 3, down: 3, stable: true, pct: false, size: 100 }; state.trendLists = d.trend_lists || {}; state.trendRef = d.trend_ref || null;
-  for (const i of state.items || []) i._chgMine = i.chg;   // (variations : mon exemplaire / le marché seul — 21/11)
+  for (const i of state.items || []) i._chgMine = i.chg;   // (variations : l'exemplaire / le marché seul — 21/11)
   chgApply();
   state.modDiscount = d.mod_discount ?? 5; state.boxBonus = d.box_bonus ?? 6; state.planCut = d.plan_cut ?? 5;   // (réglages des estimations : décote, boîte, livret)
   trendSync();   // taille des flèches, bouton 📈
@@ -1015,7 +1012,7 @@ async function load() {
 const PUB_VISITS = document.getElementById("pubVisits");   // gardé : il est replacé à côté du titre à chaque affichage
 /* page publique de la page ouverte : compteur de visites et 📤 (partager son lien) à côté du titre */
 const PUB_PATH = { collection: "/collection", wishlist: "/wishlist", watch: "/a-surveiller", nouveautes: "/nouveautes" };
-const PUB_NAME = { collection: "Ma collection LEGO", wishlist: "Ma liste de souhaits LEGO", watch: "LEGO à surveiller", nouveautes: "Les nouveautés LEGO" };
+const PUB_NAME = { collection: "Collection LEGO", wishlist: "Liste de souhaits LEGO", watch: "LEGO à surveiller", nouveautes: "Les nouveautés LEGO" };
 const pubKeyOf = () => { const l = state.lists?.find(x => x.id === state.current);
   return l?.kind === "wishlist" ? (l.gift ? "watch" : "wishlist") : state.current === ALL ? "collection" : state.current === NOV ? "nouveautes" : ""; };
 const PUB_SHARE = Object.assign(document.createElement("button"), { type: "button", className: "pub-share", textContent: "📤", title: "Partager le lien de la page publique" });
@@ -1033,7 +1030,7 @@ function drawVisits(pub) {
   if (!v || !v.views) { el.textContent = "👁 0 visite"; el.title = "Aucune visite de la page publique pour le moment"; return; }
   el.innerHTML = `👁 <b>${nf.format(v.views)}</b>`; el.title = `${nf.format(v.views)} visite${v.views > 1 ? "s" : ""} · ${nf.format(v.visitors)} visiteur${v.visitors > 1 ? "s" : ""}`;
   el.title = `Aujourd'hui : ${v.today} · 7 derniers jours : ${v.week}` + (v.last ? ` · dernière visite : ${new Date(v.last * 1000).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : "")
-    + "\n(vos propres visites, connecté, ne comptent pas)";
+    + "\n(les visites faites une fois connecté ne comptent pas)";
 }
 async function loadVisits() {
   try { state.visits = await api("/api/visits"); } catch { return; }
@@ -1291,7 +1288,7 @@ const figLotN = () => Math.max(1, parseInt($("#cfgQty")?.value, 10) || 1);
 /* figurines modifiées d'un lot (décote sur elles seules) : la pièce d'origine la plus retirée, en figurines (orig.per = pièces par figurine) */
 const modCopies = (swaps, n) => { const r = (swaps || []).filter(x => x?.orig).map(x => Math.ceil((x.orig.qty || 1) / Math.max(1, x.orig.per || 1)));
   return Math.max(1, Math.min(n, r.length ? Math.max(...r) : 1)); };
-/* fiche unique d'une figurine seule aussi d'origine dans un de mes sets : combien sont dans ces sets (comptées dans « Quantité ») */
+/* fiche unique d'une figurine seule aussi d'origine dans un des sets : combien sont dans ces sets (comptées dans « Quantité ») */
 const inSetN = () => { const it = state.draft?.item; return it && isFig(it) && !it.attached_to && !state.draft.adjust ? it._withSetN || 0 : 0; };
 /* figurines modifiées d'un lot (sans borne) */
 const modCopiesRaw = swaps => { const sw = realSwaps(swaps), r = sw.filter(x => x?.orig).map(x => Math.ceil((x.orig.qty || 1) / Math.max(1, x.orig.per || 1)));
@@ -1512,7 +1509,7 @@ function pickFrom(title, rows, { search = true } = {}) {
   return new Promise(res => {
     const d = document.createElement("div"); d.className = "modal top";
     d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-      ${search ? `<input type="search" data-q placeholder="Rechercher : numéro, nom…" style="width:100%;margin-bottom:8px">` : ""}<div data-l></div></div>`;
+      ${search ? `<input type="search" data-q placeholder="Rechercher : numéro, nom…" style="width:100%;margin-bottom:8px">` : ""}<div data-l class="pick-list"></div></div>`;   /* (pick-list : plus gros sur ordinateur — 22/11) */
     document.body.append(d);
     const done = v => { d.remove(); res(v); };
     $("[data-x]", d).onclick = () => done(null); d.onclick = e => { if (e.target === d) done(null); };
@@ -1523,7 +1520,7 @@ function pickFrom(title, rows, { search = true } = {}) {
       const has = (txt, q) => q.split(" ").filter(Boolean).every(w => txt.includes(w));
       const [qa, qb] = forms($("[data-q]", d)?.value).map(x => x.trim());
       const l = rows.filter(r => { if (!qa) return true; const [ta, tb] = forms(`${r.label} ${r.sub || ""}`); return has(ta, qa) || has(tb, qb); }).slice(0, 80);
-      $("[data-l]", d).innerHTML = l.map((r, k) => `<button type="button" class="link-row" data-k="${k}">${r.image != null ? `<img src="${esc(r.image)}" alt="" loading="lazy">` : ""}
+      $("[data-l]", d).innerHTML = l.map((r, k) => `<button type="button" class="link-row${r.image != null ? "" : " noimg"}" data-k="${k}">${r.image != null ? `<img src="${esc(r.image)}" alt="" loading="lazy">` : ""}
         <span class="rn">${esc(r.label)}<small>${esc(r.sub || "")}</small></span></button>`).join("") || `<div class="loading">Rien ne correspond.</div>`;
       $$("[data-k]", d).forEach(b => b.onclick = () => done(l[+b.dataset.k].value));
     };
@@ -1546,7 +1543,7 @@ const lotOf = p => ({ part: p.part || p.bricklink || p.part_num, part_num: p.par
 /* une pièce ajoutée à une autre fiche : liste de pièces (MOC, set partiel) ou « pièce ajoutée » (set, minifig) */
 async function addPartTo(t, p) {
   const lot = lotOf(p);
-  if (t._setFig) {   // figurine d'un de mes sets : pièce ajoutée à cette figurine-là
+  if (t._setFig) {   // figurine d'un des sets : pièce ajoutée à cette figurine-là
     const cur = t.host.fig_mods?.[t.fid]?.fig_swaps || [];
     const k = Math.min(-1, ...cur.map(x => x.k)) - (cur.some(x => x.k < 0) ? 1 : 0);
     const swaps = [...cur, { k, orig: null, new: lot }].map(({ k, orig, new: n }) => ({ k, orig: orig || null, new: n || null }));
@@ -1563,7 +1560,7 @@ async function addPartTo(t, p) {
 async function orderPart(p) {
   const lists = state.lists.filter(l => l.kind === "parts"), l = lists.find(l => /command/i.test(l.name)) || lists[0];
   if (!p.part_num || p.color_id == null) return toast("Référence inconnue : pièce à commander à la main");
-  if (!l) return toast("Créez d'abord une liste de pièces (« À commander »)");
+  if (!l) return toast("Créer d'abord une liste de pièces (« Commandes »)");
   try {
     await api("/api/items/parts", { method: "POST", body: { list_id: l.id, set_number: "", parts: [{ part_num: p.part_num, part_name: p.name || "", bricklink: p.part || p.bricklink || p.part_num,
       color_id: p.color_id, color_name: p.color_name || p.color || "", color_rgb: p.rgb || "", element_id: p.element_id || "", image: p.image || "", quantity: p.qty || p.quantity || 1 }] } });
@@ -1575,8 +1572,9 @@ async function partToInventory(p) {
   if (!p.part_num) return toast("Référence inconnue");
   let inv;
   try { inv = await api(`/api/part-inventories?p=${encodeURIComponent(p.part_num)}&c=${encodeURIComponent(p.color_id)}`); } catch (e) { return toast(e.message); }
-  if (!inv.length) return toast("Aucun de vos inventaires ne contient cette pièce");
-  const x = inv.length === 1 ? inv[0] : await pickFrom("Dans quel inventaire ?", inv.map(v => ({ label: v.name, sub: v.set + (v.same_color ? "" : " · autre couleur"), value: v })), { search: false });
+  if (!inv.length) return toast("Aucun inventaire ne contient cette pièce");
+  if (!state.inventories) await loadInventories();
+  const x = inv.length === 1 ? inv[0] : await pickFrom("Dans quel inventaire ?", inv.map(v => ({ label: v.name, sub: v.set + (v.same_color ? "" : " · autre couleur"), image: thumb((state.inventories || []).find(z => z.key === v.key)?.image || ""), value: v })), { search: false });
   if (!x) return;
   try {
     const r = await api("/api/part-to-inventory", { method: "POST", body: { key: x.key, part_num: p.part_num, color_id: p.color_id, qty: p.qty || p.quantity || 1 } });
@@ -1605,13 +1603,13 @@ function pieceMenu(anchor, p, { from = null, remove = null, extra = [], zoom = f
     ["📋 Cocher dans un inventaire…", () => partToInventory(p)],
     ["📄 Copier vers une autre fiche…", () => move(true)],
     ...(remove && !ro ? [["➡️ Déplacer vers une autre fiche…", () => move(false)]] : []),
-    ...(noPriceOf(p) || manualOf(p) || p.approx ? [[manualOf(p) ? "💶 Modifier mon prix" : p.approx ? "💶 Mettre mon prix (estimé)" : "💶 Mettre un prix", () => setManualPrice(p, manualOf(p) ? lotPrices.get(lotKey(p)) : null).then(u => u !== undefined && drawFigPieces())]] : []),
+    ...(noPriceOf(p) || manualOf(p) || p.approx ? [[manualOf(p) ? "💶 Modifier le prix" : p.approx ? "💶 Mettre un prix (estimé)" : "💶 Mettre un prix", () => setManualPrice(p, manualOf(p) ? lotPrices.get(lotKey(p)) : null).then(u => u !== undefined && drawFigPieces())]] : []),
   ];
   if (zoom && boBehav("partZoom") && p.image) { openZoom.actions = acts; return openZoom(img(p.image), p.name || p.part); }   // (back office → Comportements : la photo en grand, comme avant)
   if (zoom) return openPartInfo(p);   // appui sur une vignette : la fiche de la pièce (où la trouver, prix… ; sa photo s'agrandit) ; ⋯ : les options
   actionMenu(anchor, acts);
 }
-/* pièce introuvable (ni prix BrickOwl ni estimation) : mon prix, remplacé dès qu'une vraie estimation arrive */
+/* pièce introuvable (ni prix BrickOwl ni estimation) : le prix, remplacé dès qu'une vraie estimation arrive */
 async function setManualPrice(p, cur = null) {
   const v = await ask(`Prix de « ${p.name || p.part || p.part_num} »${p.color_fr ? " (" + p.color_fr + ")" : ""}`, "Prix d'une pièce en €, ex : 0,50", cur != null ? String(cur).replace(".", ",") : "");
   if (v == null) return undefined;   // annulé (undefined) ; sinon le prix, ou null s'il est retiré
@@ -1788,7 +1786,7 @@ function historyBlock(box, { title, sub, modes, defMode, defPeriod = "all" }) {
   if (!keys.length) { box.hidden = true; box.innerHTML = ""; return; }
   box.hidden = false;
   let mode = keys.includes(defMode) ? defMode : keys[0], period = defPeriod;
-  const LABEL = { used: "Occasion", new: "Neuf", value: "Valeur", mine: "Mon exemplaire", set: "Le set", both: "Les deux" };
+  const LABEL = { used: "Occasion", new: "Neuf", value: "Valeur", mine: "L'exemplaire", set: "Le set", both: "Les deux" };
   const fmtD = d => new Date(Date.parse(d)).toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
   const draw = () => {
     const M = modes[mode], all = M.pts, last = all.at(-1)[1];
@@ -1809,14 +1807,14 @@ function historyBlock(box, { title, sub, modes, defMode, defPeriod = "all" }) {
         <div><span class="muted small">Moyenne</span><b>${money(avg)}</b><small class="muted">sur la période</small></div></div>
       <div class="hist-chart"></div>`;
     const cut = s => from ? (s.findIndex(p => p[0] >= from) < 0 ? s.slice(-1) : s.slice(Math.max(0, s.findIndex(p => p[0] >= from) - 1))) : s;   // (même période pour les courbes en plus)
-    lineChart($(".hist-chart", box), [{ name: mode === "both" ? "Mon exemplaire" : LABEL[mode] || "Valeur", pts, cls: "a" }, ...(M.extra || []).map(x => ({ ...x, pts: cut(x.pts) }))]);   // (« Les deux » : superposées — 21/11)
+    lineChart($(".hist-chart", box), [{ name: mode === "both" ? "L'exemplaire" : LABEL[mode] || "Valeur", pts, cls: "a" }, ...(M.extra || []).map(x => ({ ...x, pts: cut(x.pts) }))]);   // (« Les deux » : superposées — 21/11)
     $$("[data-p]", box).forEach(b => b.onclick = () => { period = b.dataset.p; draw(); });
     $$("[data-m]", box).forEach(b => b.onclick = () => { mode = b.dataset.m; draw(); });
   };
   draw();
 }
-/* graphique d'une fiche de MA collection : « 🟦 Le set » (le marché, même état) et « 🟩 Mon exemplaire » (sa vraie valeur, relevée chaque jour :
-   mes modifs comptent quand je les ai faites ; avant son premier relevé : le marché avec le même écart). Cases à cocher, disposition fixe,
+/* graphique d'une fiche de MA collection : « 🟦 Le set » (le marché, même état) et « 🟩 L'exemplaire » (sa vraie valeur, relevée chaque jour :
+   les modifs comptent quand je les ai faites ; avant son premier relevé : le marché avec le même écart). Cases à cocher, disposition fixe,
    période d'office celle des Réglages ; les boutons de période ne changent que ce graphique (21/11 soir) */
 async function mineHistory(box, info, fig, it) {
   if (info) info.own_hist = ownHistToday(info);
@@ -1834,7 +1832,7 @@ async function mineHistory(box, info, fig, it) {
   const rd = (String(info?.retirement || "").match(/\d{4}-\d{2}(-\d{2})?/) || [])[0];
   const neufPts = ext(!fig && info?.retail && !retired ? (newMk[0] ? [[newMk[0][0], info.retail], [today, info.retail]] : [])
     : !fig && info?.retail && rd ? [...newMk.filter(p => p[0] < rd).map(p => [p[0], info.retail]), ...newMk.filter(p => p[0] >= rd)] : newMk);
-  /* LE SET : dans l'état du mien (sans figurines, figurines manquantes, partiel), SANS mes ajouts — le marché ramené à cet état */
+  /* LE SET : dans l'état du mien (sans figurines, figurines manquantes, partiel), SANS les ajouts — le marché ramené à cet état */
   const mkNow = neuf ? (fig ? info?.value : info?.new_value) : (fig ? info?.used : info?.used_value);
   let base = mkNow, why = [];
   if (!fig && it.with_minifigs === false && mkNow) { base = (neuf ? info?.sf?.neuf : info?.sf?.occasion) ?? mkNow; why.push("sans figurines"); }
@@ -1854,7 +1852,7 @@ async function mineHistory(box, info, fig, it) {
     mine = clean(vl.filter(r => r[0] <= today));
     if (now != null && (!mine.length || mine.at(-1)[0] < today)) mine.push([today, Math.round(now * 100) / 100]);
   }
-  /* toutes les courbes, chacune sa couleur (21/11 soir) : neuf magasin (vert), neuf après retrait (jaune), occasion (orange), mon exemplaire (rouge) */
+  /* toutes les courbes, chacune sa couleur (21/11 soir) : neuf magasin (vert), neuf après retrait (jaune), occasion (orange), l'exemplaire (rouge) */
   /* date de retrait : exacte (AAAA-MM-JJ) ou annoncée (« Early / Mid / End of AAAA ») ; sortie : l'année du catalogue */
   const rdTxt = String(info?.retirement || ""), rdY = (rdTxt.match(/\b(20\d\d)\b/) || [])[1];
   const rd10 = info?.bs?.exit ? info.bs.exit : rd ? (rd.length === 7 ? rd + "-28" : rd.slice(0, 10)) : rdY ? `${rdY}-${/early/i.test(rdTxt) ? "03-31" : /mid/i.test(rdTxt) ? "06-30" : "12-31"}` : "";
@@ -1862,12 +1860,12 @@ async function mineHistory(box, info, fig, it) {
   const retailPts = !fig && info?.retail && rel ? (retired ? (rd10 && rel < rd10 ? [[rel, info.retail], [rd10, info.retail]] : [])
     : [[rel, info.retail], [today, info.retail]]) : [];   // (le prix magasin, de sa sortie à son retrait — encore vendu : jusqu'à aujourd'hui ; retiré sans date connue : rien — 21/11 soir)
   const afterPts = retired ? ext(newMk.filter(p => !rd10 || p[0] >= rd10)) : [];   // (après la date de retrait)
-  const occPts = neuf ? usedMk : setPts;   // (occasion : dans l'état de mon set — sans figurines, manquantes… — sans mes ajouts)
+  const occPts = neuf ? usedMk : setPts;   // (occasion : dans l'état de mon set — sans figurines, manquantes… — sans les ajouts)
   const S = [
     ["nmag", "🟩", "Neuf (magasin)", retailPts, "Neuf, magasin : le prix LEGO tant que le set est vendu", true],
     ["nret", "🟨", "Neuf (après retrait)", afterPts, "Neuf, après retrait : le prix du marché", true],
-    ["occ2", "🟧", "Occasion", occPts, `Occasion${!neuf && why.length ? " dans l'état du mien (" + why.join(", ") + ")" : ""}, sans mes ajouts : le prix du marché`, true],
-    ...(modded ? [["mine2", "🟥", "Mon exemplaire", mine, "Mon exemplaire : sa vraie valeur (mes ajouts, retraits, boîte… comptent)", true]] : [])].filter(x => x[3].length);
+    ["occ2", "🟧", "Occasion", occPts, `Occasion${!neuf && why.length ? " dans l'état du mien (" + why.join(", ") + ")" : ""}, sans les ajouts : le prix du marché`, true],
+    ...(modded ? [["mine2", "🟥", "L'exemplaire", mine, "L'exemplaire : sa vraie valeur (les ajouts, retraits, boîte… comptent)", true]] : [])].filter(x => x[3].length);
   const per = Math.max(7, +state.trend?.period || 15);   // (d'office : la période des Réglages)
   const P = [...new Set([per, 30, 90, 180, 365, 1095, 0])];
   const plbl = n => !n ? "Tout" : n === 365 ? "1 an" : n === 1095 ? "3 ans" : n % 30 === 0 ? `${n / 30} mois` : `${n} j`;
@@ -1905,7 +1903,7 @@ function usedCurve(newPts, usedNow, own = [], col = 2) {
 }
 
 /* « Voir l'évolution » d'un set ou d'une minifig (même sans l'avoir) */
-async function openEvolution(type, number, name = "", it = null) {   // it : ma fiche (courbe « Mon exemplaire » — 21/11)
+async function openEvolution(type, number, name = "", it = null) {   // it : ma fiche (courbe « L'exemplaire » — 21/11)
   const d = document.createElement("div");
   d.className = "modal over";
   d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>${esc(name || number)} <span class="muted small">${esc(number)}</span></h2>
@@ -1927,10 +1925,10 @@ async function openEvolution(type, number, name = "", it = null) {   // it : ma 
            ${esc(new Date(one[0]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }))}
            (${one[2] != null ? `occasion ${money(one[2])}` : ""}${one[1] != null && one[2] != null ? " · " : ""}${one[1] != null ? `neuf ${money(one[1])}` : ""}).
            Elle apparaîtra dès le prochain relevé.</p>`
-        : `<p class="muted">Pas encore d'historique pour ${ce} : son prix sera relevé chaque jour dès qu'il sera dans vos listes.</p>`;
+        : `<p class="muted">Pas encore d'historique pour ${ce} : son prix sera relevé chaque jour dès qu'il sera dans les listes.</p>`;
       return;
     }
-    if (it) await mineHistory($("[data-h]", d), info, type === "fig", it);   // (ma fiche : cases « Le set » / « Mon exemplaire » — 21/11 soir)
+    if (it) await mineHistory($("[data-h]", d), info, type === "fig", it);   // (ma fiche : cases « Le set » / « L'exemplaire » — 21/11 soir)
     else itemHistory($("[data-h]", d), info, type === "fig", it);
   } catch (e) { $("[data-h]", d).innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
 }
@@ -1961,24 +1959,24 @@ function ownHistToday(info) {
   return own.length && own.at(-1)[0] < today ? [...own, [today, ...own.at(-1).slice(1)]] : own;
 }
 /* fiche d'un set / d'une figurine */
-function itemHistory(box, info, fig, it = null) {   // it : ma fiche → courbe « Mon exemplaire » (le prix réel + ce que j'ai en plus ou en moins)
+function itemHistory(box, info, fig, it = null) {   // it : ma fiche → courbe « L'exemplaire » (le prix réel + ce que j'ai en plus ou en moins)
   if (info) info.own_hist = ownHistToday(info);   // (sans effet si déjà prolongé : la dernière ligne est à la date du jour)
   const since = info?.own_hist?.[0] ? ` depuis le ${new Date(info.own_hist[0][0]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : "";
   const used = usedCurve(info?.history, fig ? info?.used : info?.used_value, info?.own_hist);
   const ownNew = (info?.own_hist || []).filter(r => r[1] != null).map(r => [r[0], r[1]]);   // relevés de l'appli : [date, neuf, occasion]
   const be = !!info?.history?.length;
-  const mine = (() => {   /* mon exemplaire : la courbe du marché (neuf s'il est neuf, sinon occasion), décalée de ce qu'il a en plus ou en moins aujourd'hui */
+  const mine = (() => {   /* l'exemplaire : la courbe du marché (neuf s'il est neuf, sinon occasion), décalée de ce qu'il a en plus ou en moins aujourd'hui */
     if (!it || it.total_value == null) return null;
     const neuf = it.condition === "neuf", base = neuf ? (be ? info.history : ownNew) : used, q = Math.max(1, it.quantity || 1);
     if (!base?.length) return null;
-    const u = it.total_value / q, m0 = base.at(-1)[1] || 1, d = u - m0;   // (mes ajouts : en plus ; exemplaire incomplet / décoté : en proportion — 21/11 soir)
+    const u = it.total_value / q, m0 = base.at(-1)[1] || 1, d = u - m0;   // (les ajouts : en plus ; exemplaire incomplet / décoté : en proportion — 21/11 soir)
     return base.map(([t, v]) => [t, Math.max(0, Math.round((d >= 0 ? v + d : v * u / m0) * 100) / 100)]);
   })();
-  const setPts = it ? (it.condition === "neuf" ? (be ? info.history : ownNew) : used) : null;   // (le set, au même état que mon exemplaire)
+  const setPts = it ? (it.condition === "neuf" ? (be ? info.history : ownNew) : used) : null;   // (le set, au même état que l'exemplaire)
   historyBlock(box, { title: "📈 Évolution du prix", defMode: mine ? "mine" : "used", modes: {
-    mine: mine && { pts: mine, note: "Mon exemplaire : le prix réel du marché, plus ce que mon exemplaire a en plus (pièces, figurines, boîte…) ou en moins aujourd'hui." },
+    mine: mine && { pts: mine, note: "L'exemplaire : le prix réel du marché, plus ce que l'exemplaire a en plus (pièces, figurines, boîte…) ou en moins aujourd'hui." },
     set: mine && setPts?.length && { pts: setPts, note: `Le set seul, ${it.condition === "neuf" ? "neuf" : "d'occasion"} : le prix du marché.` },
-    both: mine && setPts?.length && { pts: mine, extra: [{ name: "Le set", pts: setPts, cls: "b" }], note: "Mon exemplaire et le set seul, superposés." },
+    both: mine && setPts?.length && { pts: mine, extra: [{ name: "Le set", pts: setPts, cls: "b" }], note: "L'exemplaire et le set seul, superposés." },
     used: !(mine && it?.condition !== "neuf") && used && { pts: used, note: be ? "Occasion : courbe du neuf ramenée au prix d'occasion actuel (BrickEconomy ne publie pas l'historique de l'occasion) ; remplacée par les relevés de l'application au fil des jours."
       : `Occasion : relevés quotidiens de l'application${since} (prix des annonces ; ligne plate = prix inchangé).` },
     new: mine && it?.condition === "neuf" ? null : be ? { pts: info.history, note: fig ? "Neuve / détachée : historique BrickEconomy." : "Neuf / scellé : historique BrickEconomy." }
@@ -2041,7 +2039,7 @@ function openZoom(src, alt = "", fb = "") {
   }
   if (check) { const lb = $(".zoom-check", d); lb.onclick = e => e.stopPropagation(); $("input", lb).onchange = e => check.set(e.target.checked); }
   if (onDrop) {
-    $(".zoom-fig", d).insertAdjacentHTML("beforeend", `<div class="zoom-drop-hint">Glissez une photo ici pour la remplacer</div>`);
+    $(".zoom-fig", d).insertAdjacentHTML("beforeend", `<div class="zoom-drop-hint">Glisser une photo ici pour la remplacer</div>`);
     d.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); d.classList.add("drop-on"); } });
     d.addEventListener("dragleave", e => { if (e.target === d) d.classList.remove("drop-on"); });
     d.addEventListener("drop", e => { e.preventDefault(); const f = [...e.dataTransfer.files].find(x => x.type.startsWith("image/")); if (!f) return; close(); onDrop(f); });
@@ -2068,11 +2066,11 @@ async function sheetPhotoSet(dr, blob, what) {   // photo recadrée → photo de
     const url = (await api("/api/upload", { method: "POST", body: blob, headers: { "Content-Type": "image/jpeg" } })).url;
     if (dr.kind === "custom") Object.assign(dr.custom, { imageUrl: url, blob: null }); else dr.photoUrl = url;
     $("#cfgImg").src = img(url); drawAltPhotos(); updateEstimate();
-    toast(what + " : pensez à enregistrer la fiche");
+    toast(what + " : penser à enregistrer la fiche");
     if (dr.kind === "custom") mocQuickScan();   // figurine MOC : la nouvelle photo est scannée tout de suite
   } catch (err) { toast(err.message); }
 }
-/* ↩ Restaurer l'image : la fiche d'un set ou d'une figurine du catalogue reprend son image officielle — ma photo (ou une autre photo choisie) est retirée.
+/* ↩ Restaurer l'image : la fiche d'un set ou d'une figurine du catalogue reprend son image officielle — la photo (ou une autre photo choisie) est retirée.
    Comme tout changement de photo : enregistré avec 💾 ; « Annuler », dans le message, remet la photo d'avant. */
 const officialPhoto = dr => !dr?.info || dr.kind === "custom" ? "" : (dr.kind === "fig" ? dr.info.image : setPhoto(dr.info, dr.photoPref)) || "";
 const canResetPhoto = dr => { const o = officialPhoto(dr); return !!(dr && dr.photoUrl && o && dr.photoUrl !== o); };
@@ -2081,7 +2079,7 @@ function sheetPhotoReset() {
   const before = dr.photoUrl;
   const put = u => { if (state.draft !== dr) return; dr.photoUrl = u; dr.viewPhoto = null; $("#cfgImg").src = img(u || officialPhoto(dr)); drawAltPhotos(); updateEstimate(); };
   put("");
-  toast("Image officielle reprise : pensez à enregistrer la fiche", { label: "Annuler", run: () => put(before) });
+  toast("Image officielle reprise : penser à enregistrer la fiche", { label: "Annuler", run: () => put(before) });
 }
 /* ✂️ recadrer / pivoter la photo affichée de la fiche (catalogue ou la mienne) : le résultat devient la photo de la fiche */
 async function sheetRecrop() {
@@ -2110,13 +2108,13 @@ document.addEventListener("click", e => {
 }, true);
 /* vignettes des résultats : photo BrickEconomy « large » (400×300) pour qu'elles restent nettes en plus grand */
 const resThumb = u => u && /\/images\/sets\/lego-[\w-]+_(small|medium)\.jpg$/.test(u) ? u.replace(/_(small|medium)\.jpg$/, "_large.jpg") : u;
-/* résultat de recherche déjà dans ma collection : petite coche verte (+ nombre) */
+/* résultat de recherche déjà dans la collection : petite coche verte (+ nombre) */
 function ownMark(r, onlyPlain = false) {   // onlyPlain : seulement les exemplaires NON modifiés (figurines d'origine à remettre dans un set)
   const fig = r.type === "fig", plain = i => !onlyPlain || !realSwaps(i.fig_swaps).length;
   const k = figKey(r.number);
   const n = ownedCopies(r.number, fig).filter(i => !(fig && i._in) && plain(i)).reduce((t, i) => t + (i.quantity || 1), 0)   /* (rangées dans un set : comptées avec le set, une fois) */
     + (fig ? itemsOf(ALL).filter(i => !i.kind || i.kind === "set").reduce((t, i) => t + figsOf(i).filter(f => figKey(f.id) === k && !(onlyPlain && f.modified)).length, 0) : 0);
-  return n ? ` <span class="own-mark" title="Dans ma collection${n > 1 ? ` (${n})` : ""}">✔${n > 1 ? `<small>${n}</small>` : ""}</span>` : "";
+  return n ? ` <span class="own-mark" title="Dans la collection${n > 1 ? ` (${n})` : ""}">✔${n > 1 ? `<small>${n}</small>` : ""}</span>` : "";
 }
 const wishLabel = i => i.condition === "neuf" ? "Neuf" : i.with_minifigs ? "Occasion avec figurines" : "Occasion sans figurines";
 
@@ -2153,7 +2151,7 @@ function drawInSetNote() {
     <button type="button" class="link" data-openhost>${esc(host.number)} ${esc(itemName(host))}</button><br>
     <span class="muted small">${n > 1 ? "Ils comptent" : "Elle compte"} dans la valeur du set.</span>
     <button type="button" class="link" data-unhost>Retirer du set</button></span>`;
-  box.hidden = true;   // (doublon de « Dans mes sets » : la note ne s'affiche plus ; son « Retirer du set » sert au bouton « Sortir du set »)
+  box.hidden = true;   // (doublon de « Dans les sets » : la note ne s'affiche plus ; son « Retirer du set » sert au bouton « Sortir du set »)
   $("[data-openhost]", box).onclick = () => openEdit(host.id);
   $("[data-unhost]", box).onclick = async () => {
     if ((it.quantity || 1) > 1) {   // plusieurs exemplaires : combien sortent (les autres restent dans le set)
@@ -2175,7 +2173,7 @@ function drawInSetNote() {
     if (fresh) openEdit(fresh.id); else modal.hidden = true;   // fiche rouverte sur l'élément à jour
   };
 }
-/* ouvrir la fiche d'une minifig : celle de l'élément s'il s'agit d'un MOC, sinon la fiche du catalogue (prix, sets, mes exemplaires) */
+/* ouvrir la fiche d'une minifig : celle de l'élément s'il s'agit d'un MOC, sinon la fiche du catalogue (prix, sets, les exemplaires) */
 function openFig(f) {
   if (!f) return;
   const id = String(f.id || "");
@@ -2217,7 +2215,7 @@ function mergeFigs() {
       && (!m.name || m.name === itemName(x)) && figModSig(x.fig_swaps, x.quantity, x.accessories) === sig);   // (quelle que soit la liste)
     if (L) { i._merged = L; L._withSetN += i.quantity || 1; }
   }
-  {   // la même figurine d'origine dans plusieurs de mes sets, sans exemplaire seul : une seule carte (celle du premier set)
+  {   // la même figurine d'origine dans plusieurs sets, sans exemplaire seul : une seule carte (celle du premier set)
     const lead = new Map();
     for (const i of state.items) if (i.set_orig && i._in && isFig(i) && !i._merged) {
       const m = i._mods || {};
@@ -2226,7 +2224,7 @@ function mergeFigs() {
       i._merged = l; l._withSetN += i.quantity || 1;
     }
   }
-  for (const i of state.items) if (isFig(i) && i._in && !i.set_orig && !i.indiv && !i._merged) {   // ajoutée dans un de mes sets, identique à une seule : sa fiche
+  for (const i of state.items) if (isFig(i) && i._in && !i.set_orig && !i.indiv && !i._merged) {   // ajoutée dans un des sets, identique à une seule : sa fiche
     const sig = figModSig(i.fig_swaps, i.quantity, i.accessories), nm = itemName(i);
     const L = state.items.find(x => x !== i && isFig(x) && !x.attached_to && !x.set_orig && !x.as_set && !x.indiv && figKey(x.number) === figKey(i.number) && kindOf(x.list_id) === "collection"
       && itemName(x) === nm && figModSig(x.fig_swaps, x.quantity, x.accessories) === sig);
@@ -2308,7 +2306,7 @@ function toggleView(k) {   // « Tout » / « Sets » / « Figurines » : ce que
 const modAt = i => i.set_orig && i._in ? Math.max(i._in.fig_at?.[i.number] || 0, i.added_at || 0)   // figurine d'origine : sa date à elle
   : Math.max(i.fig_touch && i.fig_touch === i.updated_at ? (i.own_at || 0) : (i.updated_at || 0), i.added_at || 0);
 const byMod = (a, b) => modAt(b) - modAt(a);   // la dernière modifiée (ou ajoutée) en premier
-/* prix d'occasion du catalogue (× quantité) : sets et minifigs de ma collection ; null pour les MOC, souhaits, pièces */
+/* prix d'occasion du catalogue (× quantité) : sets et minifigs de la collection ; null pour les MOC, souhaits, pièces */
 const catUsed = i => i._virt ? i._cat : isCustom(i) || isWish(i.list_id) || i.kind === "part" ? null
   : isFig(i) ? (usedOf(i.info) != null ? usedOf(i.info) * (i.quantity || 1) : null)
   : i.info?.used_value != null ? i.info.used_value * (i.quantity || 1) : null;
@@ -2326,12 +2324,12 @@ function trendSync() {   // taille des flèches (--trend-k) et état du bouton �
 }
 /* « Comparer les variations à » (Réglages) : crans du curseur, en jours — 30 / 90 / 180 / 365 : même jour, 1 / 3 / 6 / 12 mois avant (20/11) */
 const TREND_DAYS = [1, 7, 15, 30, 90, 180, 365];
-/* écarts de prix : le MARCHÉ seul (d'office) ou MON EXEMPLAIRE (mes ajouts, retraits, boîte comptent) — choisi à la volée (21/11) */
+/* écarts de prix : le MARCHÉ seul (d'office) ou MON EXEMPLAIRE (les ajouts, retraits, boîte comptent) — choisi à la volée (21/11) */
 const chgMineOn = () => true;   // (toujours MON EXEMPLAIRE : choix du propriétaire, 21/11 soir — plus de bouton)
 function chgApply() { const mine = chgMineOn(); for (const i of state.items || []) i.chg = mine ? i._chgMine : (i.chg_mkt ?? i._chgMine); }
 document.addEventListener("click", e => { if (!e.target.closest?.("[data-chgmine]")) return;
   try { localStorage.setItem("bq-chg-mine", chgMineOn() ? "0" : "1"); } catch {}
-  chgApply(); render(); toast(chgMineOn() ? "Écarts : mon exemplaire (mes ajouts comptent)" : "Écarts : le marché seul"); });
+  chgApply(); render(); toast(chgMineOn() ? "Écarts : l'exemplaire (les ajouts comptent)" : "Écarts : le marché seul"); });
 const trendDaysLbl = n => n === 1 ? "la veille" : n === 30 ? "il y a 1 mois" : n === 90 ? "il y a 3 mois" : n === 180 ? "il y a 6 mois" : n === 365 ? "il y a 1 an" : `il y a ${n} jours`;
 const trendMark = (pct, force = false, eur = null) => {   // force : dans une fiche, la variation est toujours affichée ; eur : écart en € à montrer (tri « Variation de prix (€) »)
   const t = trendCfg();
@@ -2367,7 +2365,7 @@ phoneMq.addEventListener?.("change", () => { topViewsShow(); render(); });   // 
 /* tri « Aléatoire » : une valeur au hasard par fiche, fixe pour un tirage (window.bqRandSeed, changé quand on choisit ce tri) */
 window.bqRandSeed = window.bqRandSeed || Math.random().toString(36).slice(2);
 function sortRand(x) { let h = 2166136261; for (const c of String(x.id || x.number || x.part_num || "") + "|" + (x._img || "") + "|" + window.bqRandSeed) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
-const PART_SORTS = ["added", "added_old", "name", "number", "qty", "random"];   // « À commander » : seuls tris utiles (dernier ajout d'abord)
+const PART_SORTS = ["added", "added_old", "name", "number", "qty", "random"];   // « Commandes » : seuls tris utiles (dernier ajout d'abord)
 try { state.sortDef = localStorage.getItem("bq-sort-def") || ""; } catch { state.sortDef = ""; }   // « Définir par défaut » (menu ⇅ Tri)
 const COLL_HIDE = ["added", "name", "number", "year", "qty", "theme"];   // tris retirés du menu de la collection (21/11)
 const defaultSort = id => isWish(id) ? "year" : id === UNBUILT ? "added_old" : isPartsList(id) ? "added" : (state.sortDef && !COLL_HIDE.includes(state.sortDef) ? state.sortDef : "") || (views.figs && !views.sets ? "value" : "modified");   // un tri choisi reste retenu par liste
@@ -2396,6 +2394,7 @@ document.addEventListener("click", e => {   // photo d'une vignette de pièce : 
   openZoom.actions = null; openZoom(im.currentSrc || im.src, t?.getAttribute("title") || "");
 }, true);
 function render() {
+  if (!isPartsList(state.current)) document.querySelector(".blf-bar")?.remove();   /* (filtres de « Commandes » : seulement là — 22/11) */
   applyTheme(listTheme());   // (couleur du thème de la liste ouverte)
   {   /* pages vues (liste, statistiques…) : « retour » du téléphone ramène à la précédente au lieu de quitter l'appli */
     const pg = render.pages || (render.pages = { last: null, stack: [] }), key = state.current + "|" + (state.subDirect || "");
@@ -2507,12 +2506,12 @@ function render() {
   }
   $("#listActions").hidden = !list;
   $("#btnDeleteList").hidden = !!list?.default || list?.kind === "wishlist";
-  $("#btnRename").hidden = list?.kind === "wishlist" || !!list?.default;   // liste de souhaits et « À commander » d'origine : nom fixe
+  $("#btnRename").hidden = list?.kind === "wishlist" || !!list?.default;   // liste de souhaits et « Commandes » d'origine : nom fixe
   $("#btnMoveList").hidden = list?.kind === "wishlist" || list?.kind === "parts";   // pièces à commander : rien où la ranger
   $("#btnNovelties").hidden = true;   // nouveautés : une page du menu de gauche
   ["#btnRename", "#btnListLogo", "#btnMoveList", "#btnDeleteList"].forEach(s => $(s).hidden = true);   // (regroupés dans « ✏️ Modifier la liste »)
   $("#btnEditList").hidden = !list;
-  $("#btnOrderBL").hidden = !isPartsList(state.current) || DEMO || !itemsOf(state.current).length;   // « À commander » → wanted list BrickLink
+  $("#btnOrderBL").hidden = !isPartsList(state.current) || DEMO || !itemsOf(state.current).length;   // « Commandes » → wanted list BrickLink
   renderCleanBtn();
   { const n = isPartsList(state.current) ? itemsOf(state.current).filter(i => !i.got && !(i.ordered || []).length && !i.cmd_m).reduce((a, i) => a + (i.quantity || 1), 0) : 0;   /* (à commander : ni commandé ni reçu — 22/11) */
     $("#btnOrderBL").textContent = `🧾 Exporter en XML${n ? ` (${nf.format(n)})` : ""}`; }   /* (toujours BrickLink — 22/11) */   // (site de référence — 21/11)
@@ -2533,7 +2532,7 @@ function render() {
   if (novMode) {   // ✨ Nouveautés : la page garde ses filtres tant qu'on y reste
     $("#listTitle").textContent = "✨ Nouveautés"; $("#listTitle").append(PUB_SHARE);   /* (pas de compteur de visites ici) */ $("#listActions").hidden = true; renderSelBar();   /* (compteur et 📤 aussi ici) */
     if (!$("#novView").childElementCount) openNovelties($("#novView"));
-    else if (enterNov) $("#novView").refresh?.();   // retour sur la page : liste relue (un set retiré de mes listes y revient)
+    else if (enterNov) $("#novView").refresh?.();   // retour sur la page : liste relue (un set retiré des listes y revient)
     return;
   }
   $("#novView").innerHTML = "";
@@ -2560,7 +2559,7 @@ function render() {
       <div class="stat"><div class="lbl">Pièces</div><div class="val">${approx(s.pieces)}</div></div>`;
   } else {
   $("#stats").innerHTML = `
-    <div class="stat main-stat stat-link" id="statValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">${state.current === ALL ? "Valeur de la collection" : "Valeur de la liste"}${subIds.length ? " (sous-listes comprises)" : ""}</div><div class="val" title="Selon ce que vous avez renseigné : figurines, sets partiels, pièces échangées, MOC…">${moneyA(tree.value, tree.apx)}${trendTot(state.current === ALL ? state.lists.filter(l => (l.kind || "collection") === "collection").map(l => l.id) : [state.current, ...subIds])}</div>
+    <div class="stat main-stat stat-link" id="statValue" role="button" tabindex="0" title="Voir les statistiques"><div class="lbl">${state.current === ALL ? "Valeur de la collection" : "Valeur de la liste"}${subIds.length ? " (sous-listes comprises)" : ""}</div><div class="val" title="Selon ce qui est renseigné : figurines, sets partiels, pièces échangées, MOC…">${moneyA(tree.value, tree.apx)}${trendTot(state.current === ALL ? state.lists.filter(l => (l.kind || "collection") === "collection").map(l => l.id) : [state.current, ...subIds])}</div>
       ${subIds.length ? `<div class="sub">Cette liste : ${moneyA(s.value, s.apx)} · sous-listes : ${moneyA(tree.value - s.value, tree.apx)}</div>` : ""}
       <div class="sub sub-ref" title="Valeur neuve (scellée) de ces sets et figurines selon BrickEconomy ; les MOC à leur valeur chiffrée">Si c'était neuf : ${money(tree.allNew)}</div></div>
     <button class="stat stat-btn view-tg ${views.sets && !views.figs ? "on" : ""}" id="statSets" title="Afficher / masquer les sets" aria-pressed="${views.sets}"><div class="lbl">Sets</div><div class="val">${nf.format(vs.sets)}</div></button>
@@ -2673,7 +2672,7 @@ function render() {
   if (!items.length && !inHere && subs.length) { box.innerHTML = subHtml; wireSubs(); renderSelBar(); return; }
   if (!items.length && !inHere) {
     box.innerHTML = `<div class="empty"><div class="big">🧱</div><p><strong>Cette liste est vide.</strong></p>
-      <p>Ajoutez un set par son nom, son numéro ou une simple photo.</p>
+      <p>Ajouter un set par son nom, son numéro ou une simple photo.</p>
       <button class="btn primary" onclick="openAdd()">+ Ajouter un set</button></div>`;
     renderSelBar();
     return;
@@ -2914,7 +2913,7 @@ function renderNav() {
     ${window.PERSO?.menu?.() || ""}
     `;   // au-dessus de Réglages (« Revoir les sélections du jour » : retiré, 17/11)
   try { window.PERSO?.menuWire?.(); } catch {}   /* (extensions locales) */
-  $("#statsNav [data-random]").onclick = () => {   // n'importe quelle fiche de ma collection (sets, figurines, MOC…)
+  $("#statsNav [data-random]").onclick = () => {   // n'importe quelle fiche de la collection (sets, figurines, MOC…)
     const all = state.items.filter(i => kindOf(i.list_id) === "collection" && i.kind !== "part");
     if (!all.length) return toast("Collection vide");
     setMenu(false); openEdit(all[Math.floor(Math.random() * all.length)].id);
@@ -2924,7 +2923,7 @@ function renderNav() {
       <span class="nm">🚧 À construire</span><span class="ct">${ub.reduce((a, i) => a + (i.quantity || 1), 0)} · ${money(ubNew).replace(/,\d\d/, "")}</span></button><div class="side-sep"></div>`)
     + listTree("wishlist").filter(x => !x.l.gift && !x.depth)   // listes principales (sous-listes : pastilles sous le titre ; « À surveiller » : bouton 👀)
       .map(({ l }) => entry(l.id, "⭐ " + l.name, treeItems(l.id), 0)).join("")
-    + (state.reorder ? "" : `<button class="nav-item ${state.current === NOV ? "on" : ""} ${state.novCount?.new ? "nav-new" : ""}" data-id="${NOV}" title="${state.novCount?.new ? `${state.novCount.new} nouveauté${state.novCount.new > 1 ? "s" : ""} apparue${state.novCount.new > 1 ? "s" : ""} depuis votre dernière visite` : "Nouveautés LEGO (selon vos thèmes suivis)"}">
+    + (state.reorder ? "" : `<button class="nav-item ${state.current === NOV ? "on" : ""} ${state.novCount?.new ? "nav-new" : ""}" data-id="${NOV}" title="${state.novCount?.new ? `${state.novCount.new} nouveauté${state.novCount.new > 1 ? "s" : ""} apparue${state.novCount.new > 1 ? "s" : ""} depuis la dernière visite` : "Nouveautés LEGO (selon les thèmes suivis)"}">
       <span class="nm">✨ Nouveautés</span><span class="ct">${state.novCount ? `${state.novCount.new ? `<b class="nav-new-n">+${nf.format(state.novCount.new)}</b> · ` : ""}${nf.format(state.novCount.count)}` : ""}</span></button>
       <button class="nav-item nav-novcal" data-id="${NOV}" data-novcal title="Les prochaines sorties LEGO, mois par mois"><span class="nm">📅 Calendrier des sorties</span></button>`);   // (raccourci : la page Nouveautés, onglet Calendrier)
   try { novNavSync(); } catch {}   /* (Nouveautés / Calendrier : la bonne entrée en surbrillance) */
@@ -3144,13 +3143,13 @@ function pickEmoji(title, cur = "") {
     d.className = "modal top";
     d.innerHTML = `<form class="modal-box" style="width:min(460px,100%)"><div class="modal-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
       <div class="emo-grid">${LIST_EMOJIS.map(x => `<button type="button" data-e="${esc(x)}" class="${x === cur ? "on" : ""}">${esc(x)}</button>`).join("")}</div>
-      <label>Ou tapez / collez un emoji<input data-t value="${esc(cur)}" maxlength="16" style="width:100%;font-size:22px" autocomplete="off"></label>
+      <label>Ou taper / coller un emoji<input data-t value="${esc(cur)}" maxlength="16" style="width:100%;font-size:22px" autocomplete="off"></label>
       <div class="est-actions" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-x>Annuler</button><button class="btn primary">Valider</button></div></form>`;
     document.body.append(d);
     const done = v => { d.remove(); res(v); };
     $$("[data-x]", d).forEach(b => b.onclick = () => done(null));
     $$("[data-e]", d).forEach(b => b.onclick = () => done(b.dataset.e));
-    $("form", d).onsubmit = ev => { ev.preventDefault(); const v = $("[data-t]", d).value.trim(); if (!v) return toast("Choisissez un emoji"); done(v); };
+    $("form", d).onsubmit = ev => { ev.preventDefault(); const v = $("[data-t]", d).value.trim(); if (!v) return toast("Choisir un emoji"); done(v); };
   });
 }
 $("#btnListLogo").onclick = e => {
@@ -3161,7 +3160,7 @@ $("#btnListLogo").onclick = e => {
     if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return toast("Image PNG, JPEG ou WebP");
     const src = URL.createObjectURL(f);
     const b = await cropImage(src, `Logo de la liste « ${l.name} »`, { free: true, alpha: true, cutout: true, max: 600, ok: "Utiliser comme logo",
-      hint: "Cadre libre : entourez le logo au plus près (déplacez le cadre par le milieu, étirez-le par ses coins). 🪄 Détourer supprime le fond (transparent)." });
+      hint: "Cadre libre : entourer le logo au plus près (le cadre se déplace par le milieu, s'étire par ses coins). 🪄 Détourer supprime le fond (transparent)." });
     URL.revokeObjectURL(src);
     if (!b) return;
     try { put((await api("/api/upload", { method: "POST", body: b, headers: { "Content-Type": "image/png" } })).url); } catch (err) { toast(err.message); }
@@ -3264,7 +3263,7 @@ $("#btnEditList").onclick = () => {
     const body = { color: f.elements.nocolor.checked ? "" : f.elements.color.value, show, hide_name: !show.view.n, ...(f.elements.sublogo ? { sub_logo: f.elements.sublogo.value } : {}), ...(f.elements.inmenu ? { in_menu: f.elements.inmenu.checked } : {}) };   // (hide_name : gardé pour ce qui le lit encore)
     const nm = f.elements.nm.value.trim(); if (!fixedName && nm && nm !== l0.name) body.name = nm;
     if (canMove && f.elements.parent.value !== parentOf(l0)) body.parent_id = f.elements.parent.value;
-    if (fresh && !nm) { toast("Donnez un nom à la liste"); f.elements.nm.focus(); return; }
+    if (fresh && !nm) { toast("Donner un nom à la liste"); f.elements.nm.focus(); return; }
     try { await api("/api/lists/" + l0.id, { method: "PUT", body }); close(); if (fresh) state.newListPending = null; await load();
       const af = f.elements.after?.value;
       if (f.elements.after && (af !== after0 || body.parent_id !== undefined)) {   // « Ranger après… » : la place parmi les listes du même niveau
@@ -3282,7 +3281,7 @@ $("#btnRename").onclick = async () => {
 $("#btnDeleteList").onclick = async () => {
   const l = state.lists.find(l => l.id === state.current);
   const n = state.items.filter(i => i.list_id === l.id).length, subs = childLists(l.id).length;
-  if (n) return toast(`La liste « ${l.name} » contient ${n} fiche${n > 1 ? "s" : ""} : déplacez-les ou supprimez-les d'abord`);
+  if (n) return toast(`La liste « ${l.name} » contient ${n} fiche${n > 1 ? "s" : ""} : à déplacer ou supprimer d'abord`);
   if (!await confirmBox(`Supprimer la liste « ${l.name} » ?${subs ? ` Ses ${subs} sous-liste(s) sont conservées et remontent d'un niveau.` : ""}`)) return;
   try { await api("/api/lists/" + l.id, { method: "DELETE" }); state.current = ALL; await load(); toast("Liste supprimée"); }
   catch (e) { toast(e.message); }
@@ -3386,7 +3385,7 @@ $("#sidebar").addEventListener("click", e => {
   if (e.target.closest("button.btn, .nav-item") && window.innerWidth <= 820) setMenu(false);
 });
 /* date lisible : « 8 nov. 2026 à 07:50 » */
-/* « 📦 Commandée le 21 nov. 2026 » : seulement la ou les dates (ni site ni quantité) — inventaires et « À commander » (21/11 nuit) */
+/* « 📦 Commandée le 21 nov. 2026 » : seulement la ou les dates (ni site ni quantité) — inventaires et « Commandes » (21/11 nuit) */
 const cmdText = ts => { const d = [...new Set((ts || []).filter(Boolean).map(t => fmtDate(t).replace(/ à .*/, "")))]; return "📦 Commandée" + (d.length ? " le " + d.join(" et le ") : ""); };
 const fmtDate = t => t ? new Date(t * 1000).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(/,? (\d\d:\d\d)$/, " à $1") : "";
 
@@ -3462,7 +3461,7 @@ async function openPartColors(p) {
   d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>${esc(p.name)} <span class="muted small">${esc(p.part_num)}</span></h2>
     <button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
     <div class="fig-sum"><span><b>${nf.format(p.total)}</b> pièces</span><span><b>${p.colors.length}</b> couleur${p.colors.length > 1 ? "s" : ""}</span>${p.priced ? `<span>Valeur : <b>${money(p.value)}</b></span>` : ""}</div>
-    <p class="hint">Touchez une couleur pour voir les sets et figurines où elle apparaît.</p>
+    <p class="hint">Toucher une couleur pour voir les sets et figurines où elle apparaît.</p>
     <div class="figs-grid" data-g></div>
     <div style="margin-top:14px"><button type="button" class="btn small-btn" data-other>🎨 Chercher d'autres couleurs</button></div>
     <div data-others></div></div>`;
@@ -3470,7 +3469,7 @@ async function openPartColors(p) {
   const close = () => d.remove();
   $("[data-x]", d).onclick = close;
   d.onclick = e => { if (e.target === d) close(); };
-  let owned = null, imgsNow = {};   // mes sets qui ont cette pièce (par couleur)
+  let owned = null, imgsNow = {};   // les sets qui ont cette pièce (par couleur)
   const setsOf = c => { if (!owned) return "";
     const l = owned.filter(s => s.colors.some(x => x.color_id === c.color_id)).map(s => ({ s, q: s.colors.find(x => x.color_id === c.color_id).qty })).sort((a, b) => b.q - a.q);
     if (!l.length) return "";
@@ -3484,7 +3483,7 @@ async function openPartColors(p) {
       <span class="fval">×${nf.format(c.qty)}</span>
       <span class="ap-val">${c.unit != null ? `${money(c.unit * c.qty)} <small>(${money(c.unit)} pièce${c.approx ? ", d'après des pièces similaires" : c.manual ? ", prix saisi" : ""})</small>` : `<small class="muted">${c.tried ? "prix introuvable" : "pas encore chiffrée"}</small>`}</span>${setsOf(c)}</button>`).join("");
     $$("[data-k]", d).forEach(b => b.onclick = e => { const os = e.target.closest("[data-openset]");
-      if (os) { const it = state.items.find(i => i.number === os.dataset.openset && kindOf(i.list_id) === "collection"); if (it) { close(); openEdit(it.id); } return; }   // un de mes sets : sa fiche
+      if (os) { const it = state.items.find(i => i.number === os.dataset.openset && kindOf(i.list_id) === "collection"); if (it) { close(); openEdit(it.id); } return; }   // un des sets : sa fiche
       const c = p.colors[+b.dataset.k];
       if (c.unit == null || c.manual || c.approx) return actionMenu(b, [["🔎 Détail de la pièce", () => openPartInfo({ part: p.part_num, part_num: p.part_num, name: p.name, image: imgs[c.color_id] || p.image, color_id: c.color_id, color_fr: c.color_fr, qty: c.qty })],
         ["💶 Mettre un prix", async () => { const u = await setManualPrice({ part_num: p.part_num, name: p.name, color_id: c.color_id, color_fr: c.color_fr }, c.manual ? c.unit : null); if (u !== undefined) { c.unit = u; c.manual = u != null; draw(imgsNow); } }]]);
@@ -3523,7 +3522,7 @@ function openAllParts(listId) {
       <input type="search" data-q placeholder="Filtrer : nom, référence…">
       <select data-sort><option value="total">Les plus nombreuses</option><option value="rare">Les moins nombreuses</option><option value="value">Valeur totale</option><option value="unit">Prix à l'unité</option><option value="colors">Nombre de couleurs</option><option value="bycolor">Par couleur</option><option value="name">Nom (A → Z)</option><option value="num">Référence</option></select>
     </div>
-    <div class="figs-grid ap-grid" data-grid>${loading("Rassemblement des pièces de vos sets…")}</div></div>`;
+    <div class="figs-grid ap-grid" data-grid>${loading("Rassemblement des pièces des sets…")}</div></div>`;
   document.body.append(d);
   let data = null, cat = "", limit = 120, timer = null;
   const close = () => { clearTimeout(timer); d.remove(); };
@@ -3797,15 +3796,15 @@ async function partStats(box, scope) {
   const rareCol = colors[colors.length - 1];
   const cards = [];
   const card = (pic, val, txt, sw) => cards.push(`<div class="odd">${pic ? `<img class="odd-pic" src="${img(pic)}" alt="" loading="lazy">` : `<div class="odd-ico">${sw || "🧩"}</div>`}<div><b>${val}</b><p>${txt}</p></div></div>`);
-  card(top.image, `×${nf.format(top.total)}`, `<b>${esc(top.name)}</b> est votre pièce la plus présente.`);
-  if (dear) card(dear.p.image, money(dear.c.unit), `l'unité : <b>${esc(dear.p.name)}</b> (${esc(dear.c.color_fr)}) est votre pièce la plus chère.`);
-  if (richest) card(richest.image, money(richest.value), `au total pour <b>${esc(richest.name)}</b> : la pièce qui pèse le plus dans la valeur de vos sets.`);
-  card("", esc(colors[0].color_fr), `est votre couleur reine : ${nf.format(colors[0].qty)} pièces, soit ${fr(colors[0].qty / total * 100, 0)} % du total.`, `<span class="odd-sw" style="background:#${colors[0].rgb || "ccc"}"></span>`);
+  card(top.image, `×${nf.format(top.total)}`, `<b>${esc(top.name)}</b> est la pièce la plus présente.`);
+  if (dear) card(dear.p.image, money(dear.c.unit), `l'unité : <b>${esc(dear.p.name)}</b> (${esc(dear.c.color_fr)}) est la pièce la plus chère.`);
+  if (richest) card(richest.image, money(richest.value), `au total pour <b>${esc(richest.name)}</b> : la pièce qui pèse le plus dans la valeur des sets.`);
+  card("", esc(colors[0].color_fr), `est la couleur reine : ${nf.format(colors[0].qty)} pièces, soit ${fr(colors[0].qty / total * 100, 0)} % du total.`, `<span class="odd-sw" style="background:#${colors[0].rgb || "ccc"}"></span>`);
   card("", nf.format(colors.length), `couleurs différentes${rareCol && rareCol.qty <= 3 ? ` — la plus rare : <b>${esc(rareCol.color_fr)}</b> (${nf.format(rareCol.qty)} pièce${rareCol.qty > 1 ? "s" : ""})` : ""}.`, "🎨");
-  card(rainbow.image, `${rainbow.colors.length} couleurs`, `pour <b>${esc(rainbow.name)}</b>, votre pièce la plus « arc-en-ciel ».`);
+  card(rainbow.image, `${rainbow.colors.length} couleurs`, `pour <b>${esc(rainbow.name)}</b>, la pièce la plus « arc-en-ciel ».`);
   card("", nf.format(parts.length), `références de pièces différentes, dont ${nf.format(singles)} présente${singles > 1 ? "s" : ""} en un seul exemplaire (dans une couleur donnée).`, "🔢");
-  if (trans) card("", `${fr(trans / total * 100, 1)} %`, `de vos pièces sont transparentes (${nf.format(trans)}) : de quoi faire des vitraux.`, "💎");
-  if (grey) card("", `${fr(grey / total * 100, 0)} %`, `de vos pièces sont noires, grises ou blanches : la vie en noir et blanc.`, "🐼");
+  if (trans) card("", `${fr(trans / total * 100, 1)} %`, `des pièces sont transparentes (${nf.format(trans)}) : de quoi faire des vitraux.`, "💎");
+  if (grey) card("", `${fr(grey / total * 100, 0)} %`, `des pièces sont noires, grises ou blanches : la vie en noir et blanc.`, "🐼");
   box.innerHTML = `<h2>🧩 Les pièces</h2><div class="odd-grid">${cards.join("")}</div>${r.pending_sets ? `<p class="muted small">Inventaires de ${r.pending_sets} set(s) encore en cours de récupération.</p>` : ""}`;
 }
 
@@ -3848,6 +3847,11 @@ function openVariations(scope, per0 = 7) {
   };
   draw();
 }
+/* relevés quotidiens d'une courbe : médiane glissante sur 7 jours (3 avant, 3 après) — un écart d'1 à 3 jours (relevé aberrant) disparaît,
+   un vrai changement durable reste (22/11) */
+const smoothDaily = pts => pts.map((p, i) => { if (i === pts.length - 1) return p;   /* (aujourd'hui : jamais modifié) */
+  const w = pts.slice(Math.max(0, i - 4), i + 5).map(x => x[1]).filter(v => v != null).sort((x, y) => x - y);
+  const m = w[Math.floor(w.length / 2)]; return m && p[1] != null && Math.abs(p[1] - m) / m > .03 ? [p[0], m, ...p.slice(2)] : p; });   /* (écart > 3 % de la médiane de ses 9 jours : aberrant) */
 function renderStats() {
   const cols = state.lists.filter(l => (l.kind || "collection") === "collection");
   const direct = String(state.statsList || "").startsWith("direct:");   // « Non classées » d'une liste
@@ -3931,7 +3935,7 @@ function renderStats() {
 
     <section class="viz">
       <h2>Sets par année de sortie</h2>
-      <p class="muted small">Touchez une barre pour voir les sets de l'année.</p>
+      <p class="muted small">Toucher une barre pour voir les sets de l'année.</p>
       ${yearRows.length ? `<div class="vbars" style="--n:${yearRows.length}">${yearRows.map((r, k) => `<div class="vcol" data-year="${r.year}" data-tip="<b>${r.year}</b><br>${r.sets} set(s) · ${r.figs} figurine(s)<br>${approx(r.pieces)} pièces · ${esc(money(r.value))}">
           <div class="vbar" style="height:${r.sets ? Math.max(2, r.sets / yMaxVal * 100) : 0}%"></div>
           <span class="vx">${k % step === 0 || (k === yearRows.length - 1 && k % step > step * 0.6) ? r.year : ""}</span></div>`).join("")}
@@ -3967,21 +3971,21 @@ function renderStats() {
 
     <section class="viz" id="partStats"><h2>🧩 Les pièces</h2><div class="loading"><span class="spinner"></span>Rassemblement des pièces…</div></section>
 
-    <section class="viz" id="visitStats"><h2>👁 Visites de vos pages publiques</h2><div class="loading"><span class="spinner"></span>Visites…</div></section>`;
+    <section class="viz" id="visitStats"><h2>👁 Visites des pages publiques</h2><div class="loading"><span class="spinner"></span>Visites…</div></section>`;
 
   const v = $("#statsView");
   $$("[data-scope]", v).forEach(b => b.onclick = () => { state.statsList = b.dataset.scope; renderStats(); });
   { const bv = $("#btnVariations", v); if (bv) bv.onclick = () => openVariations(state.statsList || ALL); }
   partStats($("#partStats", v), scope);
-  api("/api/visits").then(vs => {   // compteur de visites (vos propres visites, connecté, ne comptent pas)
+  api("/api/visits").then(vs => {   // compteur de visites (les propres visites, connecté, ne comptent pas)
     const box = $("#visitStats", v); if (!box) return;
     const PAGES = { collection: "📚 Collection", wishlist: "⭐ Liste de souhaits", watch: "👀 À surveiller", nouveautes: "✨ Nouveautés" };
     const rows = Object.keys(PAGES).filter(p => vs[p]).map(p => [p, vs[p]]).concat(Object.entries(vs).filter(([p]) => !PAGES[p]));
     const pl = (n, w) => `${nf.format(n || 0)} ${w}${(n || 0) > 1 ? "s" : ""}`;
-    box.innerHTML = `<h2>👁 Visites de vos pages publiques</h2>` + (rows.length ? `<div class="vis-grid">${rows.map(([p, e]) => `<div class="kpi">
+    box.innerHTML = `<h2>👁 Visites des pages publiques</h2>` + (rows.length ? `<div class="vis-grid">${rows.map(([p, e]) => `<div class="kpi">
         <div class="lbl">${esc(PAGES[p] || p)}</div><div class="val">${nf.format(e.views || 0)}</div>
         <div class="sub">${pl(e.views, "visite")} · ${pl(e.visitors, "visiteur")} différent${(e.visitors || 0) > 1 ? "s" : ""}<br>aujourd'hui : ${nf.format(e.today || 0)} · 7 jours : ${nf.format(e.week || 0)}${e.last ? `<br>dernière : ${esc(fmtDate(e.last))}` : ""}</div></div>`).join("")}</div>
-      <p class="hint">Vos propres visites (connecté) ne comptent pas ; les adresses des visiteurs ne sont jamais gardées en clair.</p>`
+      <p class="hint">Les visites faites une fois connecté ne comptent pas ; les adresses des visiteurs ne sont jamais gardées en clair.</p>`
       : `<p class="muted">Aucune visite pour le moment.</p>`);
   }).catch(() => { const box = $("#visitStats", v); if (box) box.remove(); });
   api("/api/history/collection" + (scope !== ALL ? "?list=" + encodeURIComponent(scope) : "")).then(h => {
@@ -3993,9 +3997,10 @@ function renderStats() {
     const noH = h.without_history ? ` ${h.without_history} élément${h.without_history > 1 ? "s" : ""} sans historique compté${h.without_history > 1 ? "s" : ""} à valeur constante.` : "";
     const snapStart = h.snapshots[0]?.[0] || "9999";   // relevés réels de l'application, à partir de leur première date
     historyBlock(box, { title: "📈 Valeur dans le temps", defPeriod: "3", defMode: "used", modes: {
-      used: { pts: [...h.estimated.filter(p => p[0] < snapStart), ...h.snapshots],
-        note: `Occasion (votre estimation) : vos sets et figurines actuels, chacun selon l'évolution de son prix, ramenés à votre estimation d'aujourd'hui ; un set compte à partir de sa sortie. Les relevés quotidiens de l'application prennent le relais.${noH}` },
-      new: { pts: h.new, note: `Neuf : valeur neuve de vos sets et figurines actuels (historique BrickEconomy).${noH}` },
+      used: { pts: (() => { const sn = smoothDaily(h.snapshots), est = h.estimated.filter(p => p[0] < snapStart), last = est.at(-1)?.[1], k = last && sn[0]?.[1] ? sn[0][1] / last : 1;
+          return smoothDaily([...est.map(p => [p[0], p[1] * k, ...p.slice(2)]), ...sn]); })(),   /* (historique reconstitué ramené au 1er vrai relevé : pas de marche ; relevés aberrants lissés — 22/11) */
+        note: `Occasion (l'estimation) : les sets et figurines actuels, chacun selon l'évolution de son prix, ramenés à l'estimation d'aujourd'hui ; un set compte à partir de sa sortie. Les relevés quotidiens de l'application prennent le relais.${noH}` },
+      new: { pts: h.new, note: `Neuf : valeur neuve des sets et figurines actuels (historique BrickEconomy).${noH}` },
     } });
     $("h3", box).outerHTML = `<h2>📈 Valeur dans le temps</h2>`;
   }).catch(e => { const box = $("#colHist", v); if (box) box.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
@@ -4144,7 +4149,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
     const nt = (data.themes || []).length;
     $("[data-exth]", d).textContent = nx ? `🎯 Thèmes suivis (${nt - nx}/${nt})` : "🎯 Thèmes suivis (tous)";
     $("[data-theme]", d).innerHTML = `<option value="">Tous les thèmes</option>` + themes.map(t => `<option ${t === cur ? "selected" : ""}>${esc(t)}</option>`).join("");
-    /* apparues depuis ma dernière visite : encadrées pendant toute la visite, puis « vues » — y compris celles arrivées pendant
+    /* apparues depuis la dernière visite : encadrées pendant toute la visite, puis « vues » — y compris celles arrivées pendant
        que la page est ouverte (relevé lego.com terminé après l'ouverture) */
     fresh ||= new Set();
     const arrived = data.items.filter(x => x.new && !fresh.has(x.number));
@@ -4161,7 +4166,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
     if (it) openEdit(it.id); else toast("Introuvable dans la liste de souhaits");
   };
   const add = async (x, btn) => {
-    if (!wishId) return toast("Créez d'abord une liste de souhaits");
+    if (!wishId) return toast("Créer d'abord une liste de souhaits");
     btn.disabled = true; const was = btn.textContent; btn.textContent = "⏳ Ajout…";
     try {
       await api("/api/items", { method: "POST", body: { kind: "set", number: x.number, list_id: wishId, quantity: 1, condition: "neuf", no_price_ok: true,
@@ -4172,7 +4177,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
     } catch (e) { toast(e.message); btn.disabled = false; btn.textContent = was; }
   };
   const addFig = async (f, x, btn) => {   // figurine exclusive (n° Rebrickable « fig-… ») → liste de souhaits
-    if (!wishId) return toast("Créez d'abord une liste de souhaits");
+    if (!wishId) return toast("Créer d'abord une liste de souhaits");
     if (btn) { btn.disabled = true; btn.textContent = "⏳ Ajout…"; }
     try {
       await api("/api/items", { method: "POST", body: { kind: "fig", number: f.fig, list_id: wishId, quantity: 1, condition: "neuf", no_price_ok: true,
@@ -4217,7 +4222,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
         <div class="cal-pic">${f.image ? `<img src="${img(f.image)}" alt="" loading="lazy" data-ph="fig">` : `<img src="${PH_FIG}" class="nov-ph" data-reimg="${esc(x.number)}" data-reimgfig="${esc(f.fig)}" alt="">`}<span class="cal-flag" title="Figurine exclusive">🟡</span></div>
         <span class="cal-nm">${esc(f.name)}</span><small>dans ${esc(x.name)}</small></div>`;
       const tile = x => `<div class="cal-tile ${x.wished ? "is-wished" : x.watched ? "is-watched" : ""} ${x.hidden ? "is-hidden" : ""}" data-cal="${esc(x.number)}" title="${esc(x.name)}">
-        <div class="cal-pic">${x.image || (x.images || [])[0] ? `<img src="${img(x.image || (x.images || [])[0])}" alt="" loading="lazy" data-ph="set">` : `<img src="${PH_SET}" class="nov-ph" data-reimg="${esc(x.number)}" alt="">`}${x.wished ? `<span class="cal-flag" title="Dans ma liste de souhaits">⭐</span>` : x.watched ? `<span class="cal-flag" title="À surveiller">👀</span>` : ""}</div>
+        <div class="cal-pic">${x.image || (x.images || [])[0] ? `<img src="${img(x.image || (x.images || [])[0])}" alt="" loading="lazy" data-ph="set">` : `<img src="${PH_SET}" class="nov-ph" data-reimg="${esc(x.number)}" alt="">`}${x.wished ? `<span class="cal-flag" title="Dans la liste de souhaits">⭐</span>` : x.watched ? `<span class="cal-flag" title="À surveiller">👀</span>` : ""}</div>
         <span class="cal-nm">${esc(x.name)}</span><small>${esc(String(x.number).replace(/-1$/, ""))}${x.price != null ? " · " + money(x.price) : ""}</small></div>`;
       const todayRow = `<div class="cal-today" data-today>📍 Aujourd'hui · ${today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>`;
       let html = "", marked = false;
@@ -4248,7 +4253,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
           <div class="nov-sheet-pic"><img src="${pic ? img(pic) : f ? PH_FIG : PH_SET}" alt="" data-ph="${f ? "fig" : "set"}"></div>
           <p class="nov-sheet-name"><b>${esc(f ? f.name : x.name)}</b><br><span class="muted small">${f ? `dans « ${esc(x.name)} » · ` : ""}${esc(meta)}</span>${date ? `<br><span class="nov-sheet-date">📅 ${x.kind === "soon" ? "Sortie" : "Sorti"} : ${esc(date)}</span>` : ""}</p>
           <div class="nov-sheet-acts">${f ? B2("fig", "⭐ La figurine dans la liste de souhaits", "primary") + B2("lego", "🔗 Le set sur lego.com") + B2("hide", x.hidden ? "👁 Réafficher le set" : "🚫 Ne plus afficher (le set)")
-            : (x.wished ? B2("open", "⭐ Dans ma liste de souhaits (ouvrir)") : B2("wish", "⭐ Ajouter à la liste de souhaits", "primary")) + (x.watched ? B2("open", "👀 Surveillé (ouvrir)") : B2("watch", "👀 À surveiller"))
+            : (x.wished ? B2("open", "⭐ Dans la liste de souhaits (ouvrir)") : B2("wish", "⭐ Ajouter à la liste de souhaits", "primary")) + (x.watched ? B2("open", "👀 Surveillé (ouvrir)") : B2("watch", "👀 À surveiller"))
               + B2("lego", "🔗 Voir sur lego.com") + B2("hide", x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher")}</div></div>`;
         document.body.append(m);
         const close = () => m.remove(); $("[data-x]", m).onclick = close; m.onclick = e => { if (e.target === m) close(); };
@@ -4290,7 +4295,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
         <div class="nov-card ${x.hidden ? "is-hidden" : ""} ${x.new ? "is-new" : ""}" data-fig="${esc(f.fig)}"><div class="nov-pic fig">${f.image ? `<img src="${img(f.image)}" alt="" loading="lazy" data-ph="fig">`
           : `<img src="${PH_FIG}" class="nov-ph" data-reimg="${esc(x.number)}" data-reimgfig="${esc(f.fig)}" alt="" title="Photo pas encore disponible : toucher pour la rechercher">`}</div>
           <div class="nov-txt"><b>${esc(f.name)}</b><small>dans « ${esc(x.name)} » (${esc(x.number)})${x.theme ? " · " + esc(x.theme) : ""}</small><small>${x.price != null ? `<b>${money(x.price)}</b>` : ""}${x.release ? ` · 📅 ${x.kind === "soon" ? "Sortie" : "Sorti"} : ${esc(x.release)}` : ""}</small></div>
-          ${acts(x).replace('<div class="nov-acts">', `<div class="nov-acts"><button type="button" class="btn small-btn primary" data-addfig="${esc(f.fig)}" data-set="${esc(x.number)}">⭐ La figurine</button>`).replace("⭐ Ajouter à la liste de souhaits", "⭐ Le set")}</div>`).join("")}</div>` : `<div class="loading">${data.figs_done ? "Aucune figurine exclusive pour ces filtres." : "Analyse des figurines en cours (Rebrickable)… revenez dans quelques minutes."}</div>`);
+          ${acts(x).replace('<div class="nov-acts">', `<div class="nov-acts"><button type="button" class="btn small-btn primary" data-addfig="${esc(f.fig)}" data-set="${esc(x.number)}">⭐ La figurine</button>`).replace("⭐ Ajouter à la liste de souhaits", "⭐ Le set")}</div>`).join("")}</div>` : `<div class="loading">${data.figs_done ? "Aucune figurine exclusive pour ces filtres." : "Analyse des figurines en cours (Rebrickable)… revenir dans quelques minutes."}</div>`);
     }
     B.innerHTML = wait || (H1 + (H1 && H2.includes("nov-card") ? `<h3 class="nov-sec">🟡 Figurines exclusives</h3>` : "") + (H1 && !H2.includes("nov-card") ? "" : H2));   // (les deux cases : les sets, puis les figurines)
     $$("[data-add]", B).forEach(b => b.onclick = () => add(data.items.find(x => x.number === b.dataset.add), b));
@@ -4379,7 +4384,7 @@ async function ensureGiftList() {
   }
   return g;
 }
-/* set ou figurine du catalogue mis directement « à offrir » (pas dans ma collection) : { number, name, kind, image, release } */
+/* set ou figurine du catalogue mis directement « à offrir » (pas dans la collection) : { number, name, kind, image, release } */
 async function addForGift(x) {
   const note = await ask(`👀 « ${x.name || x.number} » à surveiller`, "Note (facultatif) : qui le cherche, pour quand…", "");
   if (note == null) return false;
@@ -4428,7 +4433,7 @@ function drawGiftRow() {   // 🎁 dans l'en-tête de la fiche ; pour une fiche 
     if (inGift) return actionMenu(g, [["✏️ Note", () => giftNote(it)], ["↩ Remettre dans les souhaits", () => fromGift(it)]]);
     if (inCol) return addForGift({ number: it.number, name: itemName(it), kind: it.kind === "fig" ? "fig" : "set", image: it.info?.image || "", used: isRetired(it.info) });   // le mien reste : une copie « à surveiller »
     if (!catalog) return toGift(it);
-    const v = await choiceBox(`« ${itemName(it)} » à surveiller`, [["copy", "L'ajouter aussi (je le garde dans mes souhaits)"], ["move", "Le déplacer dans « À surveiller »", "primary"]]);
+    const v = await choiceBox(`« ${itemName(it)} » à surveiller`, [["copy", "L'ajouter aussi (gardé dans les souhaits)"], ["move", "Le déplacer dans « À surveiller »", "primary"]]);
     if (v === "move") toGift(it);
     else if (v === "copy") addForGift({ number: it.number, name: itemName(it), kind: it.kind === "fig" ? "fig" : "set", image: it.info?.image || "", used: isRetired(it.info) });
   };
@@ -4442,10 +4447,10 @@ $("#btnForGift").onclick = async () => {
   if (await addForGift({ number: info.number, name: info.name, kind: dr.kind === "fig" ? "fig" : "set", image: info.image || "", used: isRetired(info) })) modal.hidden = true;
 };
 
-/* 🧾 Passer commande : les pièces de « À commander » → ma wanted list BrickLink (par défaut).
+/* 🧾 Passer commande : les pièces de « Commandes » → la wanted list BrickLink (par défaut).
    BrickLink ne permet pas de la remplir à ma place : le fichier BrickLink est copié, sa page d'import ouverte, il reste à coller. */
 const BL_UPLOAD = "https://www.bricklink.com/v2/wanted/upload.page";
-/* 🧹 Nettoyer : les pièces ✔ OK (reçues) sortent de « À commander » */
+/* 🧹 Nettoyer : les pièces ✔ OK (reçues) sortent de « Commandes » */
 function renderCleanBtn() {
   const n = isPartsList(state.current) ? itemsOf(state.current).filter(i => i.got).length : 0;
   $("#btnCleanParts").hidden = !n;
@@ -4454,7 +4459,7 @@ function renderCleanBtn() {
 $("#btnCleanParts").onclick = async () => {
   const got = itemsOf(state.current).filter(i => i.got); if (!got.length) return;
   const pcs = got.reduce((a, i) => a + (i.quantity || 1), 0);
-  if (!await confirmBox(`Retirer les ${nf.format(got.length)} pièce${got.length > 1 ? "s" : ""} reçue${got.length > 1 ? "s" : ""} (✔ OK, ${nf.format(pcs)} au total) de « À commander » ? Leurs lignes d'inventaire passent OK et les fiches concernées reçoivent la note « Commande · Pièces reçues ».`, { ok: "🧹 Nettoyer" })) return;
+  if (!await confirmBox(`Retirer les ${nf.format(got.length)} pièce${got.length > 1 ? "s" : ""} reçue${got.length > 1 ? "s" : ""} (✔ OK, ${nf.format(pcs)} au total) de « Commandes » ? Leurs lignes d'inventaire passent OK et les fiches concernées reçoivent la note « Commande · Pièces reçues ».`, { ok: "🧹 Nettoyer" })) return;
   let r;
   try { r = await api("/api/parts/clean", { method: "POST", body: { list_id: state.current } }); } catch (e) { return toast(e.message); }
   await load(); await loadInventories();
@@ -4470,8 +4475,8 @@ $("#btnOrderBL").onclick = async function blExport(full = false) {   // un appui
   try { r = await api("/api/parts/bl-xml", { method: "POST", body: { list_id: state.current, full: true } }); } catch (e) { return toast(e.message); }   /* (toujours tout ce qui reste à commander — 22/11) */
   if (!r.refs) return toast("Rien à exporter : tout est commandé ou reçu");
   if (false) {   // (ancien : « rien de nouveau depuis le dernier export » — retiré 22/11)
-    if (await confirmBox(`Rien de nouveau : les ${nf.format(r.already.pieces)} pièce${r.already.pieces > 1 ? "s" : ""} de « À commander » sont déjà exportées en XML (${{ brickowl: "BrickOwl", both: "BrickLink / BrickOwl" }[refSite()] || "BrickLink"}).`
-      + " Tout réexporter (si vous avez vidé la wanted list) ?", { ok: "Tout réexporter" })) blExport(true);
+    if (await confirmBox(`Rien de nouveau : les ${nf.format(r.already.pieces)} pièce${r.already.pieces > 1 ? "s" : ""} de « Commandes » sont déjà exportées en XML (${{ brickowl: "BrickOwl", both: "BrickLink / BrickOwl" }[refSite()] || "BrickLink"}).`
+      + " Tout réexporter (si la wanted list a été vidée) ?", { ok: "Tout réexporter" })) blExport(true);
     return;
   }
   const tgt = "bl";   // (exports : toujours BrickLink — 22/11)
@@ -4480,7 +4485,7 @@ $("#btnOrderBL").onclick = async function blExport(full = false) {   // un appui
     a.download = `wanted-list-briquotheque-${new Date().toISOString().slice(0, 10)}.xml`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
   let copied = true;
   try { await navigator.clipboard.writeText(r.xml); } catch { copied = false; file(); }   // copie refusée : le fichier à la place
-  /* (export « À commander » : copie seulement, aucun site ouvert — 22/11) */
+  /* (export « Commandes » : copie seulement, aucun site ouvert — 22/11) */
   try { await api("/api/parts/bl-sent", { method: "POST", body: { ids: r.ids } }); load(); } catch (e) { toast(e.message); return; }   // exportées : quantité + date sur chaque pièce
   const n = `${nf.format(r.pieces)} pièce${r.pieces > 1 ? "s" : ""}`;
   toast(`${copied ? "📋 " + n + " copiées (XML)" : "⬇ " + n + " dans le fichier XML"}`   /* (copie seulement : aucun site ouvert — 22/11) */
@@ -4496,12 +4501,12 @@ $("#btnNewInv").onclick = () => {
   const d = document.createElement("div");
   d.className = "modal";
   d.innerHTML = `<div class="modal-box"><div class="modal-head"><h2>Nouvel inventaire</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-    <p class="ask">Choisissez le set à inventorier — même si vous ne l'avez pas dans votre collection.</p>
+    <p class="ask">Le set à inventorier — même s'il n'est pas dans la collection.</p>
     <div data-sb>${searchBlock("Ex : 76914, Ferrari, Honda S2000…", { form: "data-f" })}</div>
     <div class="cam-row" style="margin:10px 0 0"><button type="button" class="btn small-btn" data-xmlbtn>📄 Import XML</button></div>
     <div data-xmlbox hidden style="margin-top:8px">
       <label>Nom de l'inventaire<input data-xmlname maxlength="150" placeholder="Ex : Vrac du grenier, MOC du garage…" style="width:100%"></label>
-      <textarea data-xmltxt rows="6" class="moc-xml" spellcheck="false" placeholder="Collez ici le XML BrickLink de la liste de pièces (Rebrickable : Inventory → Export → BrickLink XML)"></textarea>
+      <textarea data-xmltxt rows="6" class="moc-xml" spellcheck="false" placeholder="Coller ici le XML BrickLink de la liste de pièces (Rebrickable : Inventory → Export → BrickLink XML)"></textarea>
       <div class="est-actions" style="justify-content:flex-end;margin-top:6px"><button type="button" class="btn primary" data-xmlgo>Créer l'inventaire</button></div></div>
     <div class="results" data-r></div></div>`;
   document.body.append(d);
@@ -4509,7 +4514,7 @@ $("#btnNewInv").onclick = () => {
   $("[data-xmlbtn]", d).onclick = () => { const b = $("[data-xmlbox]", d); b.hidden = !b.hidden; if (!b.hidden) $("[data-xmlname]", d).focus(); };
   $("[data-xmlgo]", d).onclick = async e => {   // inventaire d'une liste de pièces XML (pas un set du catalogue)
     const text = $("[data-xmltxt]", d).value.trim(), name = $("[data-xmlname]", d).value.trim();
-    if (!text) return toast("Collez le contenu du XML");
+    if (!text) return toast("Coller le contenu du XML");
     e.currentTarget.disabled = true;
     try {
       const r = await api("/api/inventory-xml", { method: "POST", body: { name, text } });
@@ -4553,20 +4558,31 @@ $("#btnNewInv").onclick = () => {
           : `<div class="loading">Aucun set trouvé.</div>`;
         $$("[data-k]", d).forEach(b => b.onclick = () => { const r = list[b.dataset.k]; d.remove(); openInventory("set-" + r.number, r.name); });
         if (more) moreButton($("[data-r]", d), async () => { const n = await searchSetsPage(q, ++page); more = n.more; all = mergeRes(all, n.results); show(); });
-        insertMine($("[data-r]", d), q, { only: "sets", onPick: r => { d.remove(); openInventory(r.item.id, itemName(r.item)); } });   // mes sets d'abord
+        insertMine($("[data-r]", d), q, { only: "sets", onPick: r => { d.remove(); openInventory("set-" + r.item.number, itemName(r.item)); } });   // les sets d'abord (inventaire indépendant de la fiche — 22/11)
       };
       show();
     } catch (err) { $("[data-r]", d).innerHTML = `<div class="loading">${esc(err.message)}</div>`; }
   };
 };
 
+/* prix des pièces d'inventaire déjà chiffrées : gardés sur l'appareil (24 h ; sans prix : 6 h) — la réouverture n'attend plus (22/11) */
+const ipStore = {
+  m: null,
+  load() { if (!this.m) { try { this.m = JSON.parse(localStorage.getItem("bq-ip") || "{}"); } catch { this.m = {}; } } return this.m; },
+  get(k) { const e = this.load()[k]; if (!e) return undefined; const age = Date.now() / 1000 - e.t; return age < (e.v == null ? 6 * 3600 : 86400) ? e.v : undefined; },
+  set(k, v) { this.load()[k] = { v, t: Math.floor(Date.now() / 1000) }; clearTimeout(this.tm); this.tm = setTimeout(() => this.save(), 1500); },
+  save() { const m = this.load(), now = Date.now() / 1000;
+    for (const k of Object.keys(m)) if (now - m[k].t > 86400) delete m[k];
+    try { localStorage.setItem("bq-ip", JSON.stringify(m)); } catch {} },
+};
 async function openInventory(itemId, setName, opts = {}) {
+  { const it_ = !/^set-/.test(itemId) && state.items.find(i => i.id === itemId); if (it_?.number) itemId = "set-" + it_.number; }   /* (jamais rattaché à une fiche : rangé par n° de set — 22/11) */
   const d = document.createElement("div");
   d.className = "modal";
   d.innerHTML = `<div class="modal-box wide inv-box">
     <div class="modal-head"><h2 data-title>Inventaire</h2>
       <button class="icon-btn" data-refresh title="Actualiser depuis le serveur" aria-label="Actualiser">↻</button>
-      <button class="icon-btn" data-rename title="Renommer cet inventaire" aria-label="Renommer cet inventaire" hidden>✏️</button>
+      <button class="icon-btn" data-rename title="Renommer cet inventaire" aria-label="Renommer cet inventaire" hidden>✏️</button><button class="icon-btn" data-delinv-top title="Supprimer cet inventaire" aria-label="Supprimer cet inventaire" hidden>🗑️</button>
       <button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
     <div data-body><div class="loading"><span class="spinner"></span>Chargement de la liste des pièces (Rebrickable peut être lent)…</div></div></div>`;
   document.body.append(d);
@@ -4582,7 +4598,7 @@ async function openInventory(itemId, setName, opts = {}) {
   catch (err) { $("[data-body]", d).innerHTML = `<div class="loading">${esc(err.message)}</div>`; return; }
   const copies = data.copies || 1;
   const rows = data.rows.map(r => ({ ...r, need: r.quantity * copies }));
-  const sampleNote = data.sample ? `<div class="sample-banner">🧪 Inventaire de démo — un exemple fourni avec Briquothèque : cochez, modifiez ou supprimez-le librement.</div>` : "";
+  const sampleNote = data.sample ? `<div class="sample-banner">🧪 Inventaire de démo — un exemple fourni avec Briquothèque : à cocher, modifier ou supprimer librement.</div>` : "";
   const st = data.state || {};
   const COLORS = data.colors || {};
   let swaps = { ...(data.swaps || {}) };
@@ -4711,7 +4727,7 @@ async function openInventory(itemId, setName, opts = {}) {
       <button type="button" class="inv-hero-pic" data-hero aria-label="Agrandir la photo du set">
         <img src="${img(heroSrc)}" ${heroSrc !== rb ? `data-fb="${esc(img(rb))}"` : ""} alt="${esc(data.name)}"></button>
       <div class="inv-hero-txt"><div class="cfg-num" data-hero-sub></div><div class="inv-hero-name">${esc(data.name)}</div>${data.name_en ? `<div class="cfg-en">${esc(data.name_en)}</div>` : ""}
-        ${data.owned ? `<span class="pill">Dans ma collection${copies > 1 ? ` · ${copies} exemplaires` : ""}</span>` : `<span class="pill">Hors collection</span>`}
+
         <div hidden><button type="button" class="btn small-btn" data-photo>📷 Photo</button></div></div>
     </div>
     <div class="inv-sum" data-sum></div>
@@ -4732,8 +4748,8 @@ async function openInventory(itemId, setName, opts = {}) {
     <div class="inv-scanbar" data-scanbar hidden></div>
     <div class="swap-list" data-swaps></div>
     <div class="inv-list" data-list></div>
-    ${data.owned ? "" : `<div class="inv-end"><button type="button" class="btn danger-ghost" data-delinv>Supprimer cet inventaire</button></div>`}
-    <p class="hint">Chaque choix est enregistré immédiatement. ${copies > 1 ? `Quantités pour vos ${copies} exemplaires du set.` : ""} Les figurines ne sont pas dans l'inventaire.</p>`;
+    <div class="inv-end"><button type="button" class="btn danger-ghost" data-delinv>🗑️ Supprimer cet inventaire</button></div>
+    <p class="hint">Chaque choix est enregistré immédiatement. ${copies > 1 ? `Quantités pour les ${copies} exemplaires du set.` : ""} Les figurines ne sont pas dans l'inventaire.</p>`;
 
   let wasDone = opts.askBuild ? false : (() => { const c = counts(); return !!c.total && c.okPcs >= c.total; })();   // askBuild : complet → on propose sa fiche
   const checkBuild = async () => {   // dernière pièce cochée : prêt à construire ? (non : rien)
@@ -4748,14 +4764,24 @@ async function openInventory(itemId, setName, opts = {}) {
     openCustom({ partial: !data.xml, number: data.xml ? "" : data.set, name: label || data.name, image: data.photo || data.image || "" });
     state.draft.mocFile = { lots, name: "Inventaire" }; state.draft.fromInventory = itemId;
     $("#cfgUnbuilt").checked = true; drawMocInfo();
-    toast("Fiche préparée depuis l'inventaire : choisissez le reste puis « Ajouter à la liste »");
+    {   /* fiche créée tout de suite (22/11) : « À construire », photo de l'inventaire, la liste où j'ai le plus de sets de son thème */
+      let th = ""; if (data.set) try { th = (await Promise.race([api(`/api/set/${encodeURIComponent(data.set)}`), new Promise(ok => setTimeout(() => ok({}), 3000))])).theme || ""; } catch {}   /* (3 s au plus) */
+      const col = state.items.filter(i => kindOf(i.list_id) === "collection" && (i.kind || "set") === "set"), cnt = {};
+      for (const i of col.filter(i => th && i.info?.theme === th).length ? col.filter(i => i.info?.theme === th) : col) cnt[i.list_id] = (cnt[i.list_id] || 0) + 1;
+      const lid = Object.entries(cnt).sort((x, y) => y[1] - x[1])[0]?.[0] || state.lists.find(l => l.kind === "collection")?.id;
+      if (lid) { $("#cfgList").value = lid; $("#cfgList").dispatchEvent(new Event("change", { bubbles: true })); }
+      $("#cfgUnbuilt").checked = true;
+      await new Promise(r => setTimeout(r, 400));
+      $("#stepConfig").requestSubmit($("#btnSave"));
+      toast(`🚧 « ${label || data.name} » ajouté à « À construire »${lid ? ` (liste ${state.lists.find(l => l.id === lid)?.name || ""})` : ""}, avec la photo de l'inventaire`);
+    }
   };
   const save = (patch) => post({ rows: patch, name: data.name || setName || "" }).then(r => {
     if (r?.forced && Object.keys(r.forced).length) {   // OK retiré d'une pièce commandée : elle redevient « Commandée »
       for (const [k, s] of Object.entries(r.forced)) st[k] = { ...(st[k] || {}), s };
       drawList(); drawSum();
     }
-    if (Object.values(patch).some(v => v && (v.s === "ok" || v.s === "cmd")) || r?.forced) load();   // « À commander » à jour
+    if (Object.values(patch).some(v => v && (v.s === "ok" || v.s === "cmd")) || r?.forced) load();   // « Commandes » à jour
     return checkBuild();
   }).catch(e => toast("Non enregistré : " + e.message));
   if (opts.askBuild) setTimeout(checkBuild, 300);
@@ -4778,6 +4804,7 @@ async function openInventory(itemId, setName, opts = {}) {
     if (n) return { unit: n.unit, how: `neuf ${ZONE_FLAG[n.zone] || ""}` };
     return null;
   };
+  for (const r of rows) { const k = ipKey(r); if (k in ip) continue; const c = ipStore.get(k); if (c !== undefined) ip[k] = ipRule(c); }   /* (prix déjà connus sur l'appareil : tout de suite) */
   const ipTxt = r => { const v = ip[ipKey(r)]; const q = st[r.key]?.q || r.need;
     return v === undefined || v === "…" ? `<span class="muted">prix…</span>` : !v ? `<span class="muted">prix inconnu</span>`
       : `≈ <b>${money(v.unit * q)}</b>${siteNote(v.fb, v.sites?.BrickLink, v.sites?.BrickOwl)} <small class="muted">(${money(v.unit)} / pièce${v.how ? ", " + esc(v.how) : ""})</small>`; };
@@ -4789,7 +4816,7 @@ async function openInventory(itemId, setName, opts = {}) {
       const one = async r => {
         const k = ipKey(r); if (k in ip) return; ip[k] = "…";
         const [bl, cid] = k.split("|");
-        try { ip[k] = ipRule(await api(`/api/part-price?part=${encodeURIComponent((st[r.key] || {}).p || r.part_num)}&bl=${encodeURIComponent(bl)}&cid=${encodeURIComponent(cid)}`)); }
+        try { const raw = await api(`/api/part-price?part=${encodeURIComponent((st[r.key] || {}).p || r.part_num)}&bl=${encodeURIComponent(bl)}&cid=${encodeURIComponent(cid)}`); ipStore.set(k, raw); ip[k] = ipRule(raw); }
         catch { ip[k] = null; }
         if (!d.isConnected) return;
         for (const rr of rows) if (ipKey(rr) === k) $$(`[data-ip="${CSS.escape(rr.key)}"]`, d).forEach(e => e.innerHTML = ipTxt(rr));   // même pièce, même couleur : toutes ses lignes
@@ -4798,14 +4825,14 @@ async function openInventory(itemId, setName, opts = {}) {
       for (let k = 0; k < todo.length; k += 3) { if (!d.isConnected) break; await Promise.all(todo.slice(k, k + 3).map(one)); }
     } finally { ipBusy = false; }
   };
-  const paidSum = () => {   /* commandées : le montant RÉEL payé (mes commandes ; seulement les pièces attribuées à la ligne) — 21/11 nuit */
+  const paidSum = () => {   /* commandées : le montant RÉEL payé (les commandes ; seulement les pièces attribuées à la ligne) — 21/11 nuit */
     const rs = rows.filter(r => st[r.key]?.s === "cmd");
     const real = rs.filter(r => (st[r.key].o || []).length && st[r.key].o.every(o => typeof o.paid === "number"));
     if (!real.length) return null;   /* (aucun prix payé connu : l'estimation, comme avant) */
     const paid = real.reduce((a, r) => a + st[r.key].o.reduce((b, o) => b + o.paid, 0), 0);
     const rest = rs.filter(r => !real.includes(r)), kn = rest.filter(r => ip[ipKey(r)] && ip[ipKey(r)] !== "…");
     const est = kn.reduce((a, r) => a + ip[ipKey(r)].unit * (st[r.key]?.q || r.need), 0);
-    return ` · <b class="inv-total" title="Prix payé dans mes commandes, pour les seules pièces de cet inventaire (port non compté)">${money(paid)} payés</b>`
+    return ` · <b class="inv-total" title="Prix payé dans les commandes, pour les seules pièces de cet inventaire (port non compté)">${money(paid)} payés</b>`
       + (rest.length ? ` <small class="muted" title="Commandées à la main ou sans prix connu : médiane BrickLink">+ ${kn.length ? "≈ " + money(est) : "?"} estimés (${rest.length} réf.)</small>` : "");
   };
   const ipSum = state0 => {   // total estimé des pièces à commander (ou commandées)
@@ -4831,12 +4858,12 @@ async function openInventory(itemId, setName, opts = {}) {
       ${gOrder.n + gRest.n && gOrder.known + gRest.known ? `<span class="sum-l sum-tot" title="Ce que coûteraient les pièces à commander et celles qui restent à vérifier">Total 🛒 + ❔ : <b class="inv-total">≈ ${money(gOrder.tot + gRest.tot)}</b>${
         gOrder.known + gRest.known < gOrder.n + gRest.n ? ` <small class="muted">(chiffrage en cours)</small>` : ""}</span>` : ""}
       ${c.excl ? `<span class="sum-l x-txt">✕ ${nf.format(c.exclPcs)} exclue${c.exclPcs > 1 ? "s" : ""}</span>` : ""}
-      ${nMiss ? `<span class="sum-l nocolor" title="Ces pièces sont marquées ⚠ dans la liste : changez leur couleur (🎨) ou remplacez-les (🔁)">⚠ ${nMiss} référence${nMiss > 1 ? "s" : ""} n'existe${nMiss > 1 ? "nt" : ""} pas dans la couleur demandée</span>` : ""}`;   // une information par ligne
+      ${nMiss ? `<span class="sum-l nocolor" title="Ces pièces sont marquées ⚠ dans la liste : changer leur couleur (🎨) ou les remplacer (🔁)">⚠ ${nMiss} référence${nMiss > 1 ? "s" : ""} n'existe${nMiss > 1 ? "nt" : ""} pas dans la couleur demandée</span>` : ""}`;   // une information par ligne
     $("[data-bar]", d).style.width = (c.total ? Math.round(c.done / c.total * 100) : 0) + "%";
-    {   /* aide-mémoire « 📍 Vous en êtes là » : 2 pointer, 3 exporter, 5 réception, 6 tout est OK (21/11 nuit) */
+    {   /* aide-mémoire « 📍 J'en suis là » : 2 pointer, 3 exporter, 5 réception, 6 tout est OK (21/11 nuit) */
       const ici = c.todo > 0 ? 2 : c.order > 0 ? 3 : c.cmd > 0 ? 5 : c.total ? 6 : 1;
       d.dataset.memo = `/aide-memoire?ici=${ici}&nom=${encodeURIComponent(data.name || "")}#/inventaire`;
-      $("[data-sum]", d).insertAdjacentHTML("beforeend", `<a class="sum-l memo-link" href="${esc(d.dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire : où j'en suis (étape ${ici})</a>`); }
+      $("[data-sum]", d).insertAdjacentHTML("beforeend", `<a class="sum-l memo-link" href="${esc(d.dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire (étape ${ici})</a>`); }
     const rb = $("[data-ready]", d);   // tout est trié (OK / à commander) : on peut passer commande
     rb.hidden = !(c.order > 0);   // (les pièces à commander restent dans l'inventaire : export XML — 21/11 soir)
     rb.textContent = `🧾 Exporter en XML (${nf.format(c.orderPcs)} pièce${c.orderPcs > 1 ? "s" : ""})`;
@@ -4860,13 +4887,13 @@ async function openInventory(itemId, setName, opts = {}) {
     return `<div class="inv-row ${s} ${seen[r.key] ? (seen[r.key] >= r.need ? "seen-full" : "seen") : ""}" data-k="${esc(r.key)}">
       <button type="button" class="inv-pic" data-zoom="${esc(pic || "")}" aria-label="Agrandir"><img src="${img(pic)}" ${r.part_image && r.part_image !== pic ? `data-fb="${esc(img(r.part_image))}"` : ""} alt="" loading="lazy"></button>
       <div class="inv-info"><div class="inv-name fig-link" title="Détail de la pièce et sets où elle apparaît">${esc(alt ? st[r.key].pn || alt : r.name || r.part_num)}</div>
-        ${alt ? `<div class="inv-meta recolor">remplace ${esc(r.part_num)} (${esc(r.name || "")})</div>` : ""}
+        ${alt ? `<div class="inv-meta recolor">remplace ${esc(r.part_num)} (${esc(r.name || "")})</div>` : ""}${r.added ? `<div class="inv-meta extra-txt">➕ ajoutée (hors set)</div>` : ""}
         <div class="inv-meta">${swatch(col.rgb, col.trans)} ${esc(col.fr || "")}${col.changed ? ` <span class="recolor">(au lieu de ${esc(r.color_fr || r.color_name)}${col.byRule ? ", règle" : ""})</span>` : ""}${needCheck(r)
-          ? (avail === undefined ? ` <span class="muted">· vérification…</span>` : avail?.exists === false ? (alt ? ` <span class="nocolor">⚠ ${esc(alt)} n'existe pas en ${esc(col.fr)} : changez la couleur (🎨) ou la pièce (🔁)</span>` : replText(r, col)) : "") : ""} · <b>${esc(alt || r.part_num)}</b>${r.element_id && !col.changed && !alt ? ` · élément ${esc(r.element_id)}` : ""}</div>
+          ? (avail === undefined ? ` <span class="muted">· vérification…</span>` : avail?.exists === false ? (alt ? ` <span class="nocolor">⚠ ${esc(alt)} n'existe pas en ${esc(col.fr)} : changer la couleur (🎨) ou la pièce (🔁)</span>` : replText(r, col)) : "") : ""} · <b>${esc(alt || r.part_num)}</b>${r.element_id && !col.changed && !alt ? ` · élément ${esc(r.element_id)}` : ""}</div>
       ${["order", "cmd"].includes(s) ? `<div class="inv-meta inv-ip" data-ip="${esc(r.key)}">${ipTxt(r)}</div>` : ""}</div>
       <div class="inv-need">×${r.need}${seen[r.key] ? `<span class="inv-seen ${seen[r.key] >= r.need ? "full" : ""}" title="Pièces repérées par le scan">📷 ${seen[r.key]}/${r.need}</span>` : ""}</div>
       <div class="inv-act">
-        ${s === "cmd" ? `<span class="inv-cmd" title="À la réception, passez-la en OK (ou remettez-la à commander si c'est une erreur)">${cmdText(st[r.key]?.o?.length ? st[r.key].o.map(o => o.date) : [st[r.key]?.m])}</span>` : ""}
+        ${s === "cmd" ? `<span class="inv-cmd" title="À la réception : la passer en OK (ou la remettre à commander si c'est une erreur)">${cmdText(st[r.key]?.o?.length ? st[r.key].o.map(o => o.date) : [st[r.key]?.m])}</span>` : ""}
         <button type="button" class="inv-ok ${s === "ok" ? "on" : ""}" data-s="ok">✔ OK</button>
         ${s === "cmd" ? (st[r.key]?.o?.length || st[r.key]?.m ? `<button type="button" class="inv-order" data-s="order" title="Erreur : la remettre à commander">↩ À commander</button>` : "") : `<button type="button" class="inv-order ${s === "order" ? "on" : ""}" data-s="order">🛒 À commander</button>`}
         ${s === "order" ? `<button type="button" class="inv-order" data-s="cmd" title="Commandée par un autre moyen : la marquer commandée (aujourd'hui)">📦 Commandée</button>` : ""}
@@ -4958,7 +4985,7 @@ async function openInventory(itemId, setName, opts = {}) {
       if (rowAvail(r) === undefined) { b.disabled = true; await ensureColors(part); }
       row = $$(".inv-row", d).find(x => x.dataset.k === k) || row;   // (la ligne a pu être redessinée pendant la vérification)
       if (rowAvail(r)?.exists === false) { if (row.isConnected) row.outerHTML = rowHtml(r); drawSum();
-        return toast(`⚠ ${part} n'existe pas en ${effColor(r).fr} : changez sa couleur (🎨) ou remplacez la pièce (🔁)`); }
+        return toast(`⚠ ${part} n'existe pas en ${effColor(r).fr} : changer sa couleur (🎨) ou remplacer la pièce (🔁)`); }
     }
     const patchS = {};
     for (const kk of grpKeys(r)) { const rk = rows.find(x => x.key === kk) || r;   // (ligne rassemblée : toutes — 21/11)
@@ -4979,12 +5006,12 @@ async function openInventory(itemId, setName, opts = {}) {
       btn.disabled = true; for (const r of ord) await ensureColors(st[r.key]?.p || r.part_num); btn.disabled = false;
       const bad = ord.filter(r => rowAvail(r)?.exists === false);
       if (bad.length) { drawList(); drawSum();
-        return toast(`⚠ ${bad.length} pièce${bad.length > 1 ? "s" : ""} à commander n'existe${bad.length > 1 ? "nt" : ""} pas dans la couleur demandée (${bad.slice(0, 3).map(r => st[r.key]?.p || r.part_num).join(", ")}${bad.length > 3 ? "…" : ""}) : corrigez-les d'abord (🎨 ou 🔁)`); }
+        return toast(`⚠ ${bad.length} pièce${bad.length > 1 ? "s" : ""} à commander n'existe${bad.length > 1 ? "nt" : ""} pas dans la couleur demandée (${bad.slice(0, 3).map(r => st[r.key]?.p || r.part_num).join(", ")}${bad.length > 3 ? "…" : ""}) : à corriger d'abord (🎨 ou 🔁)`); }
     }
     await flush();
     const parts = rows.filter(r => st[r.key]?.s === "order").map(r => { const col = effColor(r), s0 = st[r.key] || {};
       return { part_num: s0.p || r.part_num, bricklink: s0.p ? "" : r.bricklink || "", color_id: col.id, quantity: s0.q || r.need }; });
-    btn.disabled = true;   /* XML des pièces à commander — elles restent dans l'inventaire ; « Commandée » viendra de mes commandes (21/11 soir) */
+    btn.disabled = true;   /* XML des pièces à commander — elles restent dans l'inventaire ; « Commandée » viendra des commandes (21/11 soir) */
     try {
       const res = await api(`/api/inventory/${encodeURIComponent(itemId)}/xml`, { method: "POST", body: { parts } });
       const file = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([res.xml], { type: "text/xml" }));
@@ -5036,7 +5063,7 @@ async function openInventory(itemId, setName, opts = {}) {
     const rowOf = k => rows.find(r => r.key === k);
     const draw = () => {
       const n = items.filter(x => x.on && x.key).reduce((a, x) => a + x.qty, 0);
-      $("[data-b]", m).innerHTML = `<p class="hint" style="margin-top:0">${items.length} pièce${items.length > 1 ? "s" : ""} repérée${items.length > 1 ? "s" : ""}. Celles reconnues dans l'inventaire sont pré-cochées : vérifiez (la photo de la pièce est à gauche), corrigez la ligne si besoin, puis ajoutez-les au comptage. Une pile de pièces identiques : ajustez la quantité.</p>
+      $("[data-b]", m).innerHTML = `<p class="hint" style="margin-top:0">${items.length} pièce${items.length > 1 ? "s" : ""} repérée${items.length > 1 ? "s" : ""}. Celles reconnues dans l'inventaire sont pré-cochées : vérifier (la photo de la pièce est à gauche), corriger la ligne si besoin, puis les ajouter au comptage. Une pile de pièces identiques : ajuster la quantité.</p>
         <div class="invscan-list">${items.map((x, j) => { const r = rowOf(x.key), c = x.cands[0];
           return `<div class="invscan-row ${x.on && x.key ? "on" : ""} ${!x.key ? "none" : ""}">
             <input type="checkbox" data-on="${j}" ${x.on && x.key ? "checked" : ""} ${x.key ? "" : "disabled"} aria-label="Compter cette pièce">
@@ -5085,7 +5112,7 @@ async function openInventory(itemId, setName, opts = {}) {
     const m = document.createElement("div");
     m.className = "modal top";
     m.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>Couleur de « ${esc(r.name || r.part_num)} »</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-      <p class="ask">Couleur du set : ${swatch(r.rgb, r.trans)} ${esc(r.color_fr || r.color_name)}. Choisissez la couleur que vous utiliserez à la place.</p>
+      <p class="ask">Couleur du set : ${swatch(r.rgb, r.trans)} ${esc(r.color_fr || r.color_name)}. La couleur à utiliser à la place :</p>
       <div class="color-grid" data-g><div class="loading"><span class="spinner"></span>Chargement des couleurs…</div></div>
       <div class="est-actions" style="justify-content:flex-end;margin-top:10px"><button type="button" class="btn" data-other>🔎 Remplacer par une autre pièce</button>
         ${st[r.key]?.c != null || st[r.key]?.p ? `<button type="button" class="btn" data-reset>↩ Revenir à la pièce du set</button>` : ""}</div></div>`;
@@ -5145,35 +5172,60 @@ async function openInventory(itemId, setName, opts = {}) {
     await post({ rows: patch, swaps: {}, name: data.name || setName || "" }).catch(e => toast(e.message));
     drawList(); toast("Couleurs d'origine rétablies");
   };
-  $("[data-swapbtn]", d).onclick = () => {
+  $("[data-swapbtn]", d).onclick = () => {   /* listes de couleurs : ordre alphabétique, petit carré de chaque couleur (22/11) */
     const used = {};   // couleurs présentes dans ce set, avec le nombre de pièces
     rows.forEach(r => { used[r.color_id] = (used[r.color_id] || 0) + r.need; });
-    const opt = (id, extra = "") => `<option value="${id}">${esc(COLORS[id]?.fr || id)}${extra}</option>`;
-    const all = Object.entries(COLORS).sort((a, b) => a[1].fr.localeCompare(b[1].fr, "fr"));
+    const nm = id => COLORS[id]?.fr || String(id), odd = id => /^\s*\[|no color|any color/i.test(nm(id));
+    const byName = (a, b) => odd(a) - odd(b) || nm(a).localeCompare(nm(b), "fr", { sensitivity: "base" });
+    const from = Object.keys(used).sort(byName), to = Object.keys(COLORS).filter(id => +id >= 0).sort(byName);
+    const item = (id, extra = "") => `<button type="button" class="cp-item" data-v="${esc(id)}" data-t="${esc(nm(id).toLowerCase())}">${swatch(COLORS[id]?.rgb, COLORS[id]?.trans)}<span>${esc(nm(id))}${extra}</span></button>`;
+    const pick = (k, ids, extra) => `<div class="cpick" data-cp="${k}"><button type="button" class="cp-btn"></button><div class="cp-list" hidden>
+      ${ids.length > 12 ? `<input type="search" class="cp-q" placeholder="Chercher une couleur…" autocomplete="off">` : ""}<div class="cp-items">${ids.map(id => item(id, extra(id))).join("")}</div></div></div>`;
     const m = document.createElement("div");
     m.className = "modal top";
     m.innerHTML = `<form class="modal-box" style="width:min(460px,100%)"><div class="modal-head"><h2>Remplacer une couleur</h2></div>
       <p class="ask">Toutes les pièces d'une couleur seront affichées dans une autre (ex. remplacer le rose par du rouge). Une couleur choisie pièce par pièce reste prioritaire.</p>
-      <div class="grid2" style="grid-template-columns:1fr"><label>Remplacer<select data-from>${Object.keys(used).sort((a, b) => used[b] - used[a]).map(id => opt(id, ` (${used[id]} pcs)`)).join("")}</select></label>
-      <label>Par<select data-to>${all.map(([id]) => opt(id)).join("")}</select></label></div>
+      <div class="grid2" style="grid-template-columns:1fr"><label>Remplacer</label>${pick("from", from, id => ` <small class="muted">(${used[id]} pcs)</small>`)}
+      <label>Par</label>${pick("to", to, () => "")}</div>
       <div class="est-actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-n>Annuler</button><button class="btn primary">Appliquer</button></div></form>`;
     document.body.append(m);
+    const val = {}, set = (k, id) => { val[k] = id; const c = $(`[data-cp="${k}"]`, m); $(".cp-btn", c).innerHTML = $(`.cp-item[data-v="${CSS.escape(id)}"]`, c)?.innerHTML + `<span class="cp-caret">▾</span>`;
+      $$(".cp-item", c).forEach(b => b.classList.toggle("on", b.dataset.v === id)); };
+    set("from", [...from].sort((a, b) => used[b] - used[a])[0] || from[0]); set("to", to.find(id => !odd(id)) || to[0]);
+    $$(".cpick", m).forEach(c => {
+      const list = $(".cp-list", c), q = $(".cp-q", c);
+      $(".cp-btn", c).onclick = () => { $$(".cp-list", m).forEach(l => { if (l !== list) l.hidden = true; }); list.hidden = !list.hidden;
+        if (!list.hidden) { if (q) { q.value = ""; q.dispatchEvent(new Event("input")); q.focus(); } $(".cp-item.on", c)?.scrollIntoView({ block: "nearest" }); } };
+      $$(".cp-item", c).forEach(b => b.onclick = () => { set(c.dataset.cp, b.dataset.v); list.hidden = true; });
+      if (q) q.oninput = () => { const t = q.value.trim().toLowerCase(); $$(".cp-item", c).forEach(b => { b.hidden = !!t && !b.dataset.t.includes(t); }); };
+      if (q) q.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); $(".cp-item:not([hidden])", c)?.click(); } };
+    });
+    m.addEventListener("click", e => { if (!e.target.closest(".cpick")) $$(".cp-list", m).forEach(l => { l.hidden = true; }); });
     $("[data-n]", m).onclick = () => m.remove();
     $("form", m).onsubmit = e => {
       e.preventDefault();
-      const a = $("[data-from]", m).value, b = $("[data-to]", m).value;
-      if (a !== b) { swaps[a] = +b; saveSwaps(); toast(`${COLORS[a]?.fr} → ${COLORS[b]?.fr}`); }
+      const a = val.from, b = val.to;
+      if (a != null && b != null && a !== b) { swaps[a] = +b; saveSwaps(); toast(`${COLORS[a]?.fr} → ${COLORS[b]?.fr}`); }
       m.remove();
     };
   };
+  if ($("[data-delinv-top]", d)) { $("[data-delinv-top]", d).hidden = false; $("[data-delinv-top]", d).onclick = () => $("[data-delinv]", d)?.click(); }   /* (corbeille en haut — 22/11) */
   $("[data-delinv]", d)?.addEventListener("click", async () => {
-    const c = counts(), what = data.xml ? `l'inventaire « ${label || data.name} »` : `l'inventaire du set ${data.set}`;
+    const c = counts(), what = data.xml ? `l'inventaire « ${label || data.name} »` : `l'inventaire du set ${data.set}`;   /* (un inventaire n'est rattaché à aucune fiche — 22/11) */
+    /* pièces COMMANDÉES : déplacées dans « Commandes » (pas celles à commander) — 22/11 */
+    const moves = rows.filter(r => st[r.key]?.s === "cmd").map(r => { const col = effColor(r), s0 = st[r.key] || {};
+      return { row: r.key, part_num: s0.p || r.part_num, part_name: s0.p ? s0.pn || s0.p : r.name || "", bricklink: s0.p ? "" : r.bricklink || "", color_id: col.id,
+        color_name: col.fr || "", color_rgb: col.rgb || "", element_id: col.changed || s0.p ? "" : r.element_id || "", image: (col.changed || s0.p ? s0.ci : "") || r.image || "", quantity: s0.q || r.need }; });
+    const mvTxt = moves.length ? `Les ${nf.format(moves.length)} pièce${moves.length > 1 ? "s" : ""} commandée${moves.length > 1 ? "s" : ""} ${moves.length > 1 ? "seront déplacées" : "sera déplacée"} dans « Commandes » (pas celles à commander).` : "";
     const ok = c.total && c.okPcs >= c.total ? await confirmBox(`Inventaire complet : le supprimer ?`, { ok: "Supprimer" })   // complet : simple confirmation
-      : c.okPcs > 0 ? await confirmBox(`Supprimer quand même ${what} ? Les pièces déjà ajoutées à « À commander » restent.`,
+      : c.okPcs > 0 ? await confirmBox(`Supprimer quand même ${what} ? ${mvTxt}`,
         { ok: "Supprimer", danger: true, warn: `Cet inventaire n'est pas complet : ${nf.format(c.okPcs)} / ${nf.format(c.total)} pièces.` })
-      : await confirmBox(`Supprimer ${what} ? Les pièces déjà ajoutées à « À commander » restent.`);
+      : await confirmBox(`Supprimer ${what} ? ${mvTxt}`);
     if (!ok) return;
-    await api(`/api/inventory/${itemId}/supprimer`, { method: "POST" }); d.remove(); loadInventories(); toast("Inventaire supprimé");
+    await flush();
+    let res; try { res = await api(`/api/inventory/${itemId}/supprimer`, { method: "POST", body: { moves, set_number: data.xml ? "" : data.set } }); } catch (err) { return toast(err.message); }
+    d.remove(); loadInventories(); if (res?.moved) await load();
+    toast(res?.moved ? `Inventaire supprimé · ${nf.format(res.moved)} pièce${res.moved > 1 ? "s" : ""} commandée${res.moved > 1 ? "s" : ""} dans « Commandes »` : "Inventaire supprimé");
   });
   $("[data-photo]", d).onclick = async () => {
     const u = await pickPhoto({ title: `Photo de l'inventaire « ${label || data.name} »`, number: data.set, current: data.photo || "", fallback: data.image || rb, cutout: false });
@@ -5235,7 +5287,7 @@ async function fetchPartPrices(items) {
     }
   } finally { state.fetchingPrices = false; renderNav(); }   // menu : prix des pièces en commande
 }
-/* état voulu d'une ligne « À commander » (= any / new / used de BrickLink) : N neuf (par défaut), U occasion, X n'importe */
+/* état voulu d'une ligne « Commandes » (= any / new / used de BrickLink) : N neuf (par défaut), U occasion, X n'importe */
 const BL_CONDS = [["X", "N'importe"], ["N", "Neuf"], ["U", "Occasion"]];
 const condOf = i => ["N", "U", "X"].includes(i?.bl_cond) ? i.bl_cond : "N";
 /* prix retenu selon l'état voulu : neuf → le prix neuf ; occasion → le prix d'occasion ; n'importe → le moins cher des deux.
@@ -5259,7 +5311,7 @@ const figBuy = i => { const m = i.info?.market || {}, v = (x, rec) => x != null 
   const pk = condPick(v(i.info?.value, m.new), v(i.info?.used, m.used), condOf(i));
   return pk ? { unit: pk[0].unit, how: pk[1], src: "BrickLink", which: pk[2] } : null; };
 const partBuy = i => i.kind === "fig" ? figBuy(i) : buyPrice(partPrice(i), condOf(i));
-/* prix d'une ligne « À commander » : neuf et occasion, chacun sur sa ligne — le total, et le prix à l'unité entre parenthèses s'il y a
+/* prix d'une ligne « Commandes » : neuf et occasion, chacun sur sa ligne — le total, et le prix à l'unité entre parenthèses s'il y a
    plus d'un exemplaire ; celui retenu pour le coût (selon l'état voulu) en gras. BrickOwl (un seul prix, sans état) : une ligne. */
 const priceText = i => {
   const q = i.quantity || 1;
@@ -5279,27 +5331,29 @@ const priceText = i => {
   return line("Prix", useU ? u : n, true, useU ? zu : zn);
 };
 
-const partQtyTimers = {};   // « À commander » : enregistrement différé de la quantité, par ligne
-/* zone du prix retenu d'une ligne « À commander » (selon l'état voulu) : France, UE ou monde ; inconnue : France */
+const partQtyTimers = {};   // « Commandes » : enregistrement différé de la quantité, par ligne
+/* zone du prix retenu d'une ligne « Commandes » (selon l'état voulu) : France, UE ou monde ; inconnue : France */
 const orderZone = i => {
   let n, u, which;
   if (i.kind === "fig") { n = i.info?.market?.new; u = i.info?.market?.used; which = figBuy(i)?.which; }
   else { const p = partPrice(i); if (!p || p.loading || p.src !== "BrickLink") return homeZone(); n = p.new; u = p.used; which = buyPrice(p, condOf(i))?.which; }
   return (which === "n" ? n : which === "u" ? u : null)?.zone || homeZone();
 };
-/* lien BrickLink d'une ligne « À commander » : ses annonces dans la zone d'où vient le prix (France : vendeurs en France ; Europe :
+/* lien BrickLink d'une ligne « Commandes » : ses annonces dans la zone d'où vient le prix (France : vendeurs en France ; Europe :
    vendeurs qui livrent en France ; monde : tous), à l'état voulu (n'importe : neuf et occasion) ; pièce : dans sa couleur BrickLink */
 const orderLink = i => { const cond = { N: "N", U: "U" }[condOf(i)] || "", zone = orderZone(i);
   return i.kind === "fig" ? blSale("M", i.number, { zone, cond })
     : blSale("P", i.bricklink || i.part_num, { zone, cond, color: partPrice(i)?.bl_color ?? null }); };
-/* « À commander » ouvert : mes commandes BrickOwl relues (au plus une fois par heure, côté serveur) — « Commandée », jamais OK (21/11 soir) */
+/* « Commandes » ouvert : les commandes BrickOwl relues (au plus une fois par heure, côté serveur) — « Commandée », jamais OK (21/11 soir) */
 function ordersCheck() {
   if (DEMO || ordersCheck.on) return; ordersCheck.on = true;
-  api("/api/orders/sync", { method: "POST", body: {} }).then(r => { if (r?.changed) { load(); toast(`📦 ${r.changed} pièce${r.changed > 1 ? "s" : ""} « Commandée${r.changed > 1 ? "s" : ""} » d'après vos commandes`); } })
+  const ext = () => api("/api/orders/extra").then(r => { const n = JSON.stringify(r.items || []); if (n !== JSON.stringify(state.ordersExtra || [])) { state.ordersExtra = r.items || []; if (isPartsList(state.current)) renderPartsView(itemsOf(state.current)); } }).catch(() => {});   /* (commandées en plus — 22/11) */
+  ext();
+  api("/api/orders/sync", { method: "POST", body: {} }).then(r => { ext(); if (r?.changed) { load(); toast(`📦 ${r.changed} pièce${r.changed > 1 ? "s" : ""} « Commandée${r.changed > 1 ? "s" : ""} » d'après les commandes`); } })
     .catch(() => {}).finally(() => setTimeout(() => { ordersCheck.on = false; }, 600000));
 }
-/* ✔ OK dans « À commander » (21/11 nuit) — figurine : créer sa fiche ? ; pièce (hors inventaire) : remise là où elle manquait
-   (le set de la pièce d'abord, puis mes autres sets et figurines) ; rien n'y manque mais elle est pour un de mes sets : qu'en faire ? */
+/* ✔ OK dans « Commandes » (21/11 nuit) — figurine : créer sa fiche ? ; pièce (hors inventaire) : remise là où elle manquait
+   (le set de la pièce d'abord, puis les autres sets et figurines) ; rien n'y manque mais elle est pour un des sets : qu'en faire ? */
 async function receivedAsk(it) {
   if (it.kind === "fig") {
     if (await confirmBox(`« ${itemName(it)} » reçue : créer sa fiche ?`, { ok: "Créer la fiche", no: "Plus tard" })) {
@@ -5330,7 +5384,7 @@ async function receivedAsk(it) {
     const host = it.set_number && mine.find(x => (x.kind || "set") === "set" && x.number === it.set_number);
     if (!host) return;
     const a = await choiceBox(`« ${nm} » reçue pour « ${itemName(host)} » : aucune pièce de ce type n'y manque. Qu'en faire ?`,
-      [["keep", "Rien, je la garde à part"], ["add", "L'ajouter au set (pièce en plus)"]]);
+      [["keep", "Rien, la garder à part"], ["add", "L'ajouter au set (pièce en plus)"]]);
     if (a !== "add") return;
     await addPartTo(host, { part: it.bricklink || it.part_num, part_num: it.part_num, color_id: it.color_id, color_fr: it.color_fr || it.color_name || "", qty: it.quantity || 1, name: it.part_name || "", image: it.image || "" });
     await load(); toast(`✔ « ${nm} » ajoutée à « ${itemName(host)} »`);
@@ -5343,13 +5397,13 @@ function renderPartsView(items) {
   const known = items.filter(i => partBuy(i)?.unit != null);
   const cost = known.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0);
   setTimeout(() => fetchPartPrices(items), 0);
-  /* (« À commander » : aspect de l'inventaire — 21/11 nuit) */
+  /* (« Commandes » : aspect de l'inventaire — 21/11 nuit) */
   {   // le résumé de l'inventaire : une information par ligne, la barre, les filtres
     const isCmd = i => !i.got && ((i.ordered || []).length || i.cmd_m), pcs = l => l.reduce((a, i) => a + (i.quantity || 1), 0);
     const gOrd = items.filter(i => !i.got && !isCmd(i)), gCmd = items.filter(isCmd), gOk = items.filter(i => i.got);
     const est = l => { const k = l.filter(i => partBuy(i)?.unit != null); return k.length ? ` <b class="inv-total">≈ ${money(k.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0))}</b>${k.length < l.length ? ` <small class="muted">(${k.length}/${l.length} réf.)</small>` : ""}` : ""; };
     const real = gCmd.filter(i => (i.ordered || []).length && i.ordered.every(o => typeof o.paid === "number")), rest = gCmd.filter(i => !real.includes(i));
-    const paid = real.length ? ` · <b class="inv-total" title="Prix payé dans mes commandes (port non compté)">${money(real.reduce((a, i) => a + i.ordered.reduce((b, o) => b + o.paid, 0), 0))} payés</b>${rest.length ? ` <small class="muted">+${est(rest) || " ?"} estimés</small>` : ""}` : est(gCmd);
+    const paid = real.length ? ` · <b class="inv-total" title="Prix payé dans les commandes (port non compté)">${money(real.reduce((a, i) => a + i.ordered.reduce((b, o) => b + o.paid, 0), 0))} payés</b>${rest.length ? ` <small class="muted">+${est(rest) || " ?"} estimés</small>` : ""}` : est(gCmd);
     const tot = pcs(items), done = pcs(gCmd) + pcs(gOk);
     const F = state.blF || "";
     $("#stats").innerHTML = `<div class="bl-sum-box" style="grid-column:1/-1"><div class="inv-sum">
@@ -5358,13 +5412,18 @@ function renderPartsView(items) {
       ${gCmd.length ? `<span class="sum-l cmd-txt">📦 ${nf.format(pcs(gCmd))} commandée${pcs(gCmd) > 1 ? "s" : ""}${paid}</span>` : ""}
       <span class="sum-l ok-txt">✔ ${nf.format(pcs(gOk))} reçue${pcs(gOk) > 1 ? "s" : ""}</span>
       ${sets.size ? `<span class="sum-l">🧱 Pour ${nf.format(sets.size)} set${sets.size > 1 ? "s" : ""}</span>` : ""}
-      ${(() => { /* aide-mémoire « 📍 Vous en êtes là » : 1 ajouter, 2 exporter, 3 commander, 4-5 réception, 6 nettoyer (21/11 nuit) */
+      ${(state.ordersExtra || []).length ? (x => `<span class="sum-l extra-txt">➕ ${nf.format(x.reduce((a, e) => a + e.qty, 0))} commandée${x.reduce((a, e) => a + e.qty, 0) > 1 ? "s" : ""} en plus (non attribuées)${x.every(e => e.paid != null) ? ` · ${money(x.reduce((a, e) => a + e.paid, 0))}` : ""}</span>`)(state.ordersExtra) : ""}
+      ${(() => { /* aide-mémoire « 📍 J'en suis là » : 1 ajouter, 2 exporter, 3 commander, 4-5 réception, 6 nettoyer (21/11 nuit) */
         const ici = !items.length ? "1" : gOrd.length ? "2" : gCmd.length ? "4,5" : "6";   /* (l'export XML ne compte pas : achat quand l'occasion se présente — 22/11) */
-        $("#stats").dataset.memo = `/aide-memoire?ici=${ici}&nom=${encodeURIComponent("À commander")}#/commander`;
-        return `<a class="sum-l memo-link" href="${esc($("#stats").dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire : où j'en suis (étape ${ici.replace(",", " et ")})</a>`; })()}</div>
+        $("#stats").dataset.memo = `/aide-memoire?ici=${ici}&nom=${encodeURIComponent("Commandes")}#/commander`;
+        return `<a class="sum-l memo-link" href="${esc($("#stats").dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire (étape ${ici.replace(",", " et ")})</a>`; })()}</div>
       <div class="progress" style="margin:8px 0 12px"><i style="width:${tot ? Math.round(done / tot * 100) : 0}%"></i></div>
-      <div class="chips" data-blf>${[["", "Toutes"], ["order", "À commander"], ["cmd", "Commandées"], ["ok", "OK"]].map(([v, t]) => `<button type="button" data-f="${v}" class="${F === v ? "on" : ""}">${t}</button>`).join("")}</div></div>`;
+      <div class="chips" data-blf>${[["", "Toutes"], ["order", "À commander"], ["cmd", "Commandées"], ["ok", "OK"]].map(([v, t]) => `<button type="button" data-f="${v}" class="${F === v ? "on" : ""}">${t}</button>`).join("")}
+        <button type="button" data-blsel class="${state.blSel ? "on" : ""}" title="Cocher des lignes pour agir sur plusieurs à la fois">☑ Sélection</button></div></div>`;
     $$("[data-blf] [data-f]", $("#stats")).forEach(b => b.onclick = () => { state.blF = b.dataset.f; renderPartsView(itemsOf(state.current)); });
+    $("[data-blsel]", $("#stats")).onclick = () => { state.blSel = !state.blSel; state.blPicked = new Set(); renderPartsView(itemsOf(state.current)); };   /* (cases à cocher — 22/11) */
+    { const tb = $("#filter")?.closest(".toolbar"), ch = $("[data-blf]", $("#stats"));   /* (la rangée des filtres : dans la barre collée en haut, toujours visible — 22/11) */
+      if (tb && ch) { tb.querySelector(".blf-bar")?.remove(); ch.classList.add("blf-bar"); tb.append(ch); } }
   }
   const f = $("#filter").value.trim().toLowerCase();
   let shown = items.filter(i => !f || [i.part_num, i.part_name, i.color_name, i.element_id, i.set_number, setLabel(i.set_number), i.notes]
@@ -5383,24 +5442,25 @@ function renderPartsView(items) {
   const box = $("#items");
   if (!items.length) {
     box.innerHTML = `<div class="empty"><div class="big">🔩</div><p><strong>Aucune pièce à commander.</strong></p>
-      <p>Prenez une pièce en photo ou cherchez-la par sa référence.</p>
+      <p>Prendre une pièce en photo ou la chercher par sa référence.</p>
       <button class="btn primary" id="emptyAddPart">+ Ajouter une pièce</button></div>`;
     $("#emptyAddPart").onclick = () => openPart({ list_id: state.current });
     renderSelBar(); return;
   }
   if (!shown.length) { box.innerHTML = `<div class="empty">Aucune pièce ne correspond au filtre.</div>`; return; }
   const color = i => `${swatch(i.color_rgb)} ${esc(i.color_fr || i.color_name || "")}`;
-  const exp = i => (i.bl_qty || 0) > 0;   // exportée vers ma wanted list BrickLink
+  const exp = i => (i.bl_qty || 0) > 0;   // exportée vers la wanted list BrickLink
   {   // même pièce, même couleur : ses lignes côte à côte (l'exportée, puis « à commander de nouveau »), à la place de la première dans le tri
     const key = i => i.kind === "fig" ? "fig:" + i.number : `${i.part_num}|${i.color_id}`, groups = new Map();
     for (const i of shown) { const k = key(i); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); }
     shown = [...groups.values()].flatMap(g => g.length > 1 ? [...g.filter(exp), ...g.filter(i => !exp(i))] : g);
   }
   const again = i => !exp(i) && state.items.some(o => o !== i && o.kind === "part" && o.list_id === i.list_id && exp(o) && o.part_num === i.part_num && String(o.color_id) === String(i.color_id));
-  const cmdOf = i => !i.got && ((i.ordered || []).length || i.cmd_m);   // commandée (d'après mes commandes, ou à la main)
+  const cmdOf = i => !i.got && ((i.ordered || []).length || i.cmd_m);   // commandée (d'après les commandes, ou à la main)
   shown = [...shown.filter(i => !i.got && !cmdOf(i)), ...shown.filter(cmdOf), ...shown.filter(i => i.got)];   // non commandées, commandées, ✔ OK (21/11 nuit)
   { const F = state.blF || ""; if (F) shown = shown.filter(i => F === "ok" ? i.got : F === "cmd" ? cmdOf(i) : !i.got && !cmdOf(i)); }   // (filtres du résumé)
-  box.innerHTML = `<div class="bl-rows">${shown.map(i => `<div class="inv-row blc ${i.got ? "ok" : cmdOf(i) ? "cmd" : ""} ${exp(i) ? "exp" : ""}" data-id="${i.id}">
+  const SEL = !!state.blSel, PK = state.blPicked ||= new Set(), chk = k => SEL ? `<label class="bl-chk" title="Cocher"><input type="checkbox" data-pk="${esc(k)}" ${PK.has(k) ? "checked" : ""}></label>` : "";
+  const rowTpl = i => `<div class="inv-row blc ${i.got ? "ok" : cmdOf(i) ? "cmd" : ""} ${exp(i) ? "exp" : ""} ${SEL && PK.has("i:" + i.id) ? "picked" : ""}" data-id="${i.id}">${chk("i:" + i.id)}
       <button type="button" class="inv-pic" data-zoom="${esc(i.kind === "fig" ? itemImage(i) || "" : i.image || "")}" aria-label="Agrandir"><img src="${img(i.kind === "fig" ? itemImage(i) : i.image)}" alt="" loading="lazy"></button>
       <div class="inv-info"><div class="inv-name fig-link bl-name" data-open title="${esc(i.kind === "fig" ? itemName(i) : i.part_name || i.part_num)}">${esc(i.kind === "fig" ? itemName(i) : i.part_name || i.part_num)}</div>
         <div class="inv-meta">${i.kind === "fig" ? `🟡 Figurine · <b>${esc(i.number)}</b>` : `${color(i)} · <b>${esc(i.part_num)}</b>${i.element_id ? ` · élément ${esc(i.element_id)}` : ""}`}</div>
@@ -5411,20 +5471,117 @@ function renderPartsView(items) {
         ${i.notes ? `<div class="inv-meta">📝 ${esc(i.notes)}</div>` : ""}
         ${(i.inv_links || []).length ? `<div class="inv-meta">📋 Pour l'inventaire ${[...new Set(i.inv_links.map(l => (state.inventories || []).find(v => v.key === l.inv)?.name || ""))].filter(Boolean).map(esc).join(", ")}</div>` : ""}
         ${(() => { const st = exp(i) ? `🧾 Exportée en XML${i.bl_wanted ? ` le ${esc(fmtDate(i.bl_wanted).replace(/ à .*/, ""))}` : ""}${(i.quantity || 1) > i.bl_qty ? ` · <b>+${nf.format((i.quantity || 1) - i.bl_qty)} à exporter</b>` : ""}`
-            : again(i) ? "🔁 À commander de nouveau" : (i.inv_links || []).length ? "🛒 À commander" : "";   // « À commander » : seulement pour une pièce venue d'un inventaire
+            : again(i) ? "🔁 À commander de nouveau" : (i.inv_links || []).length ? "🛒 À commander" : "";   // « Commandes » : seulement pour une pièce venue d'un inventaire
           return st ? `<div class="inv-meta bl-state">${st}</div>` : ""; })()}
       </div>
       <div class="inv-need">×${nf.format(i.quantity || 1)}</div>
       <div class="inv-act">
-        ${cmdOf(i) ? `<span class="inv-cmd" title="À la réception, passez-la en OK (ou remettez-la à commander si c'est une erreur)">${esc(cmdText([...(i.ordered || []).map(o => o.date), i.cmd_m]))}</span>` : ""}
-        <button type="button" class="inv-ok ${i.got ? "on" : ""}" data-ok title="${i.got ? "Reçue · touchez pour annuler" : "Reçue"}">✔ OK</button>
-        ${i.got ? "" : cmdOf(i) ? `<button type="button" class="inv-order" data-uncmd title="Erreur : la remettre à commander">↩ À commander</button>`
+        ${cmdOf(i) ? `<span class="inv-cmd" title="À la réception : la passer en OK (ou la remettre à commander si c'est une erreur)">${esc(cmdText([...(i.ordered || []).map(o => o.date), i.cmd_m]))}</span>` : ""}
+        <button type="button" class="inv-ok ${i.got ? "on" : ""}" data-ok title="${i.got ? "Reçue · toucher pour annuler" : "Reçue"}">✔ OK</button>
+        ${i.got ? "" : cmdOf(i) ? `<button type="button" class="inv-order" data-cmdq title="Remettre cette ligne à commander, ou préparer une nouvelle commande">🛒 À commander</button><button type="button" hidden data-uncmd></button>`   /* (un seul bouton, deux choix — 22/11) */
           : `<button type="button" class="inv-order" data-cmdm title="Commandée (par n'importe quel moyen) : la marquer commandée aujourd'hui">📦 Commandée</button>`}
+        ${i.got || cmdOf(i) ? `<button type="button" class="inv-order" ${i.got ? "" : "hidden"} data-again title="Une nouvelle ligne à commander (même couleur ou une autre)">🔁 Commander à nouveau</button>` : ""}
         ${i.got || cmdOf(i) ? "" : `<span class="stepper inv-q bl-q"><button type="button" data-qd="-1" aria-label="Une de moins" ${(i.quantity || 1) <= 1 ? "disabled" : ""}>−</button><b>${nf.format(i.quantity || 1)}</b><button type="button" data-qd="1" aria-label="Une de plus">+</button></span>`}
         <button type="button" class="inv-mini inv-x bl-del" data-del title="Supprimer de la liste" aria-label="Supprimer">🗑️</button>
       </div>
-    </div>`).join("")}</div>`;
+    </div>`;
+  /* trois sections séparées : à commander · commandées · reçues (22/11) */
+  const GRP = [["🛒 À commander", shown.filter(i => !i.got && !cmdOf(i)), "g-order"], ["📦 Commandées", shown.filter(cmdOf), "g-cmd"], ["✔ Reçues", shown.filter(i => i.got), "g-ok"]]
+    .filter(g => g[1].length).map(([t, l, c]) => `<h3 class="grp-head ${c}">${t} <span class="muted">(${nf.format(l.reduce((a, i) => a + (i.quantity || 1), 0))})</span></h3><div class="bl-rows">${l.map(rowTpl).join("")}</div>`).join("");
+  box.innerHTML = `${GRP}${(() => { const F = state.blF || "", X = state.ordersExtra || [];   /* commandées EN PLUS (non attribuées) : tout en bas, en bleu à part (22/11) */
+      if (!X.length || !["", "cmd"].includes(F)) return "";
+      return `<h3 class="extra-head">➕ Commandées en plus <span class="muted">— attribuées à aucune fiche</span></h3><div class="bl-rows">${X.map(e => `<div class="inv-row blc extra ${SEL && PK.has("e:" + e.key) ? "picked" : ""}">${chk("e:" + e.key)}
+        <button type="button" class="inv-pic" data-zoom="${esc(e.hd || e.image || "")}" aria-label="Agrandir"><img src="${img(e.image)}" alt="" loading="lazy"></button>
+        <div class="inv-info"><div class="inv-name">${esc(e.name)}</div>
+          <div class="inv-meta">${e.fig ? "🟡 Figurine" : `${swatch(e.rgb)} ${esc(e.color_fr || "")}`}${e.ref ? ` · <b>${esc(e.ref)}</b>` : ""}</div>
+          <div class="inv-meta">${esc(cmdText([e.date]))} sur ${esc(e.site)}${e.paid != null ? ` · <b>${money(e.paid)}</b> payés` : ""}</div></div>
+        <div class="inv-need">×${nf.format(e.qty)}</div>
+        <div class="inv-act" data-ekey="${esc(e.key)}">
+          <button type="button" class="inv-ok" data-eok>✔ OK</button>
+          ${e.fig ? "" : `<button type="button" class="inv-order" data-efiche title="La pièce s'ajoute à une fiche de la collection">🧩 Attribuer à une fiche</button>
+          <button type="button" class="inv-order" data-einv title="La ligne de cet inventaire passe « Commandée » (date et prix de cette commande)">📋 Vers un inventaire</button>`}
+        </div></div>`).join("")}</div>`; })()}${SEL ? `<div class="bl-selbar" data-selbar></div>` : ""}`;
   const itOf = el => state.items.find(x => x.id === el.closest("[data-id]")?.dataset.id);
+  if (SEL) {   /* ☑ Sélection : actions sur les lignes cochées (22/11) */
+    const bar = $("[data-selbar]", box), ids = () => [...PK].filter(k => k.startsWith("i:")).map(k => k.slice(2)), exs = () => [...PK].filter(k => k.startsWith("e:")).map(k => k.slice(2));
+    const its = () => ids().map(id => state.items.find(x => x.id === id)).filter(Boolean), xs = () => exs().map(k => (state.ordersExtra || []).find(e => e.key === k)).filter(Boolean);
+    const draw = () => { const a = its().length, e = xs().length;
+      bar.innerHTML = `<span class="sb-n"><b>${a + e}</b> cochée${a + e > 1 ? "s" : ""}</span>
+        <button type="button" class="btn small-btn" data-sa>Tout</button><button type="button" class="btn small-btn" data-sn>Rien</button>
+        ${a + e ? `<button type="button" class="btn small-btn" data-s-ok>✔ OK</button>` : ""}
+        ${a ? `<button type="button" class="btn small-btn" data-s-again>🔁 Commander à nouveau</button><button type="button" class="btn small-btn" data-s-cmd>📦 Commandée</button><button type="button" class="btn small-btn" data-s-back>↩ À commander</button><button type="button" class="btn small-btn danger-ghost" data-s-del>🗑 Supprimer</button>` : ""}
+        ${e ? `<button type="button" class="btn small-btn" data-s-fiche>🧩 Attribuer à une fiche</button><button type="button" class="btn small-btn" data-s-inv>📋 Vers un inventaire</button>` : ""}
+        <button type="button" class="btn small-btn" data-s-x>Fermer</button>`;
+      const run = async (label, fn) => { bar.querySelectorAll("button").forEach(b => { b.disabled = true; }); try { const n = await fn(); toast(`${label} : ${n}`); } catch (err) { toast(err.message); }
+        state.blPicked = new Set(); await load(); loadInventories(); renderPartsView(itemsOf(state.current)); };
+      $("[data-sa]", bar).onclick = () => { $$("[data-pk]", box).forEach(c => { if (c.closest(".inv-row")?.offsetParent) { c.checked = true; PK.add(c.dataset.pk); c.closest(".inv-row").classList.add("picked"); } }); draw(); };
+      $("[data-sn]", bar).onclick = () => { PK.clear(); $$("[data-pk]", box).forEach(c => { c.checked = false; c.closest(".inv-row").classList.remove("picked"); }); draw(); };
+      $("[data-s-x]", bar).onclick = () => { state.blSel = false; state.blPicked = new Set(); renderPartsView(itemsOf(state.current)); };
+      $("[data-s-ok]", bar)?.addEventListener("click", () => run("✔ Reçues", async () => {
+        for (const it of its()) if (!it.got) await api("/api/items/" + it.id, { method: "PUT", body: { got: true } });
+        for (const e of xs()) await api("/api/orders/extra/done", { method: "POST", body: { key: e.key, how: "ok" } });
+        state.ordersExtra = (state.ordersExtra || []).filter(e => !exs().includes(e.key)); return its().length + xs().length; }));
+      $("[data-s-again]", bar)?.addEventListener("click", () => run("🔁 À commander de nouveau", async () => {   /* (même couleur, même quantité : une nouvelle ligne chacune — 22/11) */
+        const l = its(), parts = l.filter(it => it.kind === "part" && it.part_num && it.color_id != null);
+        if (parts.length) await api("/api/items/parts", { method: "POST", body: { list_id: state.current, set_number: "", parts: parts.map(it => ({ part_num: it.part_num, part_name: it.part_name || "",
+          bricklink: it.bricklink || "", color_id: it.color_id, color_name: it.color_name || "", color_rgb: it.color_rgb || "", element_id: it.element_id || "", image: it.image || "", quantity: it.quantity || 1 })) } });
+        for (const f of l.filter(it => it.kind === "fig")) await api("/api/items", { method: "POST", body: { kind: "fig", number: f.number, list_id: f.list_id, quantity: f.quantity || 1, condition: f.condition || "occasion", no_price_ok: true } });
+        return l.length; }));
+      $("[data-s-cmd]", bar)?.addEventListener("click", () => run("📦 Commandées", async () => { const t = Math.floor(Date.now() / 1000); let n = 0;
+        for (const it of its()) if (!it.got && !(it.ordered || []).length && !it.cmd_m) { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: t } }); n++; } return n; }));
+      $("[data-s-back]", bar)?.addEventListener("click", () => run("↩ À commander", async () => { let n = 0;
+        for (const it of its()) if ((it.ordered || []).length || it.cmd_m || it.got) { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: null, ordered: [], got: false, o_off: [...new Set([...(it.o_off || []), ...(it.ordered || []).map(o => o.order).filter(Boolean)])] } }); n++; } return n; }));
+      $("[data-s-del]", bar)?.addEventListener("click", async () => { const l = its(); if (!await confirmBox(`Supprimer ${l.length} ligne${l.length > 1 ? "s" : ""} de « Commandes » ?`, { ok: "Supprimer", danger: true })) return;
+        run("🗑 Supprimées", async () => { for (const it of l) await api("/api/items/" + it.id, { method: "DELETE" }); return l.length; }); });
+      $("[data-s-fiche]", bar)?.addEventListener("click", async () => { const l = xs().filter(e => !e.fig && e.color_id != null); if (!l.length) return toast("Rien à attribuer (figurines ou couleur inconnue)");
+        const t = await pickTargetItem(`Attribuer ${l.length} pièce${l.length > 1 ? "s" : ""} à…`, { setFigs: true }); if (!t) return;
+        run("🧩 Attribuées", async () => { for (const e of l) { await addPartTo(t, { part: e.bl || e.part_num, part_num: e.part_num, color_id: e.color_id, color_fr: e.color_fr, qty: e.qty, name: e.name, image: e.image });
+          await api("/api/orders/extra/done", { method: "POST", body: { key: e.key, how: "fiche" } }); }
+          state.ordersExtra = (state.ordersExtra || []).filter(e => !l.includes(e)); return l.length; }); });
+      $("[data-s-inv]", bar)?.addEventListener("click", async () => { const l = xs().filter(e => !e.fig); if (!l.length) return toast("Rien à ranger (figurines)");
+        if (!state.inventories) await loadInventories();
+        const v = await pickFrom(`${l.length} pièce${l.length > 1 ? "s" : ""} vers quel inventaire ?`, (state.inventories || []).map(x => ({ label: x.name, sub: x.set || "", image: thumb(x.image || ""), value: x })), { search: (state.inventories || []).length > 8 });
+        if (!v) return;
+        run("📋 Rangées", async () => { for (const e of l) { let hit = null;
+            try { hit = (await api(`/api/part-inventories?p=${encodeURIComponent(e.part_num)}&c=${encodeURIComponent(e.color_id ?? "")}`)).find(x => x.key === v.key && x.same_color); } catch {}
+            await api("/api/orders/extra/to-inventory", { method: "POST", body: { key: e.key, inv: v.key, ...(hit ? { row: hit.row } : { add: true }) } }); }
+          localCache.del("/api/inventory/" + v.key); state.ordersExtra = (state.ordersExtra || []).filter(e => !l.includes(e)); return l.length; }); });
+    };
+    $$("[data-pk]", box).forEach(c => c.onchange = () => { c.checked ? PK.add(c.dataset.pk) : PK.delete(c.dataset.pk); c.closest(".inv-row").classList.toggle("picked", c.checked); draw(); });
+    draw();
+  }
+  {   /* « Commandées en plus » : OK / attribuer à une fiche / vers un inventaire (22/11) */
+    const exOf = b => (state.ordersExtra || []).find(e => e.key === b.closest("[data-ekey]")?.dataset.ekey);
+    const exDone = async (e, how) => { await api("/api/orders/extra/done", { method: "POST", body: { key: e.key, how } });
+      state.ordersExtra = (state.ordersExtra || []).filter(x => x.key !== e.key); renderPartsView(itemsOf(state.current)); };
+    $$("[data-eok]", box).forEach(b => b.onclick = async () => { const e = exOf(b); if (!e) return;
+      try {
+        const add = e.fig ? await confirmBox(`« ${e.name} » reçue : l'ajouter à la collection ?`, { ok: "L'ajouter", no: "Non, juste OK" }) : false;
+        await exDone(e, add ? "collection" : "ok");
+        if (add) { openAdd(); $("#searchInput").value = e.name; $("#searchForm").dispatchEvent(new Event("submit", { cancelable: true })); }
+        else toast(`✔ « ${e.name} » reçue`);
+      } catch (err) { toast(err.message); } });
+    $$("[data-efiche]", box).forEach(b => b.onclick = async () => { const e = exOf(b); if (!e) return;
+      if (e.color_id == null) return toast("Couleur inconnue : impossible de l'attribuer");
+      const t = await pickTargetItem(`Attribuer « ${e.name} » à…`, { setFigs: true }); if (!t) return;
+      try { await addPartTo(t, { part: e.bl || e.part_num, part_num: e.part_num, color_id: e.color_id, color_fr: e.color_fr, qty: e.qty, name: e.name, image: e.image });
+        await exDone(e, "fiche"); await load();
+        toast(`🧩 « ${e.name} » attribuée à « ${t._setFig ? `${t.name} (dans ${itemName(t.host)})` : itemName(t)} »`); } catch (err) { toast(err.message); } });
+    $$("[data-einv]", box).forEach(b => b.onclick = async () => { const e = exOf(b); if (!e) return;
+      let inv; try { inv = await api(`/api/part-inventories?p=${encodeURIComponent(e.part_num)}&c=${encodeURIComponent(e.color_id ?? "")}`); } catch (err) { return toast(err.message); }
+      if (!state.inventories) await loadInventories();
+      const has = new Set(inv.filter(v => v.same_color).map(v => v.key));   /* (tous les inventaires : ceux qui l'ont d'abord ; les autres la reçoivent en plus — 22/11) */
+      const pic = k => thumb((state.inventories || []).find(v => v.key === k)?.image || "");   /* (photo de l'inventaire — 22/11) */
+      const opts = [...inv.filter(v => v.same_color).map(v => ({ label: v.name, sub: `${v.set} · contient cette pièce`, image: pic(v.key), value: v })),
+        ...(state.inventories || []).filter(v => !has.has(v.key)).map(v => ({ label: v.name, sub: `${v.set || ""} · la pièce y sera ajoutée`, image: pic(v.key), value: { key: v.key, name: v.name, add: true } }))];
+      if (!opts.length) return toast("Aucun inventaire");
+      const x = await pickFrom(`« ${e.name} » vers quel inventaire ?`, opts, { search: opts.length > 8 });
+      if (!x) return;
+      try { await api("/api/orders/extra/to-inventory", { method: "POST", body: { key: e.key, inv: x.key, ...(x.add ? { add: true } : { row: x.row }) } });
+        localCache.del("/api/inventory/" + x.key); loadInventories();
+        state.ordersExtra = (state.ordersExtra || []).filter(y => y.key !== e.key); renderPartsView(itemsOf(state.current));
+        toast(`📋 « ${e.name} » : « Commandée » dans l'inventaire « ${x.name} »`); } catch (err) { toast(err.message); } });
+  }
   $$("[data-open]", box).forEach(b => b.onclick = () => { const it = itOf(b); if (it) openEdit(it.id); });
   $$("[data-forset]", box).forEach(b => b.onclick = () => {   // « Pour … » : la fiche du set (le mien, sinon celle du catalogue)
     const n = b.dataset.forset, mine = state.items.find(x => x.number === n && (x.kind || "set") === "set" && !isWish(x.list_id)) || state.items.find(x => x.number === n);
@@ -5439,11 +5596,29 @@ function renderPartsView(items) {
     catch (err) { it.got = !on; renderPartsView(itemsOf(state.current)); renderCleanBtn(); return toast("Non enregistré : " + err.message); }
     if (on) receivedAsk(it);   /* reçue : figurine → sa fiche ; pièce → le set (ou la figurine) où elle manquait (21/11 nuit) */
   });
+  $$("[data-again]", box).forEach(b => b.onclick = () => {   /* 🔁 Commander à nouveau : une nouvelle ligne, dans la couleur choisie (22/11) */
+    const it = itOf(b); if (!it) return;
+    if (it.kind === "fig") { state.addToList = it.list_id; openAdd(); pickFig(it.number, { name: itemName(it), image: itemImage(it) || "", again: true }); return; }
+    openPart({ part: { part_num: it.part_num, bricklink: it.bricklink || it.part_num, name: it.part_name || it.part_num, image: it.image || "" },
+      pickTitle: `Commander à nouveau « ${it.part_name || it.part_num} » : quelle(s) couleur(s) ?`, multiOk: true, similarTo: { ...it, part: it.bricklink || it.part_num, name: it.part_name }, pick: async n => {
+        try {
+          await api("/api/items/parts", { method: "POST", body: { list_id: it.list_id, set_number: "", parts: [{ part_num: n.part_num || n.part || it.part_num, part_name: n.name || it.part_name || "",
+            bricklink: n.part || it.bricklink || "", color_id: n.color_id, color_name: n.color_name || n.color || "", color_rgb: n.rgb || "", element_id: n.element_id || "", image: n.image || "", quantity: n.qty || 1 }] } });
+          await load(); toast(`🔁 « ${n.name || it.part_name || it.part_num} »${n.color_fr ? ` (${n.color_fr})` : ""} : à commander de nouveau`);
+        } catch (err) { toast(err.message); } } });
+  });
   $$("[data-cmdm]", box).forEach(b => b.onclick = async () => {   // 📦 Commandée à la main (commande passée par un autre moyen)
     const it = itOf(b); if (!it) return;
     try { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: Math.floor(Date.now() / 1000) } }); await load();
       toast(`📦 « ${it.part_name || itemName(it)} » marquée commandée`, { label: "Annuler", run: async () => { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: null } }).catch(e => toast(e.message)); load(); } }); }   /* (appui par erreur : Annuler — 22/11) */
     catch (err) { toast(err.message); }
+  });
+  $$("[data-cmdq]", box).forEach(b => b.onclick = async () => {   /* 🛒 À commander (ligne commandée) : changer son statut, ou une nouvelle commande — 22/11 */
+    const it = itOf(b); if (!it) return;
+    const v = await pickFrom(`« ${it.part_name || itemName(it)} »`, [
+      { label: "↩ Changer le statut de cette ligne", sub: "plus commandée : de nouveau à commander", value: "uncmd" },
+      { label: "🔁 Préparer une nouvelle commande", sub: "une nouvelle ligne à commander, même couleur ou une autre (plusieurs possibles)", value: "again" }], { search: false });
+    if (v) b.closest(".inv-act").querySelector(`[data-${v}]`)?.click();
   });
   $$("[data-uncmd]", box).forEach(b => b.onclick = async () => {   // ↩ À commander : erreur — la commande lue ne la reprend plus
     const it = itOf(b); if (!it) return;
@@ -5470,20 +5645,20 @@ function renderPartsView(items) {
       const old = it.bl_cond; it.bl_cond = s.value; renderPartsView(itemsOf(state.current)); renderNav();
       try {
         await api("/api/items/" + it.id, { method: "PUT", body: { bl_cond: s.value } });
-        if (exp(it)) toast(`Déjà exportée : changez aussi l'état dans votre liste ${{ brickowl: "BrickOwl", both: "BrickLink / BrickOwl" }[refSite()] || "BrickLink"}`);
+        if (exp(it)) toast(`Déjà exportée : l'état est aussi à changer dans la liste ${{ brickowl: "BrickOwl", both: "BrickLink / BrickOwl" }[refSite()] || "BrickLink"}`);
         load();
       } catch (err) { it.bl_cond = old; renderPartsView(itemsOf(state.current)); toast("Non enregistré : " + err.message); }
     };
   });
   $$("[data-del]", box).forEach(b => b.onclick = async () => {   // retirée de la liste sans la recevoir
     const it = itOf(b); if (!it) return;
-    if (!await confirmBox(`Supprimer « ${it.part_name || it.part_num} » de la liste ?${exp(it) ? " Elle est déjà dans votre wanted list BrickLink : pensez à l'y retirer aussi." : ""}${(it.inv_links || []).length ? " Dans l'inventaire, elle repassera « à commander »." : ""}`, { ok: "Supprimer", danger: true })) return;
+    if (!await confirmBox(`Supprimer « ${it.part_name || it.part_num} » de la liste ?${exp(it) ? " Elle est déjà dans la wanted list BrickLink : à y retirer aussi." : ""}${(it.inv_links || []).length ? " Dans l'inventaire, elle repassera « à commander »." : ""}`, { ok: "Supprimer", danger: true })) return;
     try { await api("/api/items/" + it.id, { method: "DELETE" }); await load(); loadInventories(); toast("Pièce retirée de la liste"); } catch (err) { toast(err.message); }
   });
 }
 
 /* fenêtre d'ajout / modification d'une pièce */
-function openPart({ item = null, list_id = null, pick = null, pickTitle = "", part: prePart = null, similarTo = null, refImage = "", fixOpt = false } = {}) {   // fixOpt : case « Corriger l'originale » (remplacement d'une pièce de figurine)   // refImage : photo de la fiche (cadrer la pièce dessus)
+function openPart({ item = null, list_id = null, pick = null, pickTitle = "", part: prePart = null, similarTo = null, refImage = "", fixOpt = false, multiOk = false } = {}) {   /* multiOk : plusieurs couleurs même avec similarTo (Commander à nouveau — 22/11) */   // fixOpt : case « Corriger l'originale » (remplacement d'une pièce de figurine)   // refImage : photo de la fiche (cadrer la pièce dessus)
   /* recherche lancée depuis une fiche ouverte : « À partir de la photo actuelle » propose sa photo (celle en cours de modification) */
   if (!refImage && pick && !modal.hidden && state.draft) refImage = state.draft.photoUrl || (state.draft.item?.id ? curPhoto(state.draft.item.id) : "") || "";
   if (item && !DEMO) api("/api/consult", { method: "POST", body: { id: item.id } }).then(r => r?.changed && load()).catch(() => {});   // pièce consultée : son prix BrickLink relu s'il a plus de 24 h
@@ -5513,7 +5688,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
         <button type="button" class="on" data-dest="order">🛒 À commander</button>
         <button type="button" data-dest="item">➕ Dans un set / une figurine</button></div>
       <fieldset data-destbox hidden><legend>Ajouter dans</legend>
-        <input type="search" data-tq autocomplete="off" placeholder="Rechercher dans ma collection : numéro, nom…" style="width:100%">
+        <input type="search" data-tq autocomplete="off" placeholder="Rechercher dans la collection : numéro, nom…" style="width:100%">
         <div class="setlist dest-list" data-tlist></div>
         <div data-tchosen hidden></div>
         <div class="radio-row" data-figmode hidden>
@@ -5522,11 +5697,11 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
       </fieldset>`}
       <fieldset data-ordonly ${pick ? "hidden" : ""}><legend>Pour quel set ? <span class="muted">(facultatif)</span></legend>
         <div class="set-pick">
-          <input data-set autocomplete="off" placeholder="Un de mes sets (numéro, nom, thème…) ou une note">
+          <input data-set autocomplete="off" placeholder="Un des sets (numéro, nom, thème…) ou une note">
           <div class="set-drop" data-setdrop hidden></div>
         </div>
         <div class="note-show" data-noteshow hidden></div><!-- la note saisie, tout de suite visible (clavier du téléphone ouvert) -->
-        <p class="hint" data-setinfo>Indiquez un set pour voir en premier les couleurs de cette pièce présentes dans ce set, avec la quantité.</p>
+        <p class="hint" data-setinfo>Indiquer un set pour voir en premier les couleurs de cette pièce présentes dans ce set, avec la quantité.</p>
       </fieldset>
       <fieldset><legend>Couleur <span class="muted" data-colcount></span></legend>
         <input type="search" data-cfilter placeholder="Filtrer les couleurs…" style="width:100%;margin-bottom:8px">
@@ -5579,7 +5754,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     $d("[data-results]").innerHTML = loading(!pick && !item ? "Reconnaissance des pièces et des figurines…" : "Reconnaissance de la pièce…");
     try {
       lastPhoto = await shrink(file);
-      const forOrder = !pick && !item;   // ajout à « À commander » : les figurines aussi (reconnaissance habituelle, en parallèle)
+      const forOrder = !pick && !item;   // ajout à « Commandes » : les figurines aussi (reconnaissance habituelle, en parallèle)
       const figP = forOrder ? fetch("/api/photo", { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: lastPhoto })
         .then(r => r.ok ? r.json() : []).then(l => (Array.isArray(l) ? l : []).filter(x => x.type === "fig" && x.number).slice(0, 4)).catch(() => []) : Promise.resolve([]);
       const r = await fetch("/api/parts/photo", { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: lastPhoto });
@@ -5593,7 +5768,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
           <img src="${img(f.image)}" alt="" loading="lazy"><div><div class="t">${esc(f.number)} · ${esc(f.name || "")}</div><div class="s">Figurine · à commander</div></div></button>`).join("")}<div class="fe-title">🔶 Pièces</div></div>`);
         $$d("[data-pfig]").forEach(b => b.onclick = () => {
           const f = figs.find(x => x.number === b.dataset.pfig), lid = $d("[data-list]")?.value || list_id;
-          close(); state.addToList = lid; openAdd(); pickFig(f.number, { name: f.name, image: f.image });   // sa fiche, liste « À commander » choisie
+          close(); state.addToList = lid; openAdd(); pickFig(f.number, { name: f.name, image: f.image });   // sa fiche, liste « Commandes » choisie
         });
       }
     } catch (err) { $d("[data-results]").innerHTML = `<div class="loading">Reconnaissance impossible : ${esc(err.message)}</div>`; }
@@ -5607,11 +5782,11 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
       const show = () => { results(all, false); if (more) moreButton($d("[data-results]"), async () => {
         const n = await api(`/api/parts/search?q=${encodeURIComponent(q)}&page=${++page}`); more = n.more;
         const seen = new Set(all.map(x => x.part_num)); all = [...all, ...n.results.filter(x => !seen.has(x.part_num))]; show(); });
-        if (!pick) {   // mes pièces (listes « à commander ») d'abord
+        if (!pick) {   // les pièces (listes « à commander ») d'abord
           const nq = normQ(q).replace(/-/g, " ").trim().split(" ").filter(Boolean);
           const mine = state.items.filter(i => i.kind === "part" && i.id !== item?.id && nq.every(w => normQ(`${i.part_num} ${i.bricklink || ""} ${i.part_name || ""} ${i.color_name || ""}`).includes(w))).slice(0, 8);
           if (mine.length) {
-            $d("[data-results]").insertAdjacentHTML("afterbegin", `<div class="mine-hits"><div class="fe-title">📚 Dans mes listes de pièces (${mine.length})</div>${mine.map(i => `<button class="res mine" data-mpart="${i.id}"><img src="${img(i.image)}" alt="" loading="lazy">
+            $d("[data-results]").insertAdjacentHTML("afterbegin", `<div class="mine-hits"><div class="fe-title">📚 Dans les listes de pièces (${mine.length})</div>${mine.map(i => `<button class="res mine" data-mpart="${i.id}"><img src="${img(i.image)}" alt="" loading="lazy">
               <div><div class="t">${esc(i.part_num)} · ${esc(i.part_name || "")}</div><div class="s">${esc(i.color_fr || i.color_name || "")} · ×${i.quantity || 1} · ${esc(state.lists.find(l => l.id === i.list_id)?.name || "")}</div></div></button>`).join("")}<div class="fe-title" style="margin-top:12px">Catalogue</div></div>`);
             $$d("[data-mpart]").forEach(b => b.onclick = () => { close(); openPart({ item: state.items.find(i => i.id === b.dataset.mpart) }); });
           }
@@ -5621,7 +5796,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
   };
   function results(list, fromPhoto) {
     const box = $d("[data-results]");
-    if (!list.length) { box.innerHTML = `<div class="loading">Aucune pièce trouvée. ${fromPhoto ? "Essayez une autre photo (une seule pièce, fond uni, bien éclairée)." : "Essayez la référence gravée sur la pièce."}</div>`; return; }
+    if (!list.length) { box.innerHTML = `<div class="loading">Aucune pièce trouvée. ${fromPhoto ? "Essayer une autre photo (une seule pièce, fond uni, bien éclairée)." : "Essayer la référence gravée sur la pièce."}</div>`; return; }
     box.innerHTML = list.map((p, k) => `<button class="res" data-k="${k}">
       <img src="${img(p.image || p.photo_image)}" alt="" loading="lazy">
       <div><div class="t">${esc(p.part_num)} · ${esc(p.name)}</div>
@@ -5643,8 +5818,8 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
       box.innerHTML = groups.map(g => `<div class="eq-title">${esc(g.t)}${g.t === "Même pièce, autre couleur" ? "" : ` <span class="muted">(${g.ps.length})</span>`}</div>`
         + g.ps.slice(0, w.length ? 80 : 30).map(p => `<button class="res" data-eqk="${esc(p.part_num)}"><img src="${img(p.image)}" alt="" loading="lazy">
           <div><div class="t">${esc(p.part_num)} · ${esc(p.name)}</div><div class="s">${p.bricklink && p.bricklink !== p.part_num ? "BrickLink : " + esc(p.bricklink) : "&nbsp;"}</div></div></button>`).join("")
-        + (g.ps.length > (w.length ? 80 : 30) ? `<p class="hint">… ${g.ps.length - (w.length ? 80 : 30)} autres : utilisez la recherche au-dessus.</p>` : "")).join("")
-        || `<div class="loading">${w.length ? "Aucune pièce ne correspond au filtre." : "Aucune pièce équivalente connue : cherchez par photo ou par nom."}</div>`;
+        + (g.ps.length > (w.length ? 80 : 30) ? `<p class="hint">… ${g.ps.length - (w.length ? 80 : 30)} autres : utiliser la recherche au-dessus.</p>` : "")).join("")
+        || `<div class="loading">${w.length ? "Aucune pièce ne correspond au filtre." : "Aucune pièce équivalente connue : chercher par photo ou par nom."}</div>`;
       $$("[data-eqk]", box).forEach(b => b.onclick = () => {
         const p = r.parts.find(x => x.part_num === b.dataset.eqk);
         configure(p, p.part_num === similarTo.part_num ? {} : { color_id: similarTo.color_id });   // autre impression : même couleur si elle existe
@@ -5656,7 +5831,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
   // ----- étape 2 : couleur, set, quantité
   let part = null, colors = [], chosen = null, colorsLoading = false;
   const multi = new Map();   // plusieurs couleurs choisies (quantité > 1) : n° de couleur → quantité
-  const canMulti = !item && !similarTo;   // pas pour modifier une pièce à commander ni pour remplacer une pièce
+  const canMulti = !item && (!similarTo || multiOk);   // pas pour modifier une pièce à commander ni pour remplacer une pièce (sauf « Commander à nouveau »)
   const qtyNow = () => Math.max(1, parseInt($d("[data-qty]").value) || 1);
   /* lots à créer : une couleur (quantité du champ) ou plusieurs (chacune sa quantité) */
   const lotsNow = () => multi.size > 1 ? [...multi].map(([id, q]) => ({ c: colors.find(x => x.color_id === id), q })).filter(x => x.c)
@@ -5706,7 +5881,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     try {
       const r = await api(`/api/part/${encodeURIComponent(part.part_num)}/colors${set ? "?set=" + encodeURIComponent(set) : ""}`);
       colors = r.colors;
-      $d("[data-setinfo]").innerHTML = !set ? "Indiquez un set pour voir en premier les couleurs de cette pièce présentes dans ce set, avec la quantité."
+      $d("[data-setinfo]").innerHTML = !set ? "Indiquer un set pour voir en premier les couleurs de cette pièce présentes dans ce set, avec la quantité."
         : r.set_found ? `✔ Cette pièce est dans le set <b>${esc(setLabel(set))}</b> : les couleurs du set sont en tête, avec leur quantité.`
         : `Cette pièce n'apparaît pas dans l'inventaire du set ${esc(set)} (ou set introuvable). Le rattachement reste possible.`;
       const inSet = colors.filter(c => c.in_set);
@@ -5725,12 +5900,12 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
       chosen = { color_id: similarTo?.color_id ?? 9999, color_fr: similarTo?.color_fr || "couleur non précisée", color_name: similarTo?.color_name || "",
         rgb: similarTo?.rgb || "", image: part.image || "", noColor: true, unavailable: true };
       $d("[data-colors]").innerHTML = `<div class="loading">Couleurs indisponibles pour le moment : la pièce sera ajoutée sans couleur,
-        et une tâche « couleur à valider » vous le rappellera (vérifié une fois par jour).</div>`;
+        et une tâche « couleur à valider » le rappellera (vérifié une fois par jour).</div>`;
     }
   }
   function drawColors() {
     const q = $d("[data-cfilter]").value.trim().toLowerCase();
-    $d("[data-colcount]").textContent = `(${colors.length} existante${colors.length > 1 ? "s" : ""})` + (canMulti && colors.length > 1 ? " · touchez-en plusieurs pour les ajouter ensemble" : "");
+    $d("[data-colcount]").textContent = `(${colors.length} existante${colors.length > 1 ? "s" : ""})` + (canMulti && colors.length > 1 ? " · en toucher plusieurs pour les ajouter ensemble" : "");
     const shown = colors.filter(c => !q || (c.color_fr + " " + c.color_name).toLowerCase().includes(q));
     $d("[data-colors]").innerHTML = shown.map(c => `<button type="button" class="color-opt ${(multi.size > 1 ? multi.has(c.color_id) : chosen === c) ? "on" : ""} ${c.in_set ? "in-set" : ""}" data-c="${colors.indexOf(c)}"
         title="${esc(c.color_name)}${c.elements?.length ? " · élément(s) " + esc(c.elements.join(", ")) : ""}">
@@ -5756,13 +5931,13 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     const sel = $d("[data-element]");
     const els = chosen ? [...new Set([chosen.set_element, ...(chosen.elements || [])].filter(Boolean))] : [];
     sel.innerHTML = els.length ? els.map(e => `<option value="${esc(e)}">${esc(e)}${e === chosen.set_element ? " (celui du set)" : ""}</option>`).join("")
-      : `<option value="">${chosen ? "Aucun n° d'élément connu" : "Choisissez d'abord une couleur"}</option>`;
+      : `<option value="">${chosen ? "Aucun n° d'élément connu" : "Choisir d'abord une couleur"}</option>`;
     if (keep && els.includes(keep)) sel.value = keep;
     updateRef();
   }
   function updateRef() {
     if (multi.size > 1) { $d("[data-ref]").textContent = `${part.part_num} · ` + lotsNow().map(x => `${x.c.color_fr} ×${x.q}`).join(" + "); return; }
-    $d("[data-ref]").textContent = !chosen ? "Choisissez une couleur"
+    $d("[data-ref]").textContent = !chosen ? "Choisir une couleur"
       : `${part.part_num} · ${chosen.color_fr}${$d("[data-element]").value ? " · élément " + $d("[data-element]").value : ""} · ×${Math.max(1, parseInt($d("[data-qty]").value) || 1)}`;
   }
   $d("[data-cfilter]").oninput = drawColors;
@@ -5770,7 +5945,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
   $d("[data-qty]").oninput = updateRef;
   stepperize($d("[data-qty]"));
   let setTimer;
-  // ----- « Pour quel set ? » : mes sets qui ont la pièce (dès l'appui), sinon recherche dans mes sets
+  // ----- « Pour quel set ? » : les sets qui ont la pièce (dès l'appui), sinon recherche dans les sets
   const setIn = $d("[data-set]"), drop = $d("[data-setdrop]");
   const noteShow = flash => { const v = $d("[data-notes]").value.trim(), b = $d("[data-noteshow]"); b.hidden = !v;   // (la note, sous « Pour quel set ? »)
     b.innerHTML = v ? `📝 Note : <b>${esc(v)}</b>` : ""; if (flash && v) { b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); } };
@@ -5788,7 +5963,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     try { const r = await api(`/api/part/${encodeURIComponent(pn)}/owned-sets`); if (part?.part_num !== pn) return; owned = r; ownedFor = pn; }
     catch (e) { owned = { sets: [], pending: 0, error: e.message }; ownedFor = pn; }
     if (!drop.hidden) drawDrop();
-    if (owned.pending && !drop.hidden) ownedPoll = setTimeout(fetchOwned, 4000);   // inventaires de mes sets en cours de récupération
+    if (owned.pending && !drop.hidden) ownedPoll = setTimeout(fetchOwned, 4000);   // inventaires des sets en cours de récupération
   };
   const drawDrop = () => {
     const q = setIn.value.trim().toLowerCase();
@@ -5800,15 +5975,15 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     let html;
     if (!q) {
       const list = sets.filter(i => has.has(i.number));
-      html = `<div class="sp-title">Mes sets qui ont cette pièce</div>` + (ownedFor !== part?.part_num ? `<div class="sp-note"><span class="spinner"></span>Recherche…</div>`
+      html = `<div class="sp-title">Sets qui ont cette pièce</div>` + (ownedFor !== part?.part_num ? `<div class="sp-note"><span class="spinner"></span>Recherche…</div>`
         : owned?.error ? `<div class="sp-note">${esc(owned.error)}</div>`
-        : (list.map(i => row(i, has.get(i.number))).join("") || `<div class="sp-note">${owned?.pending ? "Aucun pour l'instant." : "Aucun de mes sets ne contient cette pièce."}</div>`)
-          + (owned?.pending ? `<div class="sp-note"><span class="spinner"></span>Analyse de mes sets : ${owned.total - owned.pending}/${owned.total} (première fois seulement)…</div>` : ""));
+        : (list.map(i => row(i, has.get(i.number))).join("") || `<div class="sp-note">${owned?.pending ? "Aucun pour l'instant." : "Aucun set ne contient cette pièce."}</div>`)
+          + (owned?.pending ? `<div class="sp-note"><span class="spinner"></span>Analyse des sets : ${owned.total - owned.pending}/${owned.total} (première fois seulement)…</div>` : ""));
     } else {
       const words = q.split(/\s+/);
       const list = sets.filter(i => { const t = `${i.number} ${itemName(i)} ${i.info?.name || ""} ${i.info?.theme || ""} ${i.info?.year || ""}`.toLowerCase(); return words.every(w => t.includes(w)); })
         .sort((a, b) => (has.has(b.number) - has.has(a.number)));
-      html = list.slice(0, 40).map(i => row(i, has.get(i.number))).join("") || `<div class="sp-note">Aucun de mes sets ne correspond. Vous pouvez aussi taper un numéro de set quelconque.</div>`;
+      html = list.slice(0, 40).map(i => row(i, has.get(i.number))).join("") || `<div class="sp-note">Aucun set ne correspond. Un numéro de set quelconque fonctionne aussi.</div>`;
     }
     if (q) html = `<button type="button" class="sp-row sp-asnote" data-asnote><span><b>📝 En faire une note</b><small>« ${esc(setIn.value.trim())} »</small></span></button>` + html;   // (pas un set : une note — ex. « pour Paul »)
     drop.innerHTML = html;
@@ -5830,9 +6005,9 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
   $d("[data-set]").addEventListener("change", () => loadColors(chosen?.color_id));
   $d("[data-set]").addEventListener("input", () => { clearTimeout(setTimer); setTimer = setTimeout(() => { if (/^\d{3,7}(-\d+)?$/.test($d("[data-set]").value.trim()) || !$d("[data-set]").value.trim()) loadColors(chosen?.color_id); }, 700); });
 
-  // ----- destination : liste « à commander » (par défaut) ou un set / une minifig de ma collection
+  // ----- destination : liste « à commander » (par défaut) ou un set / une minifig de la collection
   let dest = "order", target = null;
-  // destinations : mes fiches (sets, figurines, MOC) et les figurines rangées dans mes sets
+  // destinations : mes fiches (sets, figurines, MOC) et les figurines rangées dans les sets
   const targets = () => [...state.items.filter(i => kindOf(i.list_id) === "collection" && ((i.kind || "set") === "set" || i.kind === "fig" || i.kind === "custom")),
     ...state.items.filter(i => kindOf(i.list_id) === "collection" && (i.kind || "set") === "set" && i.with_minifigs !== false && (i.info?.minifigs || []).length)
       .flatMap(h => { const have = figHave(h, h.info.minifigs, h.quantity || 1);
@@ -5884,16 +6059,16 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
     if (!chosen && colorsLoading && part)   // couleurs pas encore arrivées : celle de la pièce remplacée (sinon « sans couleur », tâche à valider)
       chosen = similarTo?.color_id != null ? { color_id: similarTo.color_id, color_fr: similarTo.color_fr || "", color_name: similarTo.color_name || "", rgb: similarTo.rgb || "", image: part.image || "" }
         : { color_id: 9999, color_fr: "couleur non précisée", color_name: "", rgb: "", image: part.image || "", noColor: true };
-    if (!chosen) { toast("Choisissez la couleur de la pièce"); return; }
+    if (!chosen) { toast("Choisir la couleur de la pièce"); return; }
     const mk = x => ({ part: part.bricklink || part.part_num, part_num: part.part_num, name: part.name || "", color_id: x.c.color_id,
       color_fr: x.c.color_fr, qty: x.q, image: x.c.image || part.image || "" });
     const ns = lotsNow().map(mk);   // une entrée par couleur choisie
     if (dest === "item") {   // dans un set ou une minifig : sa fiche s'ouvre, la pièce y est ajoutée (à enregistrer)
-      if (!target) { toast("Choisissez le set ou la figurine"); return; }
+      if (!target) { toast("Choisir le set ou la figurine"); return; }
       const n = ns[0];
       const t = target, acc = isFigT(t) && !t._setFig && $d("input[name=figmode]:checked")?.value === "acc";
       close();
-      if (t._setFig) {   // figurine rangée dans un de mes sets : sa fiche, puis ses pièces avec celle-ci en plus
+      if (t._setFig) {   // figurine rangée dans un des sets : sa fiche, puis ses pièces avec celle-ci en plus
         openSetFig(t.fid, t.host.id);
         setTimeout(() => openFigParts(t.host.id, t.fid, { add: ns }), 600);
         return;
@@ -5911,7 +6086,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
         const lots = state.draft.mocLots ||= [];
         for (const x of ns) { const same = lots.find(y => y.part === x.part && y.color_id === x.color_id); if (same) same.qty += x.qty; else lots.push(x); }
         state.draft.mocLotsDirty = true; updateEstimate(); $("#mocFigRow")?.scrollIntoView({ block: "center" });
-        toast(`${n.name || n.part} ajoutée : pensez à enregistrer la fiche`);
+        toast(`${n.name || n.part} ajoutée : penser à enregistrer la fiche`);
         return;
       }
       if (!acc) { openFigParts(t.id, t.kind === "fig" ? "" : "#set", { add: ns }); return; }
@@ -5920,7 +6095,7 @@ function openPart({ item = null, list_id = null, pick = null, pickTitle = "", pa
         const photo = blob?.size ? (await api("/api/upload", { method: "POST", body: blob })).url : "";
         (state.draft.accessories ||= []).push({ name: n.name || n.part, photo });
         drawAccessories(); $("#accBox")?.scrollIntoView({ block: "center" });
-        toast("Accessoire ajouté : pensez à enregistrer la fiche");
+        toast("Accessoire ajouté : penser à enregistrer la fiche");
       } catch (err) { toast(err.message); }
       return;
     }
@@ -6002,13 +6177,13 @@ async function openShare(t) {
   const draw = (tok, prices = true) => {
     const seen = t.fig ? "photo (zoom), prix et pièces" : "photos (zoom), figurines et leurs pièces";
     B.innerHTML = tok ? `<p class="hint" style="margin-top:0">Ce lien montre ${what}, en lecture : ${seen}. Pas de mot de passe pour la personne qui le reçoit ; ni notes ni tâches.
-      Décochez la case pour masquer la valeur, le prix d'achat et les cotes : c'est immédiat, et le lien reste le même.</p>
+      Décocher la case pour masquer la valeur, le prix d'achat et les cotes : c'est immédiat, et le lien reste le même.</p>
       <label class="moc-chk" style="margin:0 0 10px"><input type="checkbox" data-prices ${prices ? "checked" : ""}> 💶 Afficher les prix sur ce lien</label>
       <div class="share-link"><input readonly value="${esc(shareUrl(tok))}" data-url aria-label="Lien de partage"><button type="button" class="btn primary" data-copy>Copier</button></div>
       <div class="share-foot"><a class="btn" href="${esc(shareUrl(tok))}" target="_blank" rel="noopener">Ouvrir ↗</a>
         <button type="button" class="btn danger-ghost" data-stop style="margin-left:auto">Arrêter le partage</button></div>`
       : `<p class="hint" style="margin-top:0">Crée un lien vers ${what}, en lecture : ${seen}. Pas de mot de passe pour la personne qui le reçoit ; prix d'achat compris, mais ni notes ni tâches.
-        Vous pourrez arrêter le partage à tout moment (ici ou dans « 🔗 Fiches partagées » du menu) : le lien est alors supprimé.</p>
+        Le partage s'arrête à tout moment (ici ou dans « 🔗 Fiches partagées » du menu) : le lien est alors supprimé.</p>
       <div class="est-actions" style="justify-content:flex-end"><button type="button" class="btn primary" data-make>🔗 Créer le lien</button></div>`;
     $("[data-make]", B)?.addEventListener("click", async e => { const b = e.currentTarget; b.disabled = true;
       try { draw((await api("/api/shares", { method: "POST", body: { item_id: t.item_id, fig: t.fig || "" } })).token); loadShares(); } catch (err) { toast(err.message); b.disabled = false; } });
@@ -6041,7 +6216,7 @@ $("#btnSettings").onclick = async () => {
       <div class="doc-links" style="margin-top:10px"><a class="btn small-btn" href="/guide-utilisateur" target="_blank" rel="noopener" data-doc="guide">📘 Guide utilisateur</a> <a class="btn small-btn" href="/aide-memoire" target="_blank" rel="noopener">📌 Aide-mémoire</a></div></fieldset>
     <fieldset data-sec="rb"><legend>🔑 Clé API Rebrickable</legend>
       <p class="ask" data-state>${st.rebrickable ? `✅ Une clé est enregistrée (se termine par <b>${esc(st.rebrickable_hint)}</b>).` : "Aucune clé enregistrée."}</p>
-      <input type="password" name="key" autocomplete="off" spellcheck="false" style="width:100%" placeholder="${st.rebrickable ? "Saisir une nouvelle clé pour la remplacer" : "Collez votre clé API ici"}">
+      <input type="password" name="key" autocomplete="off" spellcheck="false" style="width:100%" placeholder="${st.rebrickable ? "Saisir une nouvelle clé pour la remplacer" : "Coller la clé API ici"}">
       <p class="hint">Sur rebrickable.com : <em>Profil → Paramètres → API</em>, puis « Générer une nouvelle clé ». La clé reste sur le serveur Briquothèque et n'est jamais réaffichée.</p>
       <p class="hint" data-msg></p>
     </fieldset>
@@ -6071,7 +6246,7 @@ $("#btnSettings").onclick = async () => {
   rf.innerHTML = `<legend>💶 Prix</legend>
     <p class="set-sub" style="margin-top:0">Prix BrickLink <span class="muted small">(ventes des 6 derniers mois, neuf et occasion)</span></p>
     <p class="hint" style="margin:0 0 6px">${st.bricklink ? `Automatiquement, les prix les plus anciens d'abord (sets, figurines, pièces), dans la limite d'appels par jour ;
-      en dehors, seulement ce que vous consultez (la fiche que vous ouvrez) ou le bouton ci-dessous. Les listes n'actualisent jamais un prix connu.<br>
+      en dehors, seulement ce qui est consulté (la fiche ouverte) ou le bouton ci-dessous. Les listes n'actualisent jamais un prix connu.<br>
       ${bn0.day ? `Dernière passe : <b>${esc(fmtDate(bn0.t || 0))}</b> · ${nf.format(bn0.calls || 0)} appels${!bn0.done ? " · en cours" : bn0.left != null ? ` · ${nf.format(bn0.left)} prix encore à rafraîchir` : ""}` : "Première passe : cette nuit."}
       · aujourd'hui : ${nf.format(st.bricklink_today || 0)} / ${nf.format(bn0.max ?? 4800)} appels.` : "BrickLink n'est pas branché (section 🧱 BrickLink) : les prix viennent de BrickOwl."}</p>
     <div class="price-cfg">
@@ -6081,7 +6256,7 @@ $("#btnSettings").onclick = async () => {
     </div>
     <div class="blz-edit">
       <p class="set-sub">Zones des prix BrickLink, dans l'ordre</p>
-      <p class="hint" style="margin:0 0 8px">Chaque prix est cherché dans la zone 1, sinon la 2, et ainsi de suite. La zone 1, si c'est un pays, est « chez vous » :
+      <p class="hint" style="margin:0 0 8px">Chaque prix est cherché dans la zone 1, sinon la 2, et ainsi de suite. La zone 1, si c'est un pays, est « sur place » :
         sans drapeau, et pays de livraison des liens BrickLink. Les prix déjà relevés gardent leur zone jusqu'à leur prochaine actualisation.</p>
       <div data-blzlist></div>
       <button type="button" class="btn small-btn" data-blzadd style="margin:6px 0 10px">+ Ajouter une zone</button>
@@ -6204,18 +6379,18 @@ $("#btnSettings").onclick = async () => {
     catch (e) { c.checked = !c.checked; toast(e.message); } }; }, 0);
   dm.innerHTML = `<legend>🌐 Pages publiques</legend>
     <p class="hint" style="margin-top:0">Ouvertes à tous, en lecture seule : ni prix d'achat privé, ni notes, ni tâches, aucune modification possible.</p>
-    <div class="qty-row"><label class="lbl-like" for="ownerName">Votre nom (« Collection de … »)</label>
+    <div class="qty-row"><label class="lbl-like" for="ownerName">Nom affiché (« Collection de … »)</label>
       <input id="ownerName" data-owner maxlength="60" value="${esc(st.owner_name || "")}" placeholder="vide : « La collection »" style="flex:1;min-width:140px"></div>
-    ${pubRow("📚", "Collection", "/collection", "Toutes vos listes de collection.")}
+    ${pubRow("📚", "Collection", "/collection", "Toutes les listes de collection.")}
     <label class="todo-chk" style="margin:2px 0 10px"><input type="checkbox" data-pubprices ${st.public_prices ? "checked" : ""}> Afficher les prix sur la collection publique (valeur estimée de chaque fiche)</label>
     ${pubRow("⭐", "Liste de souhaits", "/wishlist", "Sans « À surveiller ».")}
-    ${pubRow("✨", "Nouveautés", "/nouveautes", "Les nouveautés LEGO, sans vos filtres.")}
-    ${pubRow("👀", "À surveiller", "/a-surveiller", "Seulement les sets à surveiller, avec l'état recherché (sans vos notes).")}
+    ${pubRow("✨", "Nouveautés", "/nouveautes", "Les nouveautés LEGO, sans les filtres.")}
+    ${pubRow("👀", "À surveiller", "/a-surveiller", "Seulement les sets à surveiller, avec l'état recherché (sans les notes).")}
     <div data-demopart ${st.demo ? "" : "hidden"}><!-- démo publique : seulement si elle est activée (BQ_DEMO_SITE=1) -->
     <p class="set-sub">🧪 Démo</p>
-    <p class="hint" style="margin-top:0">Une copie ouverte à tous, sans mot de passe : quelques sets, figurines et MOC de votre collection, une liste de souhaits tirée au hasard et une liste à commander. Tout revient à zéro toutes les 12 h${st.demo?.reset_at ? ` (prochaine fois : ${new Date(st.demo.reset_at * 1000).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })})` : ""}, avec les dernières nouveautés de l'application.</p>
+    <p class="hint" style="margin-top:0">Une copie ouverte à tous, sans mot de passe : quelques sets, figurines et MOC de la collection, une liste de souhaits tirée au hasard et une liste à commander. Tout revient à zéro toutes les 12 h${st.demo?.reset_at ? ` (prochaine fois : ${new Date(st.demo.reset_at * 1000).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })})` : ""}, avec les dernières nouveautés de l'application.</p>
     <p><a href="${demoUrl}" data-demolink>${esc(demoUrl)}</a></p>${sideChk("/demo")}
-    <p class="hint">Connecté, la démo n'est pas accessible : ouvrez le lien dans une fenêtre de navigation privée (ou déconnectez-vous). Rien de ce qui se fait dans la démo ne touche votre collection.</p>
+    <p class="hint">Connecté, la démo n'est pas accessible : le lien s'ouvre dans une fenêtre de navigation privée (ou après déconnexion). Rien de ce qui se fait dans la démo ne touche la collection.</p>
     <div class="est-actions" style="justify-content:flex-start"><button type="button" class="btn small-btn" data-democopy>📋 Copier le lien</button>
       <button type="button" class="btn small-btn" data-demoreset>🔄 Remettre la démo à zéro</button></div></div>`;
   $$("[data-pcopy]", dm).forEach(b => b.onclick = () => copyText(location.origin + b.dataset.pcopy));
@@ -6237,14 +6412,14 @@ $("#btnSettings").onclick = async () => {
   $("form", d).append(dm, bn);
   const blf = document.createElement("fieldset");   // BrickLink : prix des annonces en France (API officielle)
   blf.innerHTML = `<legend>🧱 BrickLink</legend>
-    ${st.bl_alert ? `<p class="bl-alert">⚠ BrickLink refuse l'accès depuis le ${esc(fmtDate(st.bl_alert.t))} : l'adresse IP du serveur a sans doute changé. Créez un nouveau jeton (Access Token) avec la nouvelle adresse, puis recollez le TokenValue et le TokenSecret ci-dessous.<br><small>${esc(st.bl_alert.msg)}</small></p>` : ""}
+    ${st.bl_alert ? `<p class="bl-alert">⚠ BrickLink refuse l'accès depuis le ${esc(fmtDate(st.bl_alert.t))} : l'adresse IP du serveur a sans doute changé. Créer un nouveau jeton (Access Token) avec la nouvelle adresse, puis recoller le TokenValue et le TokenSecret ci-dessous.<br><small>${esc(st.bl_alert.msg)}</small></p>` : ""}
     <p class="ask" style="margin-top:0">${st.bricklink ? `✅ Branché (codes se terminant par <b>${esc(st.bricklink_hint || "")}</b>) · ${nf.format(st.bricklink_today || 0)} appel(s) aujourd'hui sur 4 800` : "Pas encore branché : les prix viennent de BrickOwl."}</p>
-    <p class="hint">Prix BrickLink : la médiane des ventes des 6 derniers mois, en France ; pas assez de ventes : la France et le reste de l'Europe ; puis le monde. « À commander » : la médiane des annonces en cours (sinon des ventes).</p>
+    <p class="hint">Prix BrickLink : la médiane des ventes des 6 derniers mois, en France ; pas assez de ventes : la France et le reste de l'Europe ; puis le monde. « Commandes » : la médiane des annonces en cours (sinon des ventes).</p>
     <details class="bl-help"><summary>Où trouver les 4 codes ?</summary><ol>
-      <li>Connectez-vous à BrickLink, puis ouvrez <a href="https://www.bricklink.com/v2/api/register_consumer.page" target="_blank" rel="noopener">la page de l'API (« API Registration »)</a>.</li>
-      <li>Acceptez les conditions : BrickLink donne la <b>ConsumerKey</b> et le <b>ConsumerSecret</b>.</li>
-      <li>Créez un « Access Token » avec l'adresse IP publique du serveur : <b>${esc(st.public_ip || "celle de votre box ou de votre hébergeur")}</b> (adresse <i>IP Address</i> et <i>IP Mask</i> 255.255.255.255).</li>
-      <li>BrickLink donne alors le <b>TokenValue</b> et le <b>TokenSecret</b> : collez les 4 codes ci-dessous.</li></ol></details>
+      <li>Se connecter à BrickLink, puis ouvrir <a href="https://www.bricklink.com/v2/api/register_consumer.page" target="_blank" rel="noopener">la page de l'API (« API Registration »)</a>.</li>
+      <li>Accepter les conditions : BrickLink donne la <b>ConsumerKey</b> et le <b>ConsumerSecret</b>.</li>
+      <li>Créer un « Access Token » avec l'adresse IP publique du serveur : <b>${esc(st.public_ip || "celle de la box ou de l'hébergeur")}</b> (adresse <i>IP Address</i> et <i>IP Mask</i> 255.255.255.255).</li>
+      <li>BrickLink donne alors le <b>TokenValue</b> et le <b>TokenSecret</b> : les 4 codes se collent ci-dessous.</li></ol></details>
     <div class="bl-keys">${[["consumer_key", "ConsumerKey"], ["consumer_secret", "ConsumerSecret"], ["token", "TokenValue"], ["token_secret", "TokenSecret"]]
       .map(([k, l]) => `<label>${l}<input type="password" data-bl="${k}" autocomplete="off" spellcheck="false" placeholder="${st.bricklink ? "inchangé" : "à coller"}"></label>`).join("")}</div>
     <p class="hint" data-blmsg></p>
@@ -6265,27 +6440,27 @@ $("#btnSettings").onclick = async () => {
   bsf.innerHTML = `<legend>🗓️ Brickset</legend>
     <p class="hint" style="margin-top:0">Dates de mise en vente et de retrait de chaque set chez LEGO (graphiques « Évolution » : prix magasin jusqu'au retrait). Clé gratuite : brickset.com › Web services.</p>
     ${st.brickset ? `<p class="ask">✅ Branché (clé se terminant par <b>${esc(st.brickset_hint || "")}</b>)</p>` : ""}
-    <label>Clé API Brickset<input type="text" data-bskey autocomplete="off" placeholder="${st.brickset ? "Nouvelle clé (pour la remplacer)" : "Votre clé Brickset"}"></label>
+    <label>Clé API Brickset<input type="text" data-bskey autocomplete="off" placeholder="${st.brickset ? "Nouvelle clé (pour la remplacer)" : "Clé Brickset"}"></label>
     <div class="est-actions" style="justify-content:flex-start;margin-top:8px"><button type="button" class="btn primary" data-bssave>Vérifier et enregistrer</button>${st.brickset ? `<button type="button" class="btn danger-ghost" data-bsdel>Retirer</button>` : ""}</div>
     <p class="hint" data-bsmsg></p>`;
   $("[data-bssave]", bsf).onclick = async () => {
-    const key = $("[data-bskey]", bsf).value.trim(); if (!key) { $("[data-bsmsg]", bsf).textContent = "Collez votre clé Brickset."; return; }
+    const key = $("[data-bskey]", bsf).value.trim(); if (!key) { $("[data-bsmsg]", bsf).textContent = "Coller la clé Brickset."; return; }
     $("[data-bsmsg]", bsf).textContent = "Vérification auprès de Brickset…";
-    try { await api("/api/settings/brickset", { method: "POST", body: { key } }); d.remove(); toast("Clé Brickset enregistrée ✔ · les dates de vos sets arrivent dans une minute"); }
+    try { await api("/api/settings/brickset", { method: "POST", body: { key } }); d.remove(); toast("Clé Brickset enregistrée ✔ · les dates des sets arrivent dans une minute"); }
     catch (e) { $("[data-bsmsg]", bsf).textContent = e.message; } };
   $("[data-bsdel]", bsf)?.addEventListener("click", async () => {
     if (!await confirmBox("Retirer la clé Brickset ? Les dates déjà connues restent.", { ok: "Retirer", danger: true })) return;
     try { await api("/api/settings/brickset", { method: "POST", body: { key: "" } }); d.remove(); toast("Clé Brickset retirée"); } catch (e) { toast(e.message); } });
   blf.after(bsf);
-  const bof2 = document.createElement("fieldset");   // BrickOwl : clé API (lire mes commandes — 21/11 soir)
+  const bof2 = document.createElement("fieldset");   // BrickOwl : clé API (lire les commandes — 21/11 soir)
   bof2.innerHTML = `<legend>🦉 BrickOwl</legend>
-    <p class="hint" style="margin-top:0">Clé de l'API BrickOwl : pour lire vos commandes (pièces de « À commander » passées en « Commandée », avec la date — jamais en OK). Votre compte BrickOwl › API : créez une clé avec l'accès aux commandes.</p>
+    <p class="hint" style="margin-top:0">Clé de l'API BrickOwl : pour lire les commandes (pièces passées en « Commandée », avec la date — jamais en OK). Compte BrickOwl › API : une clé avec l'accès aux commandes.</p>
     ${st.brickowl ? `<p class="ask">✅ Branché (clé se terminant par <b>${esc(st.brickowl_hint || "")}</b>)</p>` : ""}
-    <label>Clé API BrickOwl<input type="text" data-bokey autocomplete="off" placeholder="${st.brickowl ? "Nouvelle clé (pour la remplacer)" : "Votre clé BrickOwl"}"></label>
+    <label>Clé API BrickOwl<input type="text" data-bokey autocomplete="off" placeholder="${st.brickowl ? "Nouvelle clé (pour la remplacer)" : "Clé BrickOwl"}"></label>
     <div class="est-actions" style="justify-content:flex-start;margin-top:8px"><button type="button" class="btn primary" data-bosave>Vérifier et enregistrer</button>${st.brickowl ? `<button type="button" class="btn danger-ghost" data-bodel>Retirer</button>` : ""}</div>
     <p class="hint" data-bomsg></p>`;
   $("[data-bosave]", bof2).onclick = async () => {
-    const key = $("[data-bokey]", bof2).value.trim(); if (!key) { $("[data-bomsg]", bof2).textContent = "Collez votre clé BrickOwl."; return; }
+    const key = $("[data-bokey]", bof2).value.trim(); if (!key) { $("[data-bomsg]", bof2).textContent = "Coller la clé BrickOwl."; return; }
     $("[data-bomsg]", bof2).textContent = "Vérification auprès de BrickOwl…";
     try { await api("/api/settings/brickowl", { method: "POST", body: { key } }); d.remove(); toast("Clé BrickOwl enregistrée ✔"); }
     catch (e) { $("[data-bomsg]", bof2).textContent = e.message; } };
@@ -6295,7 +6470,7 @@ $("#btnSettings").onclick = async () => {
   bsf.after(bof2);
   const igf = document.createElement("fieldset");   // Réseaux sociaux : compte Instagram, affiché seulement sur les pages publiques
   igf.innerHTML = `<legend>💬 Réseaux sociaux</legend>
-    <p class="hint" style="margin-top:0">Facultatif : votre compte s'affiche (logo et lien) sur les pages publiques — pas dans l'appli.</p>
+    <p class="hint" style="margin-top:0">Facultatif : le compte s'affiche (logo et lien) sur les pages publiques — pas dans l'appli.</p>
     <label>Instagram<input type="text" data-soig maxlength="31" placeholder="@votre_compte" autocomplete="off" value="${esc(st.social?.instagram ? "@" + st.social.instagram : "")}"></label>`;
   $("[data-soig]", igf).onchange = async () => {   /* (enregistré dès qu'il change) */
     try { const r = await api("/api/settings/social", { method: "POST", body: { instagram: $("[data-soig]", igf).value } }); toast(r.instagram ? `✔ Instagram : @${r.instagram} (pages publiques)` : "✔ Compte Instagram retiré"); }
@@ -6319,7 +6494,7 @@ $("#btnSettings").onclick = async () => {
     <div class="thp-live" aria-hidden="true" inert><span class="thp-lbl">Aperçu</span>   <!-- (une mini fiche faite des vraies classes : le thème choisi, en direct) -->
       <span class="thp-row top-views"><span class="tv on">Tout</span><span class="tv">Sets</span><span class="tv">Figurines</span></span>
       <div class="thp-fiche">
-        <div class="thp-fhead"><b>${esc(thSmp ? itemName(thSmp) : "Mon set")}</b><span class="icon-btn">🔗</span><span class="icon-btn">📝</span><span class="icon-btn">✕</span></div>
+        <div class="thp-fhead"><b>${esc(thSmp ? itemName(thSmp) : "Le set")}</b><span class="icon-btn">🔗</span><span class="icon-btn">📝</span><span class="icon-btn">✕</span></div>
         <div class="thp-ftop"><div class="thp-fpic">${thSmp ? `<img src="${thumb(itemImage(thSmp))}" alt="">` : "🧱"}</div>
           <div class="thp-fright"><div class="thp-fprow"><span class="thp-fprice">56,67 €</span><span class="btn small-btn">💶 Tarifs</span></div>
             <div class="cfg-num">${esc(thSmp?.number || "75348-1")}</div>
@@ -6365,7 +6540,7 @@ $("#btnSettings").onclick = async () => {
     const aide = $("form > fieldset[data-sec=aide]", d);
     if (aide && thf.parentNode) { const hl = $("[data-helpon]", aide)?.closest("label"); if (hl) { hl.className = "todo-chk"; hl.removeAttribute("style"); thf.append(Object.assign(document.createElement("p"), { className: "set-sub", textContent: "Aide" }), hl); }
       const gl = $(".doc-links a", aide); if (gl) $(".doc-links", docf).prepend(gl); aide.remove(); }
-    if (!DEMO) { const ig = $("label", igf); if (ig) { const own = $("[data-owner]", dm)?.closest(".qty-row"); own?.after(Object.assign(document.createElement("p"), { className: "set-sub", textContent: "💬 Réseaux sociaux" }), Object.assign(document.createElement("p"), { className: "hint", textContent: "Facultatif : votre compte s'affiche (logo et lien) sur les pages publiques, pas dans l'appli." }), ig); igf.remove(); } }
+    if (!DEMO) { const ig = $("label", igf); if (ig) { const own = $("[data-owner]", dm)?.closest(".qty-row"); own?.after(Object.assign(document.createElement("p"), { className: "set-sub", textContent: "💬 Réseaux sociaux" }), Object.assign(document.createElement("p"), { className: "hint", textContent: "Facultatif : le compte s'affiche (logo et lien) sur les pages publiques, pas dans l'appli." }), ig); igf.remove(); } }
     const top = document.createElement("p"); top.className = "set-rule";
     top.innerHTML = "✔ Chaque réglage s'enregistre <b>dès qu'il est changé</b>. Seules les clés (Rebrickable, BrickLink) demandent « Vérifier et enregistrer ». Les autres boutons lancent une action.";
     $("[data-setnav]", d).after(top);
@@ -6475,7 +6650,7 @@ async function openLegal() {
 }
 $("[data-legal]").onclick = () => { setMenu(false); openLegal(); };
 /* liens publics du menu : un appui copie le lien (on ne quitte pas l'appli).
-   La démo : à ouvrir dans une fenêtre privée (connecté, ce navigateur montre toujours ma collection). */
+   La démo : à ouvrir dans une fenêtre privée (connecté, ce navigateur montre toujours la collection). */
 /* liens des pages publiques en bas du menu latéral : masqués un à un (Réglages → Pages publiques) ; la démo seulement si elle existe */
 function sidePubDraw() {
   $$("#pubNav [data-pub]").forEach(b => { b.hidden = (b.dataset.pub === "/demo" && !state.demoOn) || (state.sidePubHide || []).includes(b.dataset.pub); });
@@ -6485,11 +6660,11 @@ $$("[data-pub]").forEach(b => b.onclick = async () => {   // page publique : ouv
   if (!demo) window.open(u, "_blank", "noopener");
   let ok = true;
   try { await navigator.clipboard.writeText(u); } catch { ok = false; }
-  toast(demo ? (ok ? `Lien de la démo copié : ouvrez-le dans une fenêtre de navigation privée (${u})` : u) : ok ? `Page ouverte, lien copié : ${u}` : `Page ouverte : ${u}`);
+  toast(demo ? (ok ? `Lien de la démo copié : à ouvrir dans une fenêtre de navigation privée (${u})` : u) : ok ? `Page ouverte, lien copié : ${u}` : `Page ouverte : ${u}`);
 });
 if (/[?&]demo=non\b/.test(location.search)) {   // /demo alors que je suis connecté : refusé
   history.replaceState(null, "", location.pathname);
-  setTimeout(() => toast("Mode démo indisponible quand vous êtes connecté. Pour l'essayer : fenêtre de navigation privée, ou déconnectez-vous."), 800);
+  setTimeout(() => toast("Mode démo indisponible une fois connecté. Pour l'essayer : fenêtre de navigation privée, ou après déconnexion."), 800);
 }
 if (DEMO) ["#pubSep", "#pubNav"].forEach(s => $(s).hidden = true);   // démo : pas de réglages
 $("#btnLogout").onclick = async () => {
@@ -6627,13 +6802,13 @@ $("#btnItemLogo").onclick = e => {
     if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return toast("Image PNG, JPEG ou WebP");
     const src = URL.createObjectURL(f);
     const b = await cropImage(src, "Logo individuel de la fiche", { free: true, alpha: true, cutout: true, max: 600, ok: "Utiliser comme logo",
-      hint: "Cadre libre : entourez le logo au plus près. 🪄 Détourer supprime le fond (transparent)." });
+      hint: "Cadre libre : entourer le logo au plus près. 🪄 Détourer supprime le fond (transparent)." });
     URL.revokeObjectURL(src);
     if (!b) return;
-    try { set((await api("/api/upload", { method: "POST", body: b, headers: { "Content-Type": "image/png" } })).url); toast("Logo individuel : enregistrez la fiche (💾)"); } catch (err) { toast(err.message); }
+    try { set((await api("/api/upload", { method: "POST", body: b, headers: { "Content-Type": "image/png" } })).url); toast("Logo individuel : enregistrer la fiche (💾)"); } catch (err) { toast(err.message); }
   };
   const pick = () => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/png,image/jpeg,image/webp"; i.onchange = () => send(i.files[0]); i.click(); };
-  const inh = setLogoOf(), mark = v => { dr.noLogo = v; drawItemLogo(); toast("Enregistrez la fiche (💾)"); };   /* (figurine d'un set : son logo hérité, retirable) */
+  const inh = setLogoOf(), mark = v => { dr.noLogo = v; drawItemLogo(); toast("Enregistrer la fiche (💾)"); };   /* (figurine d'un set : son logo hérité, retirable) */
   actionMenu(e.currentTarget, [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(dr.itemLogo ? [["✖ Retirer le logo individuel", () => set("")]] : []),
     ...(inh && !dr.itemLogo && !dr.noLogo ? [["✖ Retirer le logo du set (pour cette figurine)", () => mark(true)]] : []), ...(inh && dr.noLogo ? [["↩ Reprendre le logo du set", () => mark(false)]] : [])], "Logo individuel");
 };
@@ -6757,7 +6932,7 @@ const codeScanner = {
         cam.hidden = false; $("#searchForm button").textContent = "📷 Prendre la photo";
         await this.zx.decodeFromConstraints({ video: { facingMode: "environment" } }, v, r => { if (r && useful(r.getText())) { const t = r.getText(); this.stop(); onCode(t); } });
       }
-    } catch (e) { this.stop(); if (!quiet) toast("Caméra indisponible : autorisez-la dans le navigateur"); }
+    } catch (e) { this.stop(); if (!quiet) toast("Caméra indisponible : à autoriser dans le navigateur"); }
   },
   /* « 📷 Photo » pendant l'aperçu : l'image de la caméra est prise telle quelle (pas d'appli photo à ouvrir) */
   async snap() {
@@ -6796,7 +6971,7 @@ async function onCode(text) {
   if (/^\d{8,14}$/.test(digits)) {   // code-barres d'une boîte de set : on retrouve le n° du set, puis recherche classique
     box.innerHTML = loading("Code-barres " + digits + "…");
     let r = null; try { r = await api("/api/ean/" + digits); } catch {}
-    if (!r?.number) { box.innerHTML = `<div class="loading">Code-barres ${esc(digits)} ${r?.unavailable ? "non vérifiable pour le moment" : "inconnu"} : cherchez le set par son nom ou son numéro.</div>`; $("#searchInput").focus(); return; }   /* (plus d'onglets : la recherche par nom reçoit la main) */
+    if (!r?.number) { box.innerHTML = `<div class="loading">Code-barres ${esc(digits)} ${r?.unavailable ? "non vérifiable pour le moment" : "inconnu"} : chercher le set par son nom ou son numéro.</div>`; $("#searchInput").focus(); return; }   /* (plus d'onglets : la recherche par nom reçoit la main) */
     return pickSet(/-\d+$/.test(r.number) ? r.number : r.number + "-1", { number: r.number, type: "set" });   // fiche du set directement
   }
   if (!cmf) { box.innerHTML = `<div class="loading">Code lu : <b>${esc(text)}</b> — ce n'est pas un code de boîte connu.</div>`; return; }
@@ -6809,12 +6984,12 @@ async function onCode(text) {
       <div class="s">${f.value != null ? `neuve ${money(f.value)}` : ""}</div></div></button>`).join("");
   if (r.found) {
     box.innerHTML = `<div class="code-hit">📦 <b>${esc(r.name)}</b> <span class="muted">· ${esc(r.series || "")} · code ${code}</span></div>
-      ${r.figs?.length ? `<p class="hint" style="margin:6px 0">Touchez la figurine pour voir sa fiche :</p>${figBtns(r.figs)}` : `<div class="loading">Figurine introuvable dans le catalogue : cherchez « ${esc(r.name)} ».</div>`}`;
+      ${r.figs?.length ? `<p class="hint" style="margin:6px 0">Toucher la figurine pour voir sa fiche :</p>${figBtns(r.figs)}` : `<div class="loading">Figurine introuvable dans le catalogue : chercher « ${esc(r.name)} ».</div>`}`;
     $$("[data-fig]", box).forEach(b => b.onclick = () => pickFig(b.dataset.fig, { number: b.dataset.fig, type: "fig" }));
     return;
   }
   // code inconnu : on choisit la minifig, et le code est retenu pour les prochaines fois
-  box.innerHTML = `<div class="code-hit">❓ Code <b>${code}</b> inconnu. Cherchez la figurine de cette boîte : le code sera retenu.</div>
+  box.innerHTML = `<div class="code-hit">❓ Code <b>${code}</b> inconnu. Chercher la figurine de cette boîte : le code sera retenu.</div>
     <form class="search-row" data-learn><input data-q placeholder="Nom de la figurine (en anglais), ex : Alien Tourist" autocomplete="off"><button class="btn primary">Rechercher</button></form><div data-lr></div>`;
   $("[data-learn]", box).onsubmit = async e => {
     e.preventDefault();
@@ -6863,7 +7038,7 @@ $("#searchForm").onsubmit = async e => {
   if (warn) res.insertAdjacentHTML("afterbegin", `<p class="hint search-warn">${esc(warn)}</p>`);
 };
 
-/* recherche « + Nouveau » : mes fiches d'abord (sets, figurines, MOC, souhaits, figurines de mes sets) — le site fonctionne par fiches */
+/* recherche « + Nouveau » : mes fiches d'abord (sets, figurines, MOC, souhaits, figurines des sets) — le site fonctionne par fiches */
 const normQ = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9-]+/g, " ");
 function mineHits(q) {
   const qa = normQ(q).replace(/-/g, " ").trim(), qb = normQ(q).replace(/-/g, "").trim();
@@ -6872,7 +7047,7 @@ function mineHits(q) {
   const rows = state.items.filter(i => i.kind !== "part" && ok(`${itemName(i)} ${i.number || ""} ${i.info?.name_en || ""} ${i.custom_name || ""} ${i.display_name || ""} ${i.gift_note || ""}`))
     .map(i => ({ id: i.id, item: i, number: i.number, img: thumb(itemImage(i)), name: itemName(i), sub: `${isCustom(i) ? mocWord(i) : i.number}${isFigLike(i) ? " · figurine" : ""} · ${state.lists.find(l => l.id === i.list_id)?.name || ""}` }));
   const loose = new Set(state.items.filter(i => isFig(i)).map(i => figKey(i.number)));
-  for (const i of state.items) {   // figurines rangées dans mes sets (sans fiche à elles)
+  for (const i of state.items) {   // figurines rangées dans les sets (sans fiche à elles)
     if ((i.kind || "set") !== "set" || i.fig_items || kindOf(i.list_id) !== "collection" || !(i.info?.minifigs || []).length) continue;   // (set converti : ses figurines sont des fiches, déjà trouvées)
     const have = figHave(i, i.info.minifigs, i.quantity || 1);
     for (const f of i.info.minifigs) if ((have[f.id] || 0) > 0 && !loose.has(figKey(f.id)) && ok(`${f.name || ""} ${f.id}`))
@@ -6880,8 +7055,8 @@ function mineHits(q) {
   }
   return rows;
 }
-/* toutes les recherches : « 📚 Dans ma collection » en tête (mes fiches d'abord, le catalogue ensuite)
-   only : "sets" (vrais sets du catalogue) / "figs" (figurines, y compris celles de mes sets) ; onPick : sinon, la fiche s'ouvre */
+/* toutes les recherches : « 📚 Dans la collection » en tête (mes fiches d'abord, le catalogue ensuite)
+   only : "sets" (vrais sets du catalogue) / "figs" (figurines, y compris celles des sets) ; onPick : sinon, la fiche s'ouvre */
 function insertMine(res, q, { only = "", onPick = null } = {}) {
   if (!res) return;
   let rows = mineHits(q);
@@ -6889,13 +7064,13 @@ function insertMine(res, q, { only = "", onPick = null } = {}) {
   if (only === "figs") rows = rows.filter(r => r.fig || (r.item && isFigLike(r.item)));
   $(".mine-hits", res)?.remove();
   if (!rows.length) return;
-  // ce qui est dans une liste de souhaits : à part (« ⭐ Dans la liste de souhaits »), pas sous « Dans ma collection »
+  // ce qui est dans une liste de souhaits : à part (« ⭐ Dans la liste de souhaits »), pas sous « Dans la collection »
   const inWish = r => r.item && isWish(r.item.list_id);
   const row = (r, k) => `<button class="res mine" data-mine="${k}"><img src="${esc(r.img)}" alt="" loading="lazy"><div><div class="t">${esc(r.name)}</div><div class="s">${esc(r.sub)}</div></div></button>`;
   const coll = rows.map((r, k) => [r, k]).filter(([r]) => !inWish(r)), wish = rows.map((r, k) => [r, k]).filter(([r]) => inWish(r));
   const group = (title, arr) => !arr.length ? "" : `<div class="fe-title">${title} (${arr.length})</div>${arr.slice(0, 12).map(([r, k]) => row(r, k)).join("")}
-    ${arr.length > 12 ? `<p class="hint">… et ${arr.length - 12} autre(s) : précisez la recherche.</p>` : ""}`;
-  res.insertAdjacentHTML("afterbegin", `<div class="mine-hits">${group("📚 Dans ma collection", coll)}${wish.length && coll.length ? `<div style="margin-top:10px"></div>` : ""}${group("⭐ Dans la liste de souhaits", wish)}
+    ${arr.length > 12 ? `<p class="hint">… et ${arr.length - 12} autre(s) : préciser la recherche.</p>` : ""}`;
+  res.insertAdjacentHTML("afterbegin", `<div class="mine-hits">${group("📚 Dans la collection", coll)}${wish.length && coll.length ? `<div style="margin-top:10px"></div>` : ""}${group("⭐ Dans la liste de souhaits", wish)}
     <div class="fe-title" style="margin-top:12px">Catalogue</div></div>`);
   $$("[data-mine]", res).forEach(b => b.onclick = e => { e.stopPropagation(); const r = rows[+b.dataset.mine];
     if (onPick) return onPick(r);
@@ -6915,7 +7090,7 @@ function showResults(list, photo = false) {
     $("[data-accphoto]", res)?.addEventListener("click", () => accessoryFromPhoto(state.lastPhoto));
   };
   if (!list.length) {
-    res.innerHTML = `${customBtn}<div class="loading">Rien trouvé. ${photo ? "Essayez une photo plus nette, de face, sur fond uni." : "Essayez avec le numéro (ex : 75192 ou sw0002) ou le nom anglais."}</div>`;
+    res.innerHTML = `${customBtn}<div class="loading">Rien trouvé. ${photo ? "Essayer une photo plus nette, de face, sur fond uni." : "Essayer avec le numéro (ex : 75192 ou sw0002) ou le nom anglais."}</div>`;
     wireCustom();
     return;
   }
@@ -7034,7 +7209,7 @@ drop.addEventListener("drop", e => e.dataTransfer.files[0] && recognize(e.dataTr
     if (m) {   // fenêtre par-dessus : sa propre photo si elle en prend une, sinon rien (pas de recherche en arrière-plan)
       const inp = fileInput(m), f0 = [...e.dataTransfer.files].find(x => x.type.startsWith("image/"));
       if (inp && f0) { const dt = new DataTransfer(); dt.items.add(f0); inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true })); }
-      else if (!inp) toast("Fermez cette fenêtre pour lancer une recherche par photo");
+      else if (!inp) toast("Fermer cette fenêtre pour lancer une recherche par photo");
       return;
     }
     let f = [...e.dataTransfer.files].find(x => x.type.startsWith("image/"));
@@ -7047,9 +7222,9 @@ drop.addEventListener("drop", e => e.dataTransfer.files[0] && recognize(e.dataTr
         const b = r.ok ? await r.blob() : null;
         if (!b?.type.startsWith("image/")) throw 0;
         f = new File([b], "image.jpg", { type: b.type });
-      } catch { toast("Image impossible à récupérer depuis ce site : enregistrez-la, puis glissez le fichier"); return; }
+      } catch { toast("Image impossible à récupérer depuis ce site : l'enregistrer, puis glisser le fichier"); return; }
     }
-    if (!f) { toast("Glissez une image (photo d'un set, d'une figurine ou d'une pièce)"); return; }
+    if (!f) { toast("Glisser une image (photo d'un set, d'une figurine ou d'une pièce)"); return; }
     if (sheetOpen()) return sheetDrop(tgt, f);   // fiche ouverte : l'image va dans la fiche, pas dans la recherche
     $$("body > .modal:not(#modal), body > .act-menu").forEach(m => m.remove());   // fenêtres par-dessus : fermées
     openAdd(); recognize(f);
@@ -7070,7 +7245,7 @@ function sheetDrop(t, f) {
       if (inp) feed(inp); }, 120);
   };
   const shown = el => el && !el.hidden && el.offsetParent;
-  if (!z) return toast("Fiche ouverte : déposez l'image sur la photo de la fiche ou dans un encadré (apparences, accessoires, pièces)");
+  if (!z) return toast("Fiche ouverte : déposer l'image sur la photo de la fiche ou dans un encadré (apparences, accessoires, pièces)");
   if (z.matches("[data-acc]")) return dr.accDrop?.(+z.dataset.acc, f);
   if (z.matches("[data-alt]")) return dr.altDrop?.(+z.dataset.alt, f);
   if (z.matches(".cfg-pic")) return sheetPhotoFrom(f);
@@ -7078,11 +7253,11 @@ function sheetDrop(t, f) {
   if (z.matches("[data-add=alt]")) { const inp = $("#cuAlts [data-altfile]:not([capture])"); return inp && feed(inp); }
   if (z.matches("[data-add=part]")) return viaDialog(z);
   if (z.id === "accBox") return openAccAdd(f);
-  if (z.id === "altBox") { const inp = $("#cuAlts [data-altfile]:not([capture])"); return inp ? feed(inp) : toast("Apparences : enregistrez d'abord la fiche"); }
+  if (z.id === "altBox") { const inp = $("#cuAlts [data-altfile]:not([capture])"); return inp ? feed(inp) : toast("Apparences : enregistrer d'abord la fiche"); }
   if (z.id === "customBox") {
     const b = $("input[name=cutype]:checked")?.value === "fig" ? $("#mocAddPart") : $("#cuPartFind");
     if (shown(b)) return viaDialog(b);
-    return toast("Pièces : ouvrez « 🔶 Pièces » pour en ajouter");
+    return toast("Pièces : ouvrir « 🔶 Pièces » pour en ajouter");
   }
 }
 
@@ -7212,8 +7387,8 @@ function openEstimate(file, direct = null) {
     }
   };
   const list = (res, fromPhoto) => {
-    if (!res.length) { R.innerHTML = `<div class="loading">Rien trouvé. ${fromPhoto ? "Essayez une photo plus nette, de face, sur fond uni — ou tapez le numéro." : "Essayez avec le numéro (ex : 75192 ou sw0002)."}</div>`; return; }
-    R.innerHTML = `<p class="hint" style="margin:0">Touchez le bon résultat pour voir le détail de ses prix et de ses figurines :</p>` + res.map((r, k) => `<button class="res" data-k="${k}">
+    if (!res.length) { R.innerHTML = `<div class="loading">Rien trouvé. ${fromPhoto ? "Essayer une photo plus nette, de face, sur fond uni — ou taper le numéro." : "Essayer avec le numéro (ex : 75192 ou sw0002)."}</div>`; return; }
+    R.innerHTML = `<p class="hint" style="margin:0">Toucher le bon résultat pour voir le détail de ses prix et de ses figurines :</p>` + res.map((r, k) => `<button class="res" data-k="${k}">
       <img src="${img(resThumb(r.image))}" alt="" loading="lazy">
       <div><div class="t"><span class="badge ${r.type === "fig" ? "fig" : "settype"}">${r.type === "fig" ? "Figurine" : "Set"}</span> ${esc(r.number)} · ${esc(r.name)}${ownMark(r)}</div>${r.name_en ? `<div class="en">${esc(r.name_en)}</div>` : ""}
       <div class="s">${(r.type === "fig" ? [r.years || "", r.value != null ? `neuve ${money(r.value)}` : ""]
@@ -7287,7 +7462,7 @@ function openEstimate(file, direct = null) {
           <span class="rn"><span>${esc(m.name)}${qtyTag(m.qty || 1)}</span><small>${esc(m.id)}</small></span><b class="qp">${qtyPrice(usedOf(m), m.qty || 1, "prix inconnu")}${isNewPrice(m) ? `<span class="qp-unit">prix neuf</span>` : ""}</b></button>`).join("")}</div>`;
     }
     const owned = ownedCopies(info.number || number, fig).reduce((a, i) => a + (i.quantity || 1), 0);
-    const mine = fig && direct ? collectFigs(ALL).find(f => figKey(f.id) === figKey(info.number || number)) : null;   // fiche ouverte depuis ma collection
+    const mine = fig && direct ? collectFigs(ALL).find(f => figKey(f.id) === figKey(info.number || number)) : null;   // fiche ouverte depuis la collection
     const meta = fig ? [info.theme, info.years] : [info.theme, info.year, info.pieces ? nf.format(info.pieces) + " pièces" : "", info.minifig_count ? info.minifig_count + " figurine" + (info.minifig_count > 1 ? "s" : "") : ""];
     const avail = info.availability ? (isRetired(info) ? `<span class="badge retired">Retiré</span>` : soonBadge(info)) : "";
     det.innerHTML = `<div class="cfg-top">
@@ -7297,11 +7472,11 @@ function openEstimate(file, direct = null) {
           ${info.name_en ? `<div class="cfg-en">${esc(info.name_en)}</div>` : ""}
           <div class="cfg-meta">${meta.filter(Boolean).map(esc).join(" · ")} ${avail}</div>
           ${retireText(info) ? `<div class="cfg-meta">${esc(retireText(info))}</div>` : ""}
-          ${mine && mine.from.length > 1 ? `<p class="hint">${mine.from.length} fiches distinctes : changez la photo dans la fiche voulue (chaque fiche est unique).</p>` : ""}
+          ${mine && mine.from.length > 1 ? `<p class="hint">${mine.from.length} fiches distinctes : changer la photo dans la fiche voulue (chaque fiche est unique).</p>` : ""}
           ${mine && mine.from.length === 1 ? `<div class="cfg-actions"><button type="button" class="btn small-btn" data-figphoto>📷 Changer la photo</button>
             <button type="button" class="btn small-btn" data-figcrop>✂️ Recadrer</button></div>` : ""}
-          ${mine ? `<p class="dup-note">Dans votre collection : <b>${nf.format(mine.count)}</b> exemplaire${mine.count > 1 ? "s" : ""}${mine.from.some(x => !x.standalone) ? ` (dans ${mine.from.filter(x => !x.standalone).length > 1 ? `${mine.from.filter(x => !x.standalone).length} sets` : "le set " + esc(mine.from.find(x => !x.standalone).number)})` : ""}${usedOf(info) != null ? ` · valeur ${money(usedOf(info) * mine.count)}` : ""}</p>`
-            : owned ? `<p class="dup-note">Vous en avez déjà ${owned} dans votre collection.</p>` : ""}</div></div>
+          ${mine ? `<p class="dup-note">Dans la collection : <b>${nf.format(mine.count)}</b> exemplaire${mine.count > 1 ? "s" : ""}${mine.from.some(x => !x.standalone) ? ` (dans ${mine.from.filter(x => !x.standalone).length > 1 ? `${mine.from.filter(x => !x.standalone).length} sets` : "le set " + esc(mine.from.find(x => !x.standalone).number)})` : ""}${usedOf(info) != null ? ` · valeur ${money(usedOf(info) * mine.count)}` : ""}</p>`
+            : owned ? `<p class="dup-note">Déjà ${owned} dans la collection.</p>` : ""}</div></div>
       <div class="est-tiles">${tiles}</div>
       <div class="hist-box" data-hist hidden></div>
       ${extra}
@@ -7309,7 +7484,7 @@ function openEstimate(file, direct = null) {
       <p class="hint">Valeurs indicatives (BrickEconomy, en euros).</p>
       <div class="est-actions" style="justify-content:flex-end;margin-top:12px">
         <button type="button" class="btn" data-again>← Autre résultat</button>
-        <button type="button" class="btn primary" data-add>+ Ajouter à ma collection</button></div>`;
+        <button type="button" class="btn primary" data-add>+ Ajouter à la collection</button></div>`;
     if (mine && mine.from.length === 1) {   // ma minifig, une seule fiche : sa photo (la mienne si choisie) ; appui → en grand, avec « Changer » / « Recadrer »
       const fid = info.number || number;
       const own = mine.from.map(x => state.items.find(i => i.id === x.itemId)).filter(Boolean);
@@ -7345,7 +7520,7 @@ function openEstimate(file, direct = null) {
     $("[data-again]", det).onclick = showFind;
     $("[data-again]", det).hidden = !!direct;
     if (mine) {   // je l'ai déjà : titre « Ma minifig », l'ajout devient secondaire
-      $("h2", d).textContent = "Ma figurine";
+      $("h2", d).textContent = "La figurine";
       Object.assign($("[data-add]", det), { className: "btn", textContent: "+ Ajouter un autre exemplaire" });
     }
     $("[data-add]", det).onclick = () => {
@@ -7390,7 +7565,7 @@ function accessoryFromPhoto(blob) {
   };
   $("[data-save]", d).onclick = async e => {   // enregistré tout de suite sur la minifig, puis sa fiche s'ouvre
     const name = $("[data-n]", d).value.trim();
-    if (!name) { toast("Donnez un nom à l'accessoire"); $("[data-n]", d).focus(); return; }
+    if (!name) { toast("Donner un nom à l'accessoire"); $("[data-n]", d).focus(); return; }
     const it = state.items.find(i => i.id === sel); if (!it) return;
     const btn = e.currentTarget; btn.disabled = true;
     try {
@@ -7411,7 +7586,7 @@ function accessoryFromPhoto(blob) {
 /* fiche d'une minifig (prix, sets qui la contiennent), sans photo */
 let openFigSheet = (number, fromSet = null) => {   // la mienne (seule) : sa fiche ; sinon la fiche du catalogue (ou celle de la figurine dans mon set)
   const k = figKey(number);
-  /* figurine d'origine d'un de mes sets, ouverte depuis CE set : sa fiche dans ce set — jamais celle d'une autre figurine de même référence (copie renommée, modifiée…) */
+  /* figurine d'origine d'un des sets, ouverte depuis CE set : sa fiche dans ce set — jamais celle d'une autre figurine de même référence (copie renommée, modifiée…) */
   const host = fromSet && state.items.find(i => i.id === fromSet);
   if (host && (host.kind || "set") === "set" && kindOf(host.list_id) === "collection" && host.with_minifigs !== false
       && (host.info?.minifigs || []).some(m => figKey(m.id) === k && (figHave(host, host.info.minifigs, host.quantity || 1)[m.id] || 0) > 0)) {
@@ -7428,7 +7603,7 @@ let openFigSheet = (number, fromSet = null) => {   // la mienne (seule) : sa fic
 async function addCatalogSet(r) {
   const cur = state.lists.find(l => l.id === state.current && (l.kind || "collection") === "collection");
   const list = cur || state.lists.find(l => (l.kind || "collection") === "collection");
-  if (!list) return toast("Créez d'abord une liste");
+  if (!list) return toast("Créer d'abord une liste");
   if (!await confirmBox(`Ajouter « ${r.name} » (${r.number}) à la liste « ${list.name} » ? Il n'est pas dans le catalogue des prix : sa valeur sera estimée par ses ${r.pieces ? nf.format(r.pieces) + " " : ""}pièces.`, { ok: "Ajouter" })) return;
   try {
     const it = await api("/api/items/catalog-set", { method: "POST", body: { number: r.number, list_id: list.id } });
@@ -7473,9 +7648,9 @@ function ownedSheet(number, fig) {
     || mine.find(i => kindOf(i.list_id) === "collection") || mine.find(i => kindOf(i.list_id) === "wishlist") || null;
 }
 function openOwned(number, fig, pre) {   // rend true si la fiche existante a été ouverte
-  if (pre?.again || pre?.view || pre?.fromSet) return false;   // « Ajouter un autre exemplaire » / figurine d'un de mes sets
+  if (pre?.again || pre?.view || pre?.fromSet) return false;   // « Ajouter un autre exemplaire » / figurine d'un des sets
   const own = ownedSheet(number, fig);
-  if (!own && fig) {   // figurine que je n'ai que dans un de mes sets : sa fiche dans ce set
+  if (!own && fig) {   // figurine que je n'ai que dans un des sets : sa fiche dans ce set
     const k = figKey(String(number || ""));
     const host = state.items.find(i => kindOf(i.list_id) === "collection" && (i.kind || "set") === "set" && (i.info?.minifigs || [])
       .some(m => figKey(m.id) === k && (figHave(i, i.info.minifigs, i.quantity || 1)[m.id] || 0) > 0));
@@ -7483,7 +7658,7 @@ function openOwned(number, fig, pre) {   // rend true si la fiche existante a é
   }
   if (!own) return false;
   openEdit(own.id);
-  toast(isWish(own.list_id) ? "Déjà dans votre liste de souhaits : sa fiche est ouverte" : "Déjà dans votre collection : sa fiche est ouverte");
+  toast(isWish(own.list_id) ? "Déjà dans la liste de souhaits : sa fiche est ouverte" : "Déjà dans la collection : sa fiche est ouverte");
   return true;
 }
 async function pickSet(number, pre) {
@@ -7527,7 +7702,7 @@ function drawAltPhotos() {
     items: [main, ...alts].map((u, j) => ({ src: u.startsWith("blob:") ? u : img(u), name: fullName(j ? names[j - 1] : dr.mainName) })) } : null;
   const setAsMain = k => {   // cette apparence devient la photo principale ; l'ancienne principale (si c'est une photo importée) devient une apparence
     const u = alts[k]; if (!u) return;
-    if (main?.startsWith("blob:")) return toast("Enregistrez d'abord la fiche (photo principale pas encore envoyée)");
+    if (main?.startsWith("blob:")) return toast("Enregistrer d'abord la fiche (photo principale pas encore envoyée)");
     const newName = names[k] || "", oldName = dr.mainName || "";
     if (main && /^\/api\/upload\//.test(main)) { alts[k] = main; names[k] = oldName; }
     else { alts.splice(k, 1); names.splice(k, 1); }   // photo du catalogue : pas une apparence (« Photo par défaut » la redonne)
@@ -7535,17 +7710,17 @@ function drawAltPhotos() {
     dr.mainName = newName;
     if (dr.kind === "custom") Object.assign(dr.custom, { imageUrl: u, blob: null }); else dr.photoUrl = u;
     dr.viewPhoto = null; $("#cfgImg").src = img(u);
-    drawAltPhotos(); updateEstimate(); toast("Photo principale changée : pensez à enregistrer la fiche");
+    drawAltPhotos(); updateEstimate(); toast("Photo principale changée : penser à enregistrer la fiche");
   };
   const rename = async k => {   // nom de l'apparence (celui de sa carte dans la vue générale) ; k = -1 : la principale
     const v = await ask("Nom de l'apparence", "Nom (facultatif)", k < 0 ? dr.mainName || "" : names[k] || "");
     if (v == null) return;
     const t = v.replace(/\s+/g, " ").trim().slice(0, 60);
     if (k < 0) dr.mainName = t; else names[k] = t;
-    drawAltPhotos(); toast("Nom changé : pensez à enregistrer la fiche");
+    drawAltPhotos(); toast("Nom changé : penser à enregistrer la fiche");
   };
   const remove = async k => {
-    if (!await confirmBox("Supprimer cette apparence ? (pensez à enregistrer la fiche)", { ok: "Supprimer" })) return;
+    if (!await confirmBox("Supprimer cette apparence ? (penser à enregistrer la fiche)", { ok: "Supprimer" })) return;
     const u = alts.splice(k, 1)[0]; names.splice(k, 1);
     if (dr.viewPhoto === u) showOn(null); else drawAltPhotos();
   };
@@ -7555,7 +7730,7 @@ function drawAltPhotos() {
       if (!c) return;
       try { const up = await api("/api/upload", { method: "POST", body: c, headers: { "Content-Type": "image/jpeg" } });
         if (dr.viewPhoto === alts[k]) dr.viewPhoto = up.url;
-        alts[k] = up.url; drawAltPhotos(); toast("Apparence changée : pensez à enregistrer la fiche"); } catch (err) { toast(err.message); }
+        alts[k] = up.url; drawAltPhotos(); toast("Apparence changée : penser à enregistrer la fiche"); } catch (err) { toast(err.message); }
     };
   dr.altDrop = (k, f) => altDropFor(k)(f);
   $$("[data-alt]", box).forEach(b => b.onclick = () => {   // appui : en grand, avec ses options
@@ -7566,7 +7741,7 @@ function drawAltPhotos() {
       if (!c) return;
       try { const up = await api("/api/upload", { method: "POST", body: c, headers: { "Content-Type": "image/jpeg" } });
         if (dr.viewPhoto === alts[k]) dr.viewPhoto = up.url;
-        alts[k] = up.url; drawAltPhotos(); toast("Apparence recadrée : pensez à enregistrer la fiche"); } catch (err) { toast(err.message); }
+        alts[k] = up.url; drawAltPhotos(); toast("Apparence recadrée : penser à enregistrer la fiche"); } catch (err) { toast(err.message); }
     };
     const fromPick = async camera => { const f = await pickImage(camera); if (f) altDropFor(k)(f); };
     openZoom.purpose = k < 0 ? "Modifier ou remplacer cette photo" : "Cette apparence alternative : la modifier ou la remplacer";
@@ -7578,7 +7753,7 @@ function drawAltPhotos() {
     openZoom.drop = altDropFor(k);
     if (k >= 0) openZoom.check = { label: "Afficher dans la vue générale", on: !dr.altHidden?.has(u), set: v => {
       dr.altHidden ||= new Set(); if (v) dr.altHidden.delete(u); else dr.altHidden.add(u);
-      drawAltPhotos(); toast("Pensez à enregistrer la fiche"); } };
+      drawAltPhotos(); toast("Penser à enregistrer la fiche"); } };
     openZoom(u.startsWith("blob:") ? u : img(u), fullName(k < 0 ? dr.mainName : names[k]));
   });
   $$("[data-altfile]", box).forEach(inp => inp.onchange = async e => {
@@ -7589,7 +7764,7 @@ function drawAltPhotos() {
     try {
       const up = await api("/api/upload", { method: "POST", body: c, headers: { "Content-Type": "image/jpeg" } });
       alts.push(up.url); names.push(""); drawAltPhotos();   // la fiche garde sa photo principale
-      toast("Apparence ajoutée : pensez à enregistrer la fiche");
+      toast("Apparence ajoutée : penser à enregistrer la fiche");
     } catch (err) { toast(err.message); }
   });
 }
@@ -7630,7 +7805,7 @@ function drawPartOf() {
   const pic = own ? thumb(itemImage(own)) : dr.partOfImg ? img(dr.partOfImg) : "";
   box.innerHTML = `<div class="in-sets big po-box">
     ${n ? `<button type="button" class="in-set-btn" data-poopen title="Voir le set d'origine">${pic ? `<img src="${pic}" alt="" loading="lazy">` : ""}
-      <span><b>${esc(own ? itemName(own) : dr.partOfName || n)}</b><small>${esc(n)}${own ? " · dans ma collection" : ""}</small></span></button>`
+      <span><b>${esc(own ? itemName(own) : dr.partOfName || n)}</b><small>${esc(n)}${own ? " · dans la collection" : ""}</small></span></button>`
       : `<p class="muted small" style="margin:0">Set d'origine pas encore choisi.</p>`}
     <div class="po-acts"><button type="button" class="btn small-btn" data-pofind>🔎 ${n ? "Changer" : "Trouver le set"}</button></div></div>`;
   $("[data-pofind]", box).onclick = () => openPartOf();
@@ -7652,12 +7827,12 @@ async function openPartOf() {
     const sets = list.filter(r => r.type !== "fig" && r.type !== "part").slice(0, 30);
     R.innerHTML = sets.map((r, k) => `<button class="res" data-k="${k}"><img src="${img(resThumb(r.image))}" alt="" loading="lazy">
       <div><div class="t">${esc(r.number)} · ${esc(r.name)}</div><div class="s">${esc([r.theme, r.year, r.pieces ? nf.format(r.pieces) + " pièces" : ""].filter(Boolean).join(" · "))}</div></div>${r.score != null ? `<span class="score">${r.score} %</span>` : ""}</button>`).join("")
-      || `<div class="loading">Aucun set trouvé : essayez la recherche par nom ou numéro.</div>`;
+      || `<div class="loading">Aucun set trouvé : essayer la recherche par nom ou numéro.</div>`;
     $$("[data-k]", R).forEach(b => b.onclick = () => {
       const r = sets[+b.dataset.k], num = /-\d+$/.test(r.number) ? r.number : r.number + "-1";
       $("#cuSetNum").value = num; dr.partOfFor = num; dr.partOfName = r.name || "";
       close(); customLabels(); loadSetFigs(); drawPartOf();
-      toast(`Partie de ${num}${dr.item ? " : pensez à enregistrer la fiche" : ""}`);
+      toast(`Partie de ${num}${dr.item ? " : penser à enregistrer la fiche" : ""}`);
     });
   };
   const byPhoto = async blob => {   // reconnaissance d'après une photo
@@ -7667,7 +7842,7 @@ async function openPartOf() {
       const r = await fetch("/api/photo", { method: "POST", headers: { "Content-Type": small.type || "image/jpeg" }, body: small });
       const data = await r.json(); if (!r.ok) throw new Error(data.erreur);
       show(data);
-    } catch (err) { R.innerHTML = `<div class="loading">Reconnaissance impossible : ${esc(err.message)} — utilisez la recherche ci-dessus.</div>`; }
+    } catch (err) { R.innerHTML = `<div class="loading">Reconnaissance impossible : ${esc(err.message)} — utiliser la recherche ci-dessus.</div>`; }
   };
   $("[data-f]", d).onsubmit = async e => {
     e.preventDefault();
@@ -7675,7 +7850,7 @@ async function openPartOf() {
     R.innerHTML = loading("Recherche…");
     try { const r = await searchPage(q, 1); show([...r.results, ...await api(`/api/rbsets?q=${encodeURIComponent(q)}`).catch(() => [])]);
       insertMine(R, q, { only: "sets", onPick: x => { const num = x.item.number; $("#cuSetNum").value = num; dr.partOfFor = num; dr.partOfName = itemName(x.item);
-        close(); customLabels(); loadSetFigs(); drawPartOf(); toast(`Partie de ${num}${dr.item ? " : pensez à enregistrer la fiche" : ""}`); } }); }
+        close(); customLabels(); loadSetFigs(); drawPartOf(); toast(`Partie de ${num}${dr.item ? " : penser à enregistrer la fiche" : ""}`); } }); }
     catch (err) { R.innerHTML = `<div class="loading">${esc(err.message)}</div>`; }
   };
   const fromFile = async f => { f = await cropForSearch(f); if (!f) return; const pv = $("[data-preview]", d); pv.src = URL.createObjectURL(f); pv.hidden = false; byPhoto(f); };
@@ -7685,7 +7860,7 @@ async function openPartOf() {
   try {
     const src = dr.custom?.blob || null, url = dr.viewPhoto || dr.custom?.imageUrl || dr.info?.image;
     const blob = src || (url ? await (await fetch(img(url))).blob() : null);
-    if (blob && d.isConnected) byPhoto(blob); else R.innerHTML = `<div class="loading">Pas de photo sur la fiche : recherchez le set par son nom ou son numéro.</div>`;
+    if (blob && d.isConnected) byPhoto(blob); else R.innerHTML = `<div class="loading">Pas de photo sur la fiche : rechercher le set par son nom ou son numéro.</div>`;
   } catch { R.innerHTML = ""; }
 }
 /* set partiel pas encore ajouté : les minifigs du set que j'ai (rangées dedans à l'ajout) */
@@ -7726,7 +7901,7 @@ function openBuilderApp(n) {
   if (android || ios) location.href = `https://lego.com/go/38/${num}`;
   else window.open(web, "_blank", "noopener");
 }
-/* minifig d'un de mes sets : sa fiche, comme les autres (quantité ajustée dans le set) */
+/* minifig d'un des sets : sa fiche, comme les autres (quantité ajustée dans le set) */
 function openSetFig(number, fromSet = null, inSet = false) {   // inSet : la figurine de CE set, même si j'ai par ailleurs une fiche de même référence
   openAdd();
   $("#results").innerHTML = loading("Ouverture de la fiche…");
@@ -7810,7 +7985,7 @@ $("#modalRename").onclick = async () => {
     return;
   }
   const sf = !it && figTodoHost();
-  if (sf) {   // figurine d'un de mes sets (sans fiche à elle) : son nom est gardé dans le set
+  if (sf) {   // figurine d'un des sets (sans fiche à elle) : son nom est gardé dans le set
     const orig = dr.info?.name || dr.info?.number || "", cur = sf.host.fig_mods?.[sf.fid]?.name || "";
     const v = await ask("Renommer", orig, cur || orig);
     if (v == null) return;
@@ -7891,7 +8066,7 @@ function fillConfig() {
   const { info, item } = state.draft;
   if (state.draft.kind !== "custom") $("#cuPartsShow").hidden = true;   // bouton « Pièces » d'un MOC ouvert juste avant : pas sur cette fiche
   $("#btnTarifs").hidden = true;   // affiché quand les prix de la fiche sont connus
-  {   // type de fiche : MOC / set partiel / figurine MOC ; sur une fiche du catalogue de ma collection : « Set » ou « Figurine », transformable
+  {   // type de fiche : MOC / set partiel / figurine MOC ; sur une fiche du catalogue de la collection : « Set » ou « Figurine », transformable
     const s = $("#cuKindSel"), cat = !!state.draft.item && !state.draft.view && ["set", "fig"].includes(state.draft.kind || "set") && kindOf(state.draft.item.list_id) === "collection";
     const isF = state.draft.kind === "fig", opt = v => s.querySelector(`option[value=${v}]`);
     opt("cat").hidden = !cat; opt("cat").textContent = isF ? "🟡 Figurine" : "🧱 Set complet";
@@ -7908,7 +8083,7 @@ function fillConfig() {
   }
   $(".cfg-top").classList.toggle("is-custom", state.draft.kind === "custom");   // MOC / set partiel : boutons alignés sur la liste du type
   const editing = !!item;
-  $("#modalTitle").textContent = editing ? "" : "Ajouter à ma collection";
+  $("#modalTitle").textContent = editing ? "" : "Ajouter à la collection";
   $("#stepFind").hidden = true; $("#stepConfig").hidden = false;
   $("#btnIsMoc").hidden = !(state.draft.photo && !editing && state.draft.kind !== "custom");
   state.draft.photoPref = item?.photo || "";
@@ -7962,7 +8137,7 @@ function fillConfig() {
   if (editing) $("#modalTitle").textContent = custom ? $("#cfgName").textContent : itemName(state.draft.item);
   $("#modalRename").hidden = false;   // tout se renomme
   const isNew = !editing && !state.draft.view && !state.draft.adjust?.fid;   // nouvelle fiche : 💾 en haut aussi (le bouton du bas « Ajouter » reste)
-  $("#modalSave").hidden = !(editing && !state.draft.view) && !state.draft.adjust?.fid && !isNew;   // 💾 en haut (fiche, figurine d'un de mes sets, nouvelle fiche)
+  $("#modalSave").hidden = !(editing && !state.draft.view) && !state.draft.adjust?.fid && !isNew;   // 💾 en haut (fiche, figurine d'un des sets, nouvelle fiche)
   $("#modalSave").title = isNew ? "Ajouter la fiche" : "Enregistrer";
   $("#btnSave").hidden = !$("#modalSave").hidden && !isNew;
   $("#modalTodo").hidden = false;
@@ -7982,7 +8157,7 @@ function fillConfig() {
       if (state.draft !== dr || !s?.number) return; dr.tarifs = { ...tarifsOf(s, false), name: (s.name || n) + " (set complet)" }; drawAddPrices(); }).catch(() => {});
   }
   drawAddPrices();   // élément que je n'ai pas : ses tarifs constatés à la place de l'estimation
-  drawOwnedSets($("#cfgInSets"), fig ? info.number : null, () => {});   // mes sets : leur fiche
+  drawOwnedSets($("#cfgInSets"), fig ? info.number : null, () => {});   // les sets : leur fiche
   drawCatalogSets($("#cfgCatSets"), fig ? info : null, n => openSetFiche(n));
 
   const cond = item?.condition || "occasion";
@@ -8004,11 +8179,11 @@ function fillConfig() {
   const inSet0 = inSets.find(x => x.item.id === state.draft.fromSet) || inSets[0];   // ouverte depuis un set : ce set-là
   state.draft.adjust = own ? { it: own }
     : inSet0 ? { it: inSet0.item, fid: (inSet0.item.info?.minifigs || []).find(f => figKey(f.id) === figKey(info.number))?.id }
-    : null;   // minifig présente seulement dans un de mes sets : on ajuste son nombre dans ce set
+    : null;   // minifig présente seulement dans un des sets : on ajuste son nombre dans ce set
   if (state.draft.adjust?.fid === undefined && state.draft.adjust && !own) state.draft.adjust = null;
-  if (state.draft.adjust?.fid) {   // figurine d'un de mes sets : c'est sa fiche — type affiché sous la photo, pas de retour vers la recherche
+  if (state.draft.adjust?.fid) {   // figurine d'un des sets : c'est sa fiche — type affiché sous la photo, pas de retour vers la recherche
     const ks = $("#cuKindSel");
-    [...ks.options].forEach(o => o.hidden = !["cat", "toset", "partial", "moc", "fig"].includes(o.value));   // (« Figurine seule (sortir du set) » retirée le 20/11 : « − » de « Dans mes sets »)
+    [...ks.options].forEach(o => o.hidden = !["cat", "toset", "partial", "moc", "fig"].includes(o.value));   // (« Figurine seule (sortir du set) » retirée le 20/11 : « − » de « Dans les sets »)
     ks.querySelector("option[value=cat]").textContent = "🟡 Figurine";
     ks.querySelector("option[value=tofig]").textContent = "🟡 Figurine seule (sortir du set)";
     ks.querySelector("option[value=toset]").textContent = "🧱 Set complet"; ks.querySelector("option[value=fig]").textContent = "🟠 Figurine MOC";
@@ -8016,23 +8191,23 @@ function fillConfig() {
     $("#modalBack").hidden = true;
   }
   // déjà possédé : bandeau bien visible (information, pas une alerte)
-  if (!editing && !state.draft.view && (dups.length || inSets.length)) {   // ouverte pour la voir : pas d'encart « déjà dans votre collection »
+  if (!editing && !state.draft.view && (dups.length || inSets.length)) {   // ouverte pour la voir : pas d'encart « déjà dans la collection »
     const n = dups.reduce((t, i) => t + (i.quantity || 1), 0);
     const lists = [...new Set(dups.map(i => state.lists.find(l => l.id === i.list_id)?.name).filter(Boolean))];
     const parts = [];
     if (n) parts.push(`<b>${n} ${fig ? "figurine" : "exemplaire"}${n > 1 ? "s" : ""}${fig ? (n > 1 ? " seules" : " seule") : ""}</b>${lists.length ? ` dans ${lists.map(x => "« " + esc(x) + " »").join(", ")}` : ""}`);
     for (const x of inSets) parts.push(`<b>${x.n}</b> dans le set « ${esc(itemName(x.item))} »`);
-    $("#dupNote").innerHTML = `<span class="own-ico">✔</span><span><b>Déjà dans votre collection</b><br>${parts.join(" · ")}</span>`;
+    $("#dupNote").innerHTML = `<span class="own-ico">✔</span><span><b>Déjà dans la collection</b><br>${parts.join(" · ")}</span>`;
     $("#dupNote").className = "own-note";
     $("#dupNote").hidden = false;
   }
-  $("#cfgList").value = item?.list_id || (fig && state.addToList) || "";   // ajout : aucune liste par défaut (sauf figurine ajoutée depuis « À commander »)
+  $("#cfgList").value = item?.list_id || (fig && state.addToList) || "";   // ajout : aucune liste par défaut (sauf figurine ajoutée depuis « Commandes »)
   $("#listErr").hidden = true;
 
   $("#btnAcquired").hidden = !(item && isWish(item.list_id));
   $("#btnForGift").hidden = true;   // remplacé par 👀 à gauche de « Voir sur »
-  $("#cfgQty").value = (item?.quantity || state.replacing?.quantity || 1) + inSetN();   // (fiche unique : avec celles rangées dans mes sets)
-  if (inSetN()) { $("#cfgQty").min = inSetN(); $("#cfgQty").dataset.minmsg = "Plus aucune figurine seule : pour en retirer une, enlevez-la d'un set (− dans « Dans mes sets »)."; } else delete $("#cfgQty").dataset.minmsg;   // (0 seule possible)
+  $("#cfgQty").value = (item?.quantity || state.replacing?.quantity || 1) + inSetN();   // (fiche unique : avec celles rangées dans les sets)
+  if (inSetN()) { $("#cfgQty").min = inSetN(); $("#cfgQty").dataset.minmsg = "Plus aucune figurine seule : pour en retirer une, l'enlever d'un set (− dans « Dans les sets »)."; } else delete $("#cfgQty").dataset.minmsg;   // (0 seule possible)
   $("#cfgBox").checked = !!item?.has_box;
   $("#cfgUnbuilt").checked = !!item?.unbuilt;   // pas coché par défaut
   const figOrig = state.draft?.adjust?.fid ? figChildOf(state.draft.adjust.it, state.draft.adjust.fid) : null;   // figurine d'origine ouverte depuis son set : sa fiche
@@ -8041,7 +8216,7 @@ function fillConfig() {
   if (state.draft) { const lo = item || figOrig; state.draft.logoOf = figOrig?.id || null; state.draft.itemLogo = lo?.item_logo || ""; state.draft.noLogo = !!lo?.no_logo;
     state.draft.logo0 = JSON.stringify([state.draft.itemLogo, state.draft.noLogo]); drawItemLogo(); }   // (logo individuel)   // (figurine d'un set sans fiche à elle, fiche vue : pas de coche)
   $("#cfgPlan").checked = !item?.no_plan;   // plans : cochés par défaut (tous les plans sont là), décocher s'il manque
-  const fmods = !item && state.draft.adjust?.fid ? state.draft.adjust.it?.fig_mods?.[state.draft.adjust.fid] || {} : null;   // figurine d'un de mes sets
+  const fmods = !item && state.draft.adjust?.fid ? state.draft.adjust.it?.fig_mods?.[state.draft.adjust.fid] || {} : null;   // figurine d'un des sets
   const src = item || fmods || {};
   state.draft.accessories = (src.accessories || []).map(a => ({ ...a }));
   { const wc = item ? (item.condition === "neuf" ? (item.also_used ? ["neuf", "occ"] : ["neuf"]) : ["occ"]) : [isRetired(state.draft.info) ? "occ" : "neuf"];
@@ -8062,13 +8237,13 @@ function fillConfig() {
   drawTodoBtn();
   if (!item && state.replacing) $("#cfgList").value = state.replacing.list_id;
   setAdjust(state.replacing ? null : state.draft.adjust);
-  if (!item && figTodoHost()) {   // figurine d'un de mes sets : ses tâches (sur SA fiche ; anciennes : sur le set, marquées pour elle)
+  if (!item && figTodoHost()) {   // figurine d'un des sets : ses tâches (sur SA fiche ; anciennes : sur le set, marquées pour elle)
     const { host, fid } = figTodoHost(), child = figChildOf(host, fid);
     state.draft.todos = (child ? todosOf(child) : todosOf(host).filter(t => t.fig === fid)).map(t => ({ ...t }));
     state.draft.todosAtOpen = state.draft.todos.map(todoKey);
     drawTodoBtn();
   }
-  if (state.draft.adjust?.fid) {   // figurine d'un de mes sets : sa photo à elle (changeable, enregistrée avec 💾)
+  if (state.draft.adjust?.fid) {   // figurine d'un des sets : sa photo à elle (changeable, enregistrée avec 💾)
     const pu = state.draft.adjust.it.fig_mods?.[state.draft.adjust.fid]?.photo_url || "";
     state.draft.photoUrl = state.draft.photoUrl0 = pu;
     if (pu) $("#cfgImg").src = img(pu);
@@ -8076,8 +8251,8 @@ function fillConfig() {
   if (state.draft.view) $("#btnSeparate").hidden = true;
   if (state.draft.adjust?.fid) { $("#modalSave").hidden = false; $("#btnSave").hidden = true;   // figurine d'un set : 💾 comme partout
     $("#btnDeleteItem").hidden = !(setFigSheet() && setFigCount() > 0); }
-  if (inSetN()) { $("#cfgQty").min = inSetN(); $("#cfgQty").dataset.minmsg = "Plus aucune figurine seule : pour en retirer une, enlevez-la d'un set (− dans « Dans mes sets »)."; }   /* (0 seule possible) (après setAdjust, qui remet le minimum à 1 : au moins une figurine seule en plus de celles des sets) */
-  if (state.draft.kind === "fig") drawOwnedSets($("#cfgInSets"), state.draft.info?.number, () => {});   /* « Dans mes sets » redessiné une fois la quantité posée : nombre par set, « Seules (sans set) », total */   /* …et « Supprimer » : la retire de son set (voir btnDeleteItem) */
+  if (inSetN()) { $("#cfgQty").min = inSetN(); $("#cfgQty").dataset.minmsg = "Plus aucune figurine seule : pour en retirer une, l'enlever d'un set (− dans « Dans les sets »)."; }   /* (0 seule possible) (après setAdjust, qui remet le minimum à 1 : au moins une figurine seule en plus de celles des sets) */
+  if (state.draft.kind === "fig") drawOwnedSets($("#cfgInSets"), state.draft.info?.number, () => {});   /* « Dans les sets » redessiné une fois la quantité posée : nombre par set, « Seules (sans set) », total */   /* …et « Supprimer » : la retire de son set (voir btnDeleteItem) */
   $("#modalShare").hidden = !(editing || (state.draft.view && state.draft.adjust?.fid)) || DEMO;   // minifig d'un set : partageable seule
   drawPlanBtn();
   updateEstimate();
@@ -8107,7 +8282,7 @@ function readConfig() {
     return {
       number: info.number, kind: "fig", list_id: $("#cfgList").value, display_name: state.draft.displayName ?? state.draft.item?.display_name ?? "",
       condition: "occasion", with_minifigs: true, missing_minifigs: [], portion: 100, portion_note: "", parts: [],
-      quantity: Math.max(1, (parseInt($("#cfgQty").value) || 0) - inSetN()),   // (0 seule : la fiche seule est retirée à 💾, voir onsubmit)   // (fiche unique : le total moins celles rangées dans mes sets)
+      quantity: Math.max(1, (parseInt($("#cfgQty").value) || 0) - inSetN()),   // (0 seule : la fiche seule est retirée à 💾, voir onsubmit)   // (fiche unique : le total moins celles rangées dans les sets)
       notes: $("#cfgNotes").value, ...todoNow(), fig: true, wish, photo_url: state.draft.photoUrl || "", accessories: state.draft.accessories || [],
       alt_photos: state.draft.altPhotos || [], alt_names: (state.draft.altPhotos || []).map((_, k) => (state.draft.altNames || [])[k] || ""), main_name: state.draft.mainName || "", alt_hidden: altHiddenOf(state.draft),
       ...(info.pending_prices ? { no_parts_est: !$("#cfgPartsEst").checked } : {}),
@@ -8148,16 +8323,16 @@ function readConfig() {
   };
 }
 
-/* figurine d'un de mes sets renommée : son nom (gardé dans le set) */
+/* figurine d'un des sets renommée : son nom (gardé dans le set) */
 const setFigName = () => { const h = figTodoHost(); return h?.host.fig_mods?.[h.fid]?.name || ""; };
-/* figurine sans fiche à elle, d'un de mes sets : le set qui garde ses tâches (celui d'où elle est ouverte, sinon celui qui la contient) */
-/* mes sets (collection) qui contiennent cette figurine : [{ host, fid }] */
+/* figurine sans fiche à elle, d'un des sets : le set qui garde ses tâches (celui d'où elle est ouverte, sinon celui qui la contient) */
+/* les sets (collection) qui contiennent cette figurine : [{ host, fid }] */
 function setsWithFig(number) {
   const k = figKey(number || "");
   return state.items.filter(i => (i.kind || "set") === "set" && kindOf(i.list_id) === "collection")
     .map(host => ({ host, f: (host.info?.minifigs || []).find(m => figKey(m.id) === k) })).filter(x => x.f).map(x => ({ host: x.host, fid: x.f.id }));
 }
-/* figurine d'un de mes sets, sans fiche à elle : le set qui la garde (celui d'où on l'a ouverte, sinon le premier qui la contient) */
+/* figurine d'un des sets, sans fiche à elle : le set qui la garde (celui d'où on l'a ouverte, sinon le premier qui la contient) */
 /* la fiche d'une figurine d'origine d'un set (son « enfant »), s'il y en a une */
 /* la fiche ouverte est-elle une figurine (du catalogue, ou MOC) ? → cadre au format des figurines ; sinon celui des sets */
 const draftIsFig = () => { const d = state.draft; return !!d && (d.kind === "fig" || (d.kind === "custom" && $("input[name=cutype]:checked")?.value === "fig")); };
@@ -8168,7 +8343,7 @@ function figTodoHost() {
   if (dr.adjust?.fid) return { host: dr.adjust.it, fid: dr.adjust.fid };
   const host = dr.fromSet && state.items.find(i => i.id === dr.fromSet && kindOf(i.list_id) === "collection");
   const f = host && (host.info?.minifigs || []).find(m => figKey(m.id) === figKey(dr.info?.number || ""));
-  return f ? { host, fid: f.id } : setsWithFig(dr.info?.number)[0] || null;   // ouverte sans son set : retrouvée dans mes sets
+  return f ? { host, fid: f.id } : setsWithFig(dr.info?.number)[0] || null;   // ouverte sans son set : retrouvée dans les sets
 }
 /* « À faire » : bouton 📝 en haut de la fiche → fenêtre de saisie (enregistré tout de suite si l'élément existe déjà) */
 function drawTodoBtn() {
@@ -8196,7 +8371,7 @@ $("#modalTodo").onclick = () => {
   const save = async (todos, msg) => {
     const it = state.draft?.item, fh = !it && figTodoHost();
     const child = fh && figChildOf(fh.host, fh.fid);
-    if (child) {   // figurine d'un de mes sets : la tâche reste sur SA fiche (jamais recopiée sur le set)
+    if (child) {   // figurine d'un des sets : la tâche reste sur SA fiche (jamais recopiée sur le set)
       const r = await api("/api/items/" + child.id, { method: "PUT", body: { todos } });
       Object.assign(child, { todos: r.todos || todos, todo: !!todos.length });
       load().catch(() => {});
@@ -8307,7 +8482,7 @@ function drawFigList(setQty) {
 }
 /* accessoires d'une minifig (armes montées…) : un nom et une photo ; ni prix ni pièces, juste pour les montrer */
 /* minifig du catalogue : ses pièces modifiées (retirées, remplacées, ajoutées), à gauche des accessoires montés */
-/* minifig affichée : seule (sa fiche) ou dans un de mes sets (ses retraits et échanges sont enregistrés dans le set) */
+/* minifig affichée : seule (sa fiche) ou dans un des sets (ses retraits et échanges sont enregistrés dans le set) */
 function figTarget() {
   const dr = state.draft; if (dr?.kind !== "fig") return null;
   if (dr.item) return isWish(dr.item.list_id) ? null : { id: dr.item.id, fid: "", swaps: dr.item.fig_swaps || [], rb: dr.item.rb_fig, number: dr.item.number, alone: true };
@@ -8323,7 +8498,7 @@ function drawFigPieces() {
   $("#btnShowParts").hidden = $("#btnFigParts").hidden = true;   // les boutons sont dans ce cadre
   const list = $("#figPartsList"), key = `${t.id}|${t.fid}|${t.rb || ""}`;
   const sd = state.draft?.swapDraft, all = sd?.key === key ? sd.list : t.swaps;   // brouillon (pas encore enregistré par 💾) sinon l'enregistré
-  const row = (p, note, gone, k = null) => pieceTile(p, { price: gone ? "" : tilePrice(p), note: [esc(p.color_fr || p.color || ""), note].filter(Boolean).join(" · "), cls: gone ? "gone" : "", attrs: `data-fpinfo data-fpsw="${k ?? ""}"` });   // pas de case : « À commander » est dans les options
+  const row = (p, note, gone, k = null) => pieceTile(p, { price: gone ? "" : tilePrice(p), note: [esc(p.color_fr || p.color || ""), note].filter(Boolean).join(" · "), cls: gone ? "gone" : "", attrs: `data-fpinfo data-fpsw="${k ?? ""}"` });   // pas de case : « Commandes » est dans les options
   let rmeta = [];   // chaque ligne : pièce d'origine (k, orig, retirée ?) ou pièce ajoutée (addK)
   const saveSwaps = async next => {   // brouillon : enregistré seulement par 💾 (envoi dans #stepConfig.onsubmit) ; fermer sans enregistrer l'oublie
     if (!state.draft) return;
@@ -8345,13 +8520,13 @@ function drawFigPieces() {
       };
       const back = async (msg) => { const next = await swapsAfterRestore(all, m.k); if (next) saveSwaps(next).then(() => toast(msg)); };   // remplacée : garder ou retirer la remplaçante ?
       const extra = !m ? [] : m.addK != null ? [["🔢 Modifier la quantité", setQty], ["✕ Retirer la pièce ajoutée", () => saveSwaps(without(m)).then(() => toast("Pièce ajoutée retirée"))]]
-        : m.gone ? [["↩ Je l'ai : la remettre", () => back("Pièce remise")]]
+        : m.gone ? [["↩ Présente : la remettre", () => back("Pièce remise")]]
         : [...(m.p && !s?.new ? [["🔢 Modifier la quantité", async () => {   // pièce d'origine : combien j'en ai sur le lot (les autres sont retirées)
-              const max = m.p.qty, v = await ask(`Combien de « ${m.p.name || m.p.part} » avez-vous ? (sur ${max})`, "", String(m.keep), { num: true, min: 0, max }); if (v == null) return;
+              const max = m.p.qty, v = await ask(`Combien de « ${m.p.name || m.p.part} » ? (sur ${max})`, "", String(m.keep), { num: true, min: 0, max }); if (v == null) return;
               const n = parseInt(v, 10); if (!(n >= 0)) return toast("Nombre non valable");
               const rest = all.filter(x => x.k !== m.k), keep = Math.min(max, n);
               saveSwaps(keep >= max ? rest : [...rest, { k: m.k, orig: { ...m.orig, qty: max - keep, per: m.p.per }, new: null }]).then(() => toast(`${keep} sur ${max}`)); }]] : []),
-           ["🗑️ Je ne l'ai pas : la retirer", () => saveSwaps(without(m)).then(() => toast(`Pièce retirée${t.alone ? "" : " (de la figurine, donc du set)"} : sa valeur est déduite`))],
+           ["🗑️ Absente : la retirer", () => saveSwaps(without(m)).then(() => toast(`Pièce retirée${t.alone ? "" : " (de la figurine, donc du set)"} : sa valeur est déduite`))],
            ...(s?.new ? [["↩ Remettre la pièce d'origine", () => back("Pièce d'origine remise")]] : [])];
       const sw = b.dataset.fpsw;   // 🔁 échanger : dans les options de la vignette
       pieceMenu(mb || b, objs[k], { from: t.alone ? t.id : null, remove: m && !m.gone ? () => saveSwaps(without(m)) : null, zoom: !mb,
@@ -8436,7 +8611,7 @@ async function toggleOrder(p, c) {
   try {
     if (c.checked && !ex) {
       const l = lists.find(l => /command/i.test(l.name)) || lists[0];
-      if (!l) { c.checked = false; return toast("Créez d'abord une liste de pièces (« À commander »)"); }
+      if (!l) { c.checked = false; return toast("Créer d'abord une liste de pièces (« Commandes »)"); }
       await api("/api/items/parts", { method: "POST", body: { list_id: l.id, set_number: "", parts: [{ part_num: p.part_num, part_name: p.name || "", bricklink: p.part || p.part_num,
         color_id: p.color_id, color_name: p.color || p.color_name || "", color_rgb: p.rgb || "", element_id: p.element_id || "", image: p.image || "", quantity: take }] } });
       await load(); toast(`${p.name || p.part} : ajoutée à « ${l.name} »`);
@@ -8468,17 +8643,17 @@ function drawAccessories() {
       <span class="acc-sq">${a.photo ? `<img src="${img(a.photo)}" alt="" loading="lazy">` : "🗡️"}<b class="fq-n">×${accQ(a)}</b></span><span class="acc-name">${esc(a.name)}${(a.parts || []).length
         ? `<small class="acc-val">${nf.format(a.parts.reduce((s, x) => s + (x.qty || 1), 0) * accQ(a))} pièces · ${a.price?.value ? (a.price.priced < a.price.lots ? "~" : "") + money(accVal(a)) : "chiffrage…"}</small>` : ""}</span>
       <button type="button" class="icon-btn fq-more" data-accmenu aria-label="Fonctions de l'accessoire" title="Fonctions de l'accessoire">⋯</button></div>`).join("")
-    : `<p class="muted small" style="margin:0">Aucun accessoire. Un accessoire compte dans le prix seulement si vous donnez sa liste de pièces.</p>`;
+    : `<p class="muted small" style="margin:0">Aucun accessoire. Un accessoire compte dans le prix seulement avec sa liste de pièces.</p>`;
   const rename = async a => {   // petite fenêtre : nouveau nom
     const v = ((await ask("Renommer l'accessoire", "Nom de l'accessoire", a.name)) || "").trim().slice(0, 100);
     if (!v || v === a.name) return;
-    a.name = v; drawAccessories(); toast("Nom modifié : pensez à enregistrer la fiche");
+    a.name = v; drawAccessories(); toast("Nom modifié : penser à enregistrer la fiche");
   };
-  const remove = k => { acc.splice(k, 1); drawAccessories(); toast("Accessoire retiré : pensez à enregistrer la fiche"); };
+  const remove = k => { acc.splice(k, 1); drawAccessories(); toast("Accessoire retiré : penser à enregistrer la fiche"); };
   const accDrop = async (a, f) => {   // nouvelle photo pour cet accessoire (zoom ou dépôt sur sa vignette)
     const src = URL.createObjectURL(f), c = await cropImage(src, `Recadrer « ${a.name} »`, { cutout: true }); URL.revokeObjectURL(src);
     if (!c) return;
-    try { a.photo = (await api("/api/upload", { method: "POST", body: c, headers: { "Content-Type": "image/jpeg" } })).url; drawAccessories(); toast("Photo changée : pensez à enregistrer la fiche"); }
+    try { a.photo = (await api("/api/upload", { method: "POST", body: c, headers: { "Content-Type": "image/jpeg" } })).url; drawAccessories(); toast("Photo changée : penser à enregistrer la fiche"); }
     catch (err) { toast(err.message); }
   };
   dr.accDrop = (k, f) => acc[k] && accDrop(acc[k], f);
@@ -8487,9 +8662,9 @@ function drawAccessories() {
     if (modal.classList.contains("ro") && !mb) { if (a.photo) openZoom(img(a.photo), a.name); return; }   // (lecture : la photo, sans outils)
     if (modal.classList.contains("ro")) return toast("🔧 pour modifier l'accessoire");
     const setQty = async () => { const v = await ask(`Combien de « ${a.name} » ?`, "1", String(accQ(a)), { num: true, min: 1, max: 999 }); if (v == null) return;
-      const n = Math.max(1, Math.min(999, parseInt(v, 10) || 1)); if (n > 1) a.qty = n; else delete a.qty; drawAccessories(); updateEstimate(); toast(`Quantité : ${n} — pensez à enregistrer la fiche`); };
+      const n = Math.max(1, Math.min(999, parseInt(v, 10) || 1)); if (n > 1) a.qty = n; else delete a.qty; drawAccessories(); updateEstimate(); toast(`Quantité : ${n} — penser à enregistrer la fiche`); };
     const acts = [["🔢 Modifier la quantité", setQty], ["✏️ Renommer", () => rename(a)], ["🧾 " + ((a.parts || []).length ? "Remplacer la liste de pièces" : "Liste de pièces (XML, facultatif)"), () => accParts(a)],
-      ...((a.parts || []).length ? [["✖ Retirer la liste de pièces", () => { delete a.parts; delete a.file; delete a.price; drawAccessories(); updateEstimate(); toast("Liste retirée : pensez à enregistrer la fiche"); }]] : []),
+      ...((a.parts || []).length ? [["✖ Retirer la liste de pièces", () => { delete a.parts; delete a.file; delete a.price; drawAccessories(); updateEstimate(); toast("Liste retirée : penser à enregistrer la fiche"); }]] : []),
       ["🗑️ Retirer", () => remove(k)]];
     {   /* photo de l'accessoire : la changer (ou en donner une) — appareil photo, fichier, image copiée */
       const pick = cap => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; if (cap) i.capture = "environment";
@@ -8501,7 +8676,7 @@ function drawAccessories() {
     openZoom.actions = [["✂️ Modifier image", async () => {
       const c = await cropImage(img(a.photo), `Recadrer « ${a.name} »`, { cutout: true });
       if (!c) return;
-      try { a.photo = (await api("/api/upload", { method: "POST", body: c })).url; drawAccessories(); toast("Photo recadrée : pensez à enregistrer la fiche"); }
+      try { a.photo = (await api("/api/upload", { method: "POST", body: c })).url; drawAccessories(); toast("Photo recadrée : penser à enregistrer la fiche"); }
       catch (e) { toast(e.message); }
     }], ...acts];
     openZoom.drop = f => accDrop(a, f);
@@ -8512,7 +8687,7 @@ function drawAccessories() {
 function accParts(a) {
   const d = document.createElement("div"); d.className = "modal over";
   d.innerHTML = `<form class="modal-box" style="width:min(520px,100%)"><div class="modal-head"><h2>Pièces de « ${esc(a.name)} »</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-    <p class="hint" style="margin-top:0">Facultatif : la liste des pièces donne une estimation réelle de l'accessoire, ajoutée à la valeur de la fiche. Collez le XML BrickLink / Studio (ou importez le fichier, CSV Rebrickable aussi).</p>
+    <p class="hint" style="margin-top:0">Facultatif : la liste des pièces donne une estimation réelle de l'accessoire, ajoutée à la valeur de la fiche. Coller le XML BrickLink / Studio (ou importer le fichier, CSV Rebrickable aussi).</p>
     <div class="cam-row" style="margin:0 0 8px"><label class="btn small-btn">📁 Importer un fichier<input type="file" accept=".xml,.csv,.txt,text/xml,text/csv" hidden data-f></label></div>
     <textarea data-t rows="7" style="width:100%" placeholder="<INVENTORY>…"></textarea>
     <div class="est-actions" style="justify-content:flex-end;margin-top:10px"><button class="btn primary">Valider</button></div></form>`;
@@ -8528,7 +8703,7 @@ function accParts(a) {
       const r = await api("/api/acc-parts", { method: "POST", body: { text: $("[data-t]", d).value, name: fname } });
       Object.assign(a, { parts: r.parts, file: r.file, price: r.price });
       close(); drawAccessories(); updateEstimate();
-      toast(`${nf.format(r.parts.length)} pièces différentes lues${r.skipped ? ` (${r.skipped} lignes ignorées)` : ""} : pensez à enregistrer la fiche`);
+      toast(`${nf.format(r.parts.length)} pièces différentes lues${r.skipped ? ` (${r.skipped} lignes ignorées)` : ""} : penser à enregistrer la fiche`);
     } catch (err) { toast(err.message); btn.disabled = false; }
   };
 }
@@ -8542,10 +8717,10 @@ async function offerOwnFigs(sid) {
     && kindOf(x.list_id) === "collection" && figKey(x.number) === figKey(f.id)) })).filter(x => x.L);
   if (!cands.length) return;
   const d = document.createElement("div"); d.className = "modal over";
-  d.innerHTML = `<div class="modal-box" style="width:min(520px,100%)"><div class="modal-head"><h2>Figurines déjà dans votre collection</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-    <p class="hint" style="margin-top:0">Vous aviez déjà ces figurines seules. Si c'est celle de « ${esc(itemName(s))} », cochez-la : elle est rangée dans le set comme sa figurine d'origine (une seule fiche, ses photos et apparences gardées).</p>
+  d.innerHTML = `<div class="modal-box" style="width:min(520px,100%)"><div class="modal-head"><h2>Figurines déjà dans la collection</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
+    <p class="hint" style="margin-top:0">Ces figurines étaient déjà là, seules. Si c'est celle de « ${esc(itemName(s))} », la cocher : elle est rangée dans le set comme sa figurine d'origine (une seule fiche, ses photos et apparences gardées).</p>
     ${cands.map(({ f, L }, k) => `<label class="moc-chk" style="display:flex;align-items:center;gap:10px;margin:6px 0"><input type="checkbox" data-k="${k}">
-      <img src="${thumb(itemImage(L))}" alt="" style="width:40px;height:40px;object-fit:contain"><span><b>${esc(itemName(L))}</b> <small class="muted">${esc(f.id)}${(L.quantity || 1) > 1 ? ` · vous en avez ${L.quantity} seules : une seule sera rangée` : ""}</small></span></label>`).join("")}
+      <img src="${thumb(itemImage(L))}" alt="" style="width:40px;height:40px;object-fit:contain"><span><b>${esc(itemName(L))}</b> <small class="muted">${esc(f.id)}${(L.quantity || 1) > 1 ? ` · ${L.quantity} seules : une seule sera rangée` : ""}</small></span></label>`).join("")}
     <div class="est-actions" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-no>Non, ce sont d'autres</button><button type="button" class="btn primary" data-ok>Ranger les cochées dans le set</button></div></div>`;
   document.body.append(d);
   const close = () => d.remove();
@@ -8590,7 +8765,7 @@ function openAccAdd(file = null) {   // nom + photo (appareil, galerie, ou image
     try {
       const photo = blob ? (await api("/api/upload", { method: "POST", body: blob })).url : "";
       (state.draft.accessories ||= []).push({ name: $("[data-n]", d).value.trim() || "Accessoire", photo });
-      drawAccessories(); close(); toast("Accessoire ajouté : pensez à enregistrer la fiche");
+      drawAccessories(); close(); toast("Accessoire ajouté : penser à enregistrer la fiche");
     } catch (err) { toast(err.message); b.disabled = false; }
   };
 }
@@ -8607,7 +8782,7 @@ $$("input[name=cutype]").forEach(r => r.addEventListener("change", async () => {
 
 /* type choisi pour une fiche MOC (liste en haut de la fiche) : "fig" ou "set" ; null pour une fiche du catalogue */
 const draftType = () => state.draft?.kind === "custom" ? ($("input[name=cutype]:checked")?.value || state.draft.custom?.type || "set") : null;
-/* figurine seule (ou MOC) de ma collection : la ranger dans un de mes sets, ou l'en sortir */
+/* figurine seule (ou MOC) de la collection : la ranger dans un des sets, ou l'en sortir */
 function drawFigHost() {
   let box = $("#figHost"); const it = state.draft?.item;
   if (!box) { box = document.createElement("div"); box.id = "figHost"; box.className = "fig-host"; }
@@ -8615,7 +8790,7 @@ function drawFigHost() {
   if (!on) { box.remove(); return; }
   $("#cfgInSets").before(box);   // en bas, avec les sets qui la contiennent
   const host = it.attached_to && state.items.find(i => i.id === it.attached_to);
-  box.innerHTML = host ? `<div class="in-sets big"><div class="in-sets-title">Dans mes sets</div>
+  box.innerHTML = host ? `<div class="in-sets big"><div class="in-sets-title">Dans les sets</div>
       <button type="button" class="in-set-btn" data-hostopen><img src="${thumb(itemImage(host))}" alt="" loading="lazy"><span><b>${esc(itemName(host))}</b><small>${esc(host.number || "")} · rangée ici</small></span></button>
       <div class="po-acts"><button type="button" class="btn small-btn" data-hostout>Sortir du set</button></div></div>`
     : "";
@@ -8624,7 +8799,7 @@ function drawFigHost() {
   $("[data-hostout]", box)?.addEventListener("click", async e => {
     const u = $("#cfgInSetNote [data-unhost]"); if (u) return u.click(); /* (combien en sortir, pièces échangées partagées) */ await setAttached(it.id, "", host); const f = state.items.find(i => i.id === it.id); if (f) openEdit(f.id); });
 }
-/* ranger une figurine (fiche à elle) dans un de mes sets */
+/* ranger une figurine (fiche à elle) dans un des sets */
 async function figHostIn(it) {
   {
     const t = await pickTargetItem(`Ranger « ${itemName(it)} » dans…`, { exclude: it.id, filter: i => isHost(i) && kindOf(i.list_id) === "collection" });
@@ -8635,7 +8810,7 @@ async function figHostIn(it) {
     const f = state.items.find(i => i.id === it.id) || state.items.find(i => i.split_from === it.id && i.attached_to === t.id); if (f) openEdit(f.id);
   }
 }
-/* minifigs de ma collection rattachées à ce set (en plus des siennes) */
+/* minifigs de la collection rattachées à ce set (en plus des siennes) */
 function drawFigExtra() { drawFigExtra0(); drawAddBar(); drawGiftRow(); }
 /* nouvelle fiche ouverte : toujours tout en haut (la fenêtre garde sinon la position de la fiche précédente),
    et encore après les contenus chargés juste après — sauf si l'utilisateur a déjà commencé à faire défiler */
@@ -8648,9 +8823,9 @@ function sheetToTop() {
   [50, 250, 700, 1500].forEach(t => setTimeout(() => { if (!moved && state.draft === dr && !modal.hidden) box.scrollTop = 0; }, t));
 }
 /* fiche (collection, pas une simple consultation) : apparences et accessoires possibles, quel que soit le type */
-/* figurine d'un de mes sets (sans fiche à elle) : sa fiche est complète, ses ajouts sont gardés dans le set */
+/* figurine d'un des sets (sans fiche à elle) : sa fiche est complète, ses ajouts sont gardés dans le set */
 const setFigSheet = () => { const a = state.draft?.adjust; return !!a?.fid && !!a.it && kindOf(a.it.list_id) === "collection" && !figsOnlyMode(); };
-/* nombre d'exemplaires de la figurine de la fiche dans son set (fiche d'une figurine d'un de mes sets) */
+/* nombre d'exemplaires de la figurine de la fiche dans son set (fiche d'une figurine d'un des sets) */
 const setFigCount = () => { const a = state.draft?.adjust; if (!a?.fid || !a.it) return 0;
   return a.it.with_minifigs === false ? 0 : figHave(a.it, a.it.info?.minifigs || [], a.it.quantity || 1)[a.fid] || 0; };
 const sheetExtras = () => { const dr = state.draft; return !!dr && (setFigSheet() || (!dr.view && !dr.adjust?.fid && !isWish($("#cfgList")?.value || dr.item?.list_id))); };
@@ -8780,7 +8955,7 @@ function drawFigExtra0() {
         try { await api(`/api/items/${a.id}/dup`, { method: "POST", body: { attach: "", qty: 1, confirm: true } }); await load();   // lot : un exemplaire sort
           const f = state.items.find(i => i.id === it.id); if (f && state.draft?.item?.id === it.id) { state.draft.item = f; drawFigExtra(); updateEstimate(); }
           toast(`Un « ${itemName(a)} » sorti du set`); } catch (e) { toast(e.message); } }],
-      ["🗑️ Supprimer (je ne l'ai pas)", async () => {   // un exemplaire (le dernier : sa fiche)
+      ["🗑️ Supprimer (pas dans la collection)", async () => {   // un exemplaire (le dernier : sa fiche)
         const many = (a.quantity || 1) > 1;
         if (!await confirmBox(many ? `Supprimer un « ${itemName(a)} » ? Il en restera ${a.quantity - 1}.` : `Supprimer « ${itemName(a)} » ? Sa fiche est supprimée de la collection.`)) return;
         try {
@@ -8823,7 +8998,7 @@ function askQty(title, max) {
     const d = document.createElement("div");
     d.className = "modal over";
     d.innerHTML = `<form class="modal-box" style="width:min(400px,100%)"><div class="modal-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-      <p class="ask">Vous en avez <b>${max}</b>. Combien en mettre dans ce set ? Les autres restent à part.</p>
+      <p class="ask"><b>${max}</b> disponibles. Combien en mettre dans ce set ? Les autres restent à part.</p>
       <div class="qty-row"><span class="lbl-like">Quantité</span><input type="number" data-n min="1" max="${max}" value="1"></div>
       <div class="est-actions" style="justify-content:flex-end;margin-top:12px"><button class="btn primary">Ajouter au set</button></div></form>`;
     document.body.append(d);
@@ -8839,17 +9014,17 @@ function pickAttach(set) {
   const d = document.createElement("div");
   d.className = "modal over";
   d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>Ajouter des figurines à « ${esc(itemName(set))} »</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-    <p class="hint" style="margin-top:0">Cochez les figurines, puis « Ajouter ». Une figurine ajoutée est rangée dans ce set.</p>
-    <div class="fe-title">🔎 Une figurine que je n'ai pas encore</div>
+    <p class="hint" style="margin-top:0">Cocher les figurines, puis « Ajouter ». Une figurine ajoutée est rangée dans ce set.</p>
+    <div class="fe-title">🔎 Une figurine pas encore dans la collection</div>
     <div data-sb>${searchBlock("Ex : Darth Vader, sw0001, Pilote…", { form: "data-cf" })}</div><div class="results" data-cr></div>
-    <div class="fe-title" style="margin-top:12px">Dans ma collection <span class="muted" style="font-weight:400">(figurines sans set)</span></div>
+    <div class="fe-title" style="margin-top:12px">Dans la collection <span class="muted" style="font-weight:400">(figurines sans set)</span></div>
     <input type="search" data-q placeholder="Filtrer : nom, référence…" style="width:100%;margin-bottom:8px"><div data-l></div>
     <div class="pick-foot"><span class="muted small" data-cnt></span><button type="button" class="btn primary" data-addsel disabled>Ajouter</button></div></div>`;
   document.body.append(d);
   const close = () => d.remove();
   $("[data-x]", d).onclick = close;
   d.onclick = e => { if (e.target === d) close(); };
-  const sel = new Map();   // « new:<n°> » → figurine du catalogue ; « own:<id> » → {id, qty} d'une figurine de ma collection
+  const sel = new Map();   // « new:<n°> » → figurine du catalogue ; « own:<id> » → {id, qty} d'une figurine de la collection
   const upd = () => {
     const n = [...sel.values()].reduce((a, x) => a + (x.qty || 1), 0), b = $("[data-addsel]", d);
     b.disabled = !n; b.textContent = n ? `Ajouter (${n})` : "Ajouter";
@@ -8894,7 +9069,7 @@ function pickAttach(set) {
   };
   $("[data-cam]", d).onchange = $("[data-file]", d).onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) photoFig(f); };
   wireLiveCam($("[data-sb]", d), $("[data-cam]", d), photoFig);
-  // figurines de ma collection : pas celles déjà rangées dans un set (une figurine n'est que dans un set) ; celles de la liste du set d'abord
+  // figurines de la collection : pas celles déjà rangées dans un set (une figurine n'est que dans un set) ; celles de la liste du set d'abord
   const cands = state.items.filter(i => kindOf(i.list_id) === "collection" && isFigLike(i) && !i.attached_to && !i._in)
     .sort((a, b) => (a.list_id === set.list_id ? 0 : 1) - (b.list_id === set.list_id ? 0 : 1) || itemName(a).localeCompare(itemName(b), "fr"));
   const draw = () => {
@@ -8924,7 +9099,7 @@ function pickAttach(set) {
       const own = (set.kind || "set") === "set" ? set.info?.minifigs || [] : [];
       let counts = !own.length ? null : set.with_minifigs === false ? Object.fromEntries(own.map(m => [m.id, 0])) : figHave(set, own, set.quantity || 1);
       for (const x of sel.values()) {
-        const loose = !x.r && state.items.find(i => i.id === x.id);   // figurine seule de ma collection, sans rien de particulier : rangée parmi celles d'origine
+        const loose = !x.r && state.items.find(i => i.id === x.id);   // figurine seule de la collection, sans rien de particulier : rangée parmi celles d'origine
         const plain = loose && isFig(loose) && !loose.photo_url && !(loose.fig_swaps || []).length && !(loose.accessories || []).length
           && !(loose.alt_photos || []).length && !todosOf(loose).length && !(loose.notes || "").trim()
           && !(loose.display_name || "").trim() && !(loose.custom_name || "").trim();   /* renommée : elle garde sa fiche et son nom (rangée dans le set, pas fondue dans celles d'origine) */
@@ -8956,7 +9131,7 @@ function pickAttach(set) {
 async function indivOut(host, srcId, kind, nm) {
   try {
     const r = await api(`/api/items/${srcId}/dup`, { method: "POST", body: { attach: host.id, qty: 1, confirm: true, indiv: kind, copy: true } });   // (originale : une copie EN PLUS, l'originale reste)
-    await load(); toast(`« ${nm} » dupliquée : modifiez-la (pièces, photo, nom…) puis 💾 — sans modification, la copie disparaît`);
+    await load(); toast(`« ${nm} » dupliquée : à modifier (pièces, photo, nom…) puis 💾 — sans modification, la copie disparaît`);
     if (state.items.some(i => i.id === r.id)) openEdit(r.id);
   } catch (err) { toast(err.message); }
 }
@@ -9001,7 +9176,7 @@ const figListClick = e => {
       [modded ? "🔁 Pièces échangées (modifier)" : "🔁 Échanger des pièces", onlyOrig(() => openFigParts(src.id, fid))],   // modifier la figurine : ici, plus sur la carte
       ["📄 Copier vers un autre set…", () => figTo(src, fid, nm, false)],
       ["➡️ Déplacer vers un autre set…", () => figTo(src, fid, nm, true)],
-      ["🗑️ Supprimer (je ne l'ai pas)", async () => {   // son nombre dans le set passe à 0 (« + 🟡 Figurine » la remet)
+      ["🗑️ Supprimer (pas dans la collection)", async () => {   // son nombre dans le set passe à 0 (« + 🟡 Figurine » la remet)
         const mfs = src.info?.minifigs || [], have = src.with_minifigs === false ? Object.fromEntries(mfs.map(f => [f.id, 0])) : figHave(src, mfs, src.quantity || 1);
         const f0 = (src.info?.minifigs || []).find(f => f.id === fid), def = (f0?.qty || 1) * (src.quantity || 1), cur = have[fid] || 0, orig = Math.min(cur, def), more = cur - orig;
         const nn = extra ? orig : more;   // tuile des ajoutées : seulement elles ; tuile d'origine : seulement celle(s) d'origine
@@ -9059,7 +9234,7 @@ function figInSets(number) {
   }
   return out;
 }
-/* minifig : un bouton par set de ma collection qui la contient (ouvre la fiche du set) */
+/* minifig : un bouton par set de la collection qui la contient (ouvre la fiche du set) */
 function ownedSetsWithFig(number) {
   const k = figKey(number);
   return state.items.filter(i => isHost(i) && !isFig(i) && kindOf(i.list_id) === "collection"   // (sets, sets partiels, MOC)
@@ -9088,7 +9263,7 @@ function drawCatalogSets(box, info, onPick) {
   box.hidden = !sets.length;
   if (!sets.length) { box.innerHTML = ""; return; }
   const draft = state.draft;
-  box.innerHTML = `<div class="in-sets-title">${sets.length > 1 ? "Aussi dans ces sets" : "Aussi dans ce set"} <span class="in-sets-note">— pas dans ma collection</span></div>` + sets.map(n => `<button type="button" class="in-set-btn" data-set="${esc(n)}">
+  box.innerHTML = `<div class="in-sets-title">${sets.length > 1 ? "Aussi dans ces sets" : "Aussi dans ce set"} <span class="in-sets-note">— pas dans la collection</span></div>` + sets.map(n => `<button type="button" class="in-set-btn" data-set="${esc(n)}">
       <img src="${img(`https://cdn.rebrickable.com/media/thumbs/sets/${n}.jpg/250x250p.jpg`)}" data-fb="${esc(img(`https://www.brickeconomy.com/resources/images/sets/lego-${n}_medium.jpg`))}" alt="" loading="lazy">
       <span><b data-nm>${esc(n)}</b><small>${esc(n)}</small></span></button>`).join("");
   $$("[data-set]", box).forEach(b => {
@@ -9115,7 +9290,7 @@ function drawOwnedSets(box, number, before, onPick) {
   const cnt = i => i.id === here ? Math.max(0, qv()) : nIn(i);
   const total = () => sets.reduce((a, i) => a + cnt(i), 0) + (solo ? loose() : 0);
   const step = (k, n) => `<span class="stepper set-step" data-sid="${esc(k)}"><button type="button" data-ss="-1" aria-label="Une de moins">−</button><b data-sv>${nf.format(n)}</b><button type="button" data-ss="1" aria-label="Une de plus">+</button></span>`;
-  box.innerHTML = sets.length ? `<div class="in-sets-title">Dans mes sets${edit ? ` <span class="in-sets-note" data-tot>— ${nf.format(total())} au total</span>` : ""}</div>`
+  box.innerHTML = sets.length ? `<div class="in-sets-title">Dans les sets${edit ? ` <span class="in-sets-note" data-tot>— ${nf.format(total())} au total</span>` : ""}</div>`
     + sets.map(i => `<div class="in-set-row"><button type="button" class="in-set-btn" data-open="${esc(i.id)}">
       <img src="${thumb(itemImage(i))}" alt="" loading="lazy"><span><b>${esc(itemName(i))}</b><small>${esc(i.number)}${i.with_minifigs === false && !extraFigs(i).length ? " · sans figurines" : ""}${i.id === here ? " · ce set" : ""}</small></span></button>${edit ? step(i.id, cnt(i)) : ""}</div>`).join("")
     + (solo ? `<div class="in-sets-solo"><span class="lbl-like">Seules (sans set)</span>${step("solo", loose())}</div>` : "") : "";
@@ -9129,7 +9304,7 @@ function drawOwnedSets(box, number, before, onPick) {
   $$("[data-ss]", box).forEach(b => b.onclick = async () => {
     const sid = b.closest("[data-sid]").dataset.sid, d = +b.dataset.ss, q = $("#cfgQty");
     if (sid === "solo") {   // seules : la quantité de la fiche (enregistrée avec 💾) ; « ce set » : comme les autres (sortir / ranger)
-      if (sid === "solo" && d < 0 && loose() < 1) return toast("Plus aucune figurine seule : pour en retirer une, enlevez-la d'un set (− dans « Dans mes sets »).");
+      if (sid === "solo" && d < 0 && loose() < 1) return toast("Plus aucune figurine seule : pour en retirer une, l'enlever d'un set (− dans « Dans les sets »).");
       q.value = sid === "solo" ? Math.max(inSetN(), Math.min(999, qv() + d)) : Math.max(0, Math.min(999, qv() + d));
       q.dispatchEvent(new Event("input", { bubbles: true })); return;
     }
@@ -9211,7 +9386,7 @@ function drawOwnedSets(box, number, before, onPick) {
 const plainItem = i => (i.portion ?? 100) >= 100 && !(i.missing_minifigs || []).length && !Object.keys(i.fig_counts || {}).length && i.with_minifigs !== false;
 
 /* liste de destination : options + bouton « + » pour créer une liste sans quitter la fiche.
-   Les listes « À commander » ne sont proposées QUE pour une figurine (fiche en cours : state.draft.kind "fig") */
+   Les listes « Commandes » ne sont proposées QUE pour une figurine (fiche en cours : state.draft.kind "fig") */
 function fillListSelect(selected) {
   const parts = state.draft?.kind === "fig" ? listTree("parts") : [];
   $("#cfgList").innerHTML = `<option value="" disabled hidden>Choisir une liste…</option><optgroup label="Collection">${listTree("collection").map(({ l, depth }) => `<option value="${l.id}">${esc(indentName(l, depth))}</option>`).join("")}</optgroup>
@@ -9300,7 +9475,7 @@ function estimateUnit(it, info) {
   return { unit: raw * (1 - mk), boxAdd, planCut, modCut: raw * mk * n, base, deduct, extra: extra - mods - setSw, mods, setSw, portion };
 }
 
-/* déjà dans ma collection : la fiche ajuste la quantité de cet exemplaire au lieu d'en ajouter un */
+/* déjà dans la collection : la fiche ajuste la quantité de cet exemplaire au lieu d'en ajouter un */
 function setAdjust(a) {
   state.draft.adjust = a || null;
   const inSet = !!a?.fid;
@@ -9350,7 +9525,7 @@ $("#btnSeparate").onclick = () => {   // ajouter malgré tout un exemplaire à p
   setAdjust(null); $("#cfgQty").value = 1; $("#cfgList").value = "";
   state.draft.figCounts = null; drawFigList(1); updateEstimate();
 };
-/* « ⧉ Copier cette fiche » : la figurine possédée de cette fiche (seule, ou d'origine dans un de mes sets), sinon null */
+/* « ⧉ Copier cette fiche » : la figurine possédée de cette fiche (seule, ou d'origine dans un des sets), sinon null */
 function dupSource() {
   const dr = state.draft;
   if (!dr || dr.kind !== "fig" || dr.item?.dup_pending) return null;
@@ -9358,7 +9533,7 @@ function dupSource() {
   if (dr.adjust?.fid && dr.adjust.it) return state.items.find(i => i.set_orig && i.attached_to === dr.adjust.it.id && i.number === dr.adjust.fid) || null;
   return null;
 }
-/* où ranger la copie : son set d'origine d'abord, puis mes autres sets qui ont cette figurine, ou aucun (rend l'id, "" ou null : annulé) */
+/* où ranger la copie : son set d'origine d'abord, puis les autres sets qui ont cette figurine, ou aucun (rend l'id, "" ou null : annulé) */
 function chooseDupSet(src) {
   return new Promise(res => {
     const origin = src._in && isHost(src._in) ? src._in : null;
@@ -9402,7 +9577,7 @@ $("#btnDupFig").onclick = async e => {
   const dr = state.draft, it = dr.item;
   if (k === "set") return copyWhole(it);
   const acts = [["📄 Copier un exemplaire", () => dupSource() ? dupFig() : copyWhole(it)]];
-  if (dr.adjust?.fid && dr.adjust.it) {   // figurine d'un de mes sets : vers un autre set
+  if (dr.adjust?.fid && dr.adjust.it) {   // figurine d'un des sets : vers un autre set
     const host = dr.adjust.it, fid = dr.adjust.fid, nm = setFigName() || dr.info?.name || fid;
     const cnt = () => { const h = state.items.find(i => i.id === host.id); return h ? figHave(h, h.info?.minifigs || [], h.quantity || 1)[fid] || 0 : 0; };
     acts.push(["➡️ Déplacer vers un autre set…", async () => { const n0 = cnt(); await figTo(host, fid, nm, true); if (cnt() !== n0) modal.hidden = true; }]);
@@ -9425,7 +9600,7 @@ async function dupFig() {
     if (realSwaps(sw0).length && (src.quantity || 1) > 1) await api(`/api/items/${r.id}/fig-swaps`, { method: "POST", body: { swaps: swapsBody(sp[0]) } });   // (part d'un exemplaire)   // rien retiré de l'original : demandé à l'enregistrement
     await load();
     openEdit(r.id);
-    toast("Nouvelle fiche, copie de l'original : modifiez-la puis enregistrez (fermer sans enregistrer l'annule)");
+    toast("Nouvelle fiche, copie de l'original : la modifier puis enregistrer (fermer sans enregistrer l'annule)");
   } catch (e) { toast(e.message); }
 }
 /* « + Étiquette » / ✕ sous le nom de la fiche : étiquettes ajoutées à la main, enregistrées tout de suite */
@@ -9529,7 +9704,7 @@ function updateEstimate() {
 function pendingEstimate(fig) {
   const si = state.draft.item, mi = si?.moc_info, on = $("#cfgPartsEst").checked;
   $("#partsEstRow").hidden = false;
-  $("#estLabel").textContent = si ? (fig ? "Estimation de ma figurine" : "Estimation de mon set") : "Valeur estimée";
+  $("#estLabel").textContent = si ? (fig ? "Estimation de la figurine" : "Estimation du set") : "Valeur estimée";
   if (on && mi?.priced) {
     $("#estValue").innerHTML = moneyA(si.total_value, si.approx);
     $("#estDetail").textContent = `Estimé par ses pièces : ${nf.format(mi.priced - (mi.approx || 0))} / ${nf.format(mi.lots)} références${mi.done ? "." : " (chiffrage en cours…)"}`;
@@ -9563,7 +9738,7 @@ function updateEstimateBase() {
     const keepList = isFigMoc && !!mi && !(state.draft.mocLots || []).length && state.draft.item?.custom_type !== "fig";   // MOC passé en figurine : sa liste de pièces reste (affichée en figurine après l'enregistrement)
     $("#mocFigRow").hidden = !isFigMoc || keepList; $("#mocSetRow").hidden = isFigMoc && !keepList;
     if (isFigMoc) drawMocLots();
-    $("#estLabel").textContent = state.draft.item?.catalog_set ? "Estimation par les pièces" : state.draft.item ? (state.draft.item.partial_set ? "Estimation de mon set partiel" : "Estimation de mon MOC") : "Valeur estimée";
+    $("#estLabel").textContent = state.draft.item?.catalog_set ? "Estimation par les pièces" : state.draft.item ? (state.draft.item.partial_set ? "Estimation du set partiel" : "Estimation du MOC") : "Valeur estimée";
     if (setMoc && mi?.priced && !state.draft.mocFile && !(isFigMoc && state.draft.mocLotsDirty)) {
       const n = it.quantity || 1;
       const ma = mi.approx > 0 || mi.missing > 0;   // MOC pas chiffré à 100 %
@@ -9577,7 +9752,7 @@ function updateEstimateBase() {
     } else {
       $("#estValue").textContent = "Sans estimation";
       $("#estDetail").textContent = state.draft.mocFile?.text || (isFigMoc && state.draft.mocLotsDirty && state.draft.mocLots.length) ? "Le chiffrage des pièces démarrera à l'enregistrement."
-        : mi && !mi.done ? "Chiffrage des pièces en cours…" : `Importez la liste de pièces ${it.custom_type === "fig" ? "de la figurine" : $("input[name=cukind]:checked")?.value === "partial" ? "de ce que vous avez" : "du MOC"} pour l'estimer.`;
+        : mi && !mi.done ? "Chiffrage des pièces en cours…" : `Importer la liste de pièces ${it.custom_type === "fig" ? "de la figurine" : $("input[name=cukind]:checked")?.value === "partial" ? "de ce qui est présent" : "du MOC"} pour l'estimer.`;
     }
     {   /* figurines rangées dans ce set MOC / set partiel : elles montent son estimation, comme sur sa carte (leurs fiches ne comptent pas une seconde fois ailleurs) */
       const kids = isFigMoc ? [] : (state.draft.item?._att || []), kv = kids.reduce((a, x) => a + (x.total_value || 0), 0), kn = kids.reduce((a, x) => a + (x.quantity || 1), 0);
@@ -9600,9 +9775,9 @@ function updateEstimateBase() {
   }
   if (it.fig) {
     ["#wishBox", "#figBox"].forEach(s => $(s).hidden = true);
-    $("#estLabel").textContent = it.wish ? "Prix estimé (liste de souhaits)" : state.draft.item || setFigSheet() ? "Estimation de ma figurine" : "Valeur estimée";
+    $("#estLabel").textContent = it.wish ? "Prix estimé (liste de souhaits)" : state.draft.item || setFigSheet() ? "Estimation de la figurine" : "Valeur estimée";
     if (!state.draft.item) $("#modalTitle").textContent = it.wish ? "Ajouter une figurine à la liste de souhaits" : state.draft.adjust?.fid ? (setFigName() || info.name || info.number) : "Ajouter une figurine";
-    const am = state.draft.view && state.draft.adjust?.fid ? state.draft.adjust.it?.fig_mods?.[state.draft.adjust.fid] : null;   // minifig d'un de mes sets
+    const am = state.draft.view && state.draft.adjust?.fid ? state.draft.adjust.it?.fig_mods?.[state.draft.adjust.fid] : null;   // minifig d'un des sets
     const sw = state.draft.item?.fig_swaps?.length && !it.wish ? state.draft.item : am?.fig_swaps?.length ? am : null;
     const delta = sw ? (sw.swap_price?.delta || 0) : 0;   // écart des pièces du LOT entier
     const mk = sw && isModified(sw) ? modPct() / 100 : 0;   // minifig modifiée (pièce retirée ou remplacée) : décote…
@@ -9628,7 +9803,7 @@ function updateEstimateBase() {
     }
     $("#cfgImg").src = img(state.draft.photoUrl || info.image);
     $("#btnPhotoPick").hidden = false;
-    const inBox = (!!state.draft.item && !isWish(state.draft.item.list_id)) || !!figTarget();   // minifig de ma collection : ses pièces sont dans la fiche
+    const inBox = (!!state.draft.item && !isWish(state.draft.item.list_id)) || !!figTarget();   // minifig de la collection : ses pièces sont dans la fiche
     $("#btnFigParts").hidden = true;
     $("#btnShowParts").hidden = inBox; $("#btnShowParts").textContent = "🔶 Pièces"; $("#btnSwapParts").hidden = true;
     return;
@@ -9642,7 +9817,7 @@ function updateEstimateBase() {
   const figLike = autoFigPhoto(info);
   $("#figBox").hidden = wishMode || !info.minifig_count || autoFigPhoto(info);   // sachet / minifig : pas de choix des figurines
   $("#estLabel").textContent = wishMode ? "Prix estimé (liste de souhaits)" : "Valeur estimée";
-  if (!state.draft.item) $("#modalTitle").textContent = wishMode ? "Ajouter à la liste de souhaits" : "Ajouter à ma collection";
+  if (!state.draft.item) $("#modalTitle").textContent = wishMode ? "Ajouter à la liste de souhaits" : "Ajouter à la collection";
   $("#cfgImg").src = img(state.draft.photoUrl || setPhoto(info, state.draft.photoPref));
   $("#btnPhotoPick").hidden = (state.draft.kind || "set") !== "set";
   $("#btnFigParts").hidden = true;
@@ -9685,7 +9860,7 @@ function updateEstimateBase() {
   if (info?.pending_prices) { pendingEstimate(false); return; }   // sans cote (catalogue des prix injoignable)
   const { unit, base, deduct, extra, mods, setSw, modCut, boxAdd, planCut, portion } = estimateUnit({ ...it, fig_mods: state.draft.item?.fig_mods, set_mod: state.draft.item?.set_mod }, info);
   const n = it.quantity || 1;
-  $("#estLabel").textContent = state.draft.item ? "Estimation de mon set" : "Valeur estimée";
+  $("#estLabel").textContent = state.draft.item ? "Estimation du set" : "Valeur estimée";
   const sa = false;   // « ~ » : seulement pour les MOC
   $("#estValue").innerHTML = n > 1 ? `${moneyA(unit * n, sa)} ${qtyTag(n)}<span class="qp-unit">Prix unitaire : ${moneyA(unit, sa)}</span>` : moneyA(unit, sa);
   const rows = [[`Set complet ${it.condition === "neuf" ? "neuf" : "d'occasion"}`, (it.condition === "neuf" ? zoneTxt(info.market?.new, base) : info.used_guess ? "" : zoneTxt(info.market?.used, base)) + money(base) + (n > 1 ? ` × ${n}` : "")]];
@@ -9750,7 +9925,7 @@ $("#btnPhotoPick").onclick = async () => {
       <label class="btn primary">📷 Appareil photo<input type="file" capture="environment" data-own accept="image/*" hidden></label>
       <label class="btn">📁 Importer une image<input type="file" data-own accept="image/*" hidden></label>
     </div>
-    <p class="hint" data-upmsg style="margin:0 0 8px">Ou choisissez une photo du catalogue :</p>
+    <p class="hint" data-upmsg style="margin:0 0 8px">Ou choisir une photo du catalogue :</p>
     <div class="pick-grid" data-grid><div class="loading"><span class="spinner"></span>Chargement des photos…</div></div>
     <div class="est-actions" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-def>↩ Photo par défaut</button></div></div>`;
   document.body.append(d);
@@ -9769,14 +9944,14 @@ $("#btnPhotoPick").onclick = async () => {
     const msg = $("[data-upmsg]", d); msg.innerHTML = `<span class="spinner"></span>Envoi de la photo…`;
     const src = URL.createObjectURL(f);
     const blob = await cropImage(src, undefined, { ...(state.draft.kind === "fig" ? FIG_CROP : {}), cutout: true }); URL.revokeObjectURL(src);
-    if (!blob) { msg.textContent = "Ou choisissez une photo du catalogue :"; return; }
+    if (!blob) { msg.textContent = "Ou choisir une photo du catalogue :"; return; }
     try {
       const r = await api("/api/upload", { method: "POST", body: blob });
       choose(r.url);
     } catch (err) { msg.textContent = "Envoi impossible : " + err.message; }
   });
-  if (state.draft.kind !== "custom" && state.draft.photoUrl?.startsWith("/api/upload/")) {   // ma photo actuelle : la recadrer (MOC : « Recadrer la photo »)
-    const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = "✂️ Modifier ma photo";
+  if (state.draft.kind !== "custom" && state.draft.photoUrl?.startsWith("/api/upload/")) {   // la photo actuelle : la recadrer (MOC : « Recadrer la photo »)
+    const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = "✂️ Modifier la photo";
     $(".cam-row", d).append(b);
     b.onclick = async () => {
       const blob = await cropImage(state.draft.photoUrl, undefined, { ...(draftIsFig() ? FIG_CROP : {}), cutout: true }); if (!blob) return;
@@ -9791,7 +9966,7 @@ $("#btnPhotoPick").onclick = async () => {
   for (const f of info.minifigs || []) if (f.image) list.push(figPhoto(f.image));   // photos des figurines du set
   list = [...new Set(list)];
   const cur = isMocDraft ? state.draft.custom.imageUrl : state.draft.photoUrl;
-  if (cur && cur.startsWith("/api/upload/")) list.unshift(cur);   // ma photo actuelle
+  if (cur && cur.startsWith("/api/upload/")) list.unshift(cur);   // la photo actuelle
   $("[data-grid]", d).innerHTML = list.map((u, k) => `<button type="button" class="pick ${u === cur ? "on" : ""}" data-k="${k}"><img src="${img(u)}" alt="" loading="lazy"></button>`).join("")
     || `<div class="loading">Aucune photo proposée pour ce set.</div>`;
   $$("[data-k]", d).forEach(b => b.onclick = () => choose(list[+b.dataset.k]));
@@ -9808,7 +9983,7 @@ function pickPhoto({ title, number, current = "", fallback = "", crop = {}, cuto
         <label class="btn">📁 Importer une image<input type="file" data-own accept="image/*" hidden></label>
         ${current ? `<button type="button" class="btn" data-recrop>✂️ Recadrer la photo actuelle</button>` : ""}
       </div>
-      <p class="hint" data-msg style="margin:0 0 8px">Ou choisissez une photo du catalogue :</p>
+      <p class="hint" data-msg style="margin:0 0 8px">Ou choisir une photo du catalogue :</p>
       <div class="pick-grid" data-grid><div class="loading"><span class="spinner"></span>Chargement des photos…</div></div>
       <div class="est-actions" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-def>↩ Photo par défaut</button></div></div>`;
     document.body.append(d);
@@ -9818,7 +9993,7 @@ function pickPhoto({ title, number, current = "", fallback = "", crop = {}, cuto
     $("[data-def]", d).onclick = () => done("");
     const msg = $("[data-msg]", d);
     const cropAndSend = async src => {
-      const blob = await cropImage(src, undefined, { ...crop, cutout: cutout && src.startsWith("blob:") });   // ma photo (pas une du catalogue) : fond retiré
+      const blob = await cropImage(src, undefined, { ...crop, cutout: cutout && src.startsWith("blob:") });   // la photo (pas une du catalogue) : fond retiré
       if (src.startsWith("blob:")) URL.revokeObjectURL(src);
       if (!blob) return;
       msg.innerHTML = `<span class="spinner"></span>Envoi de la photo…`;
@@ -9891,7 +10066,7 @@ function chooseCustomKind() {
   return new Promise(res => {
     const d = document.createElement("div"); d.className = "modal over";
     d.innerHTML = `<div class="modal-box" style="width:min(420px,100%)"><div class="modal-head"><h2>Quel type de fiche ?</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-      <div class="setlist">${[["moc", "🛠️ MOC", "une construction à vous (ou introuvable)"], ["fig", "🟠 Figurine MOC", "une figurine composée de pièces"], ["partial", "🧩 Set partiel", "une partie d'un vrai set"]]
+      <div class="setlist">${[["moc", "🛠️ MOC", "une construction perso (ou introuvable)"], ["fig", "🟠 Figurine MOC", "une figurine composée de pièces"], ["partial", "🧩 Set partiel", "une partie d'un vrai set"]]
         .map(([k, t, s]) => `<button type="button" class="link-row" data-k="${k}"><span class="rn">${t}<small>${s}</small></span></button>`).join("")}</div></div>`;
     document.body.append(d);
     const done = v => { d.remove(); res(v); };
@@ -9917,16 +10092,16 @@ async function mocQuickScan() {   // (fiche nouvelle ou déjà enregistrée ; ph
   dr.scanToken = null;
   const show = t => { if (dr.scanSeq === mine && st) { st.hidden = false; st.textContent = t; } };
   show("⏳ Scan des pièces de la photo…");
-  const slow = setTimeout(() => show("⏳ Le scan continue… Vous pouvez enregistrer : il sera rattaché à la fiche."), 5000);
+  const slow = setTimeout(() => show("⏳ Le scan continue… La fiche peut être enregistrée : il y sera rattaché."), 5000);
   try {
     const x = await fetch("/api/moc-scan/photo", { method: "POST", headers: { "Content-Type": blob.type || "image/jpeg" }, body: blob });
     const j = await x.json().catch(() => ({}));
     if (!x.ok) throw new Error(j.erreur || x.status);
     if (dr.scanSeq !== mine) return;
     dr.scanToken = j.token;
-    show(`✔ ${j.found} pièce${j.found > 1 ? "s" : ""} repérée${j.found > 1 ? "s" : ""} : cochez les bonnes ci-dessous.`);
+    show(`✔ ${j.found} pièce${j.found > 1 ? "s" : ""} repérée${j.found > 1 ? "s" : ""} : cocher les bonnes ci-dessous.`);
     try { const r = await api(`/api/moc-scan/${j.token}/slots`, { method: "POST", body: {} }); if (dr.scanSeq === mine) { dr.scanSlots = [...(r.slots || []).filter(sl => sl.cands?.length), ...(r.others || []).map(o => ({ cands: [o], colors: o.colors || [], other: true }))]; drawScanPick(); } } catch {}
-    if (dr.item) toast(`Photo scannée : ${j.found} pièce${j.found > 1 ? "s" : ""} repérée${j.found > 1 ? "s" : ""} — enregistrez la fiche pour les valider`);
+    if (dr.item) toast(`Photo scannée : ${j.found} pièce${j.found > 1 ? "s" : ""} repérée${j.found > 1 ? "s" : ""} — enregistrer la fiche pour les valider`);
   } catch { show("Scan indisponible, reprise automatique plus tard."); }
   finally { clearTimeout(slow); }
 }
@@ -9968,7 +10143,7 @@ $$("input[name=cutype]").forEach(r => r.addEventListener("change", () => {
   state.draft.custom.type = r.value;
   $("#modalTitle").textContent = state.draft.item ? $("#cfgName").textContent : "Ajouter un MOC";
   customLabels();
-  drawFigExtra();   // figurines du MOC (set) / « Ranger dans un de mes sets » (figurine) : selon le type choisi
+  drawFigExtra();   // figurines du MOC (set) / « Ranger dans un des sets » (figurine) : selon le type choisi
 }));
 /* renommer : toucher le nom (titre de la fenêtre ou nom de la fiche) — plus de bouton ✏️ */
 const canRename = () => !$("#modalRename").hidden && !!state.draft && !sheetRo();   // (lecture : pas de renommage — seulement après 🔧)
@@ -9980,7 +10155,7 @@ function pickCatalogFig(title, refImage = "") {
     const d = document.createElement("div");
     d.className = "modal over";
     d.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-      <p class="hint" style="margin-top:0">Cherchez la figurine (nom, numéro ou photo), puis touchez-la.</p>
+      <p class="hint" style="margin-top:0">Chercher la figurine (nom, numéro ou photo), puis la toucher.</p>
       <div data-sb>${refImage ? `<button type="button" class="ref-pick" data-ref title="Chercher la figurine d'après la photo de la fiche"><img src="${esc(refImage.startsWith("blob:") ? refImage : img(refImage))}" alt=""><span>🖼️ À partir de la photo actuelle</span></button>` : ""}
         ${searchBlock("Ex : Captain Rex, sw0450, Pilote…", { form: "data-cf" })}</div><div class="results" data-cr></div></div>`;
     document.body.append(d);
@@ -9993,7 +10168,7 @@ function pickCatalogFig(title, refImage = "") {
       const figs = (list || []).filter(r => r.type === "fig").slice(0, 40);
       box.innerHTML = figs.map((r, k) => `<button class="res" data-pk="${k}"><img src="${img(r.image)}" alt="" loading="lazy">
         <div><div class="t">${esc(r.number)} · ${esc(r.name)}${ownMark(r, true)}</div><div class="s">${esc([r.years, r.theme].filter(Boolean).join(" · "))}</div></div>
-        ${r.score != null ? `<span class="score">${r.score} %</span>` : ""}</button>`).join("") || `<div class="loading">Aucune figurine trouvée. Essayez son numéro (ex : sw0450) ou une autre photo.</div>`;
+        ${r.score != null ? `<span class="score">${r.score} %</span>` : ""}</button>`).join("") || `<div class="loading">Aucune figurine trouvée. Essayer son numéro (ex : sw0450) ou une autre photo.</div>`;
       $$("[data-pk]", box).forEach(b => b.onclick = () => close(figs[+b.dataset.pk].number));
     };
     $("[data-cf]", d).onsubmit = async e => {
@@ -10025,7 +10200,7 @@ function pickCatalogFig(title, refImage = "") {
 $("#cuKindSel").onchange = async e => {
   syncKindBtn();
   const dr = state.draft;
-  if (dr?.adjust?.fid && e.target.value !== "cat") {   // figurine d'un de mes sets : elle sort du set (fiche à elle), puis prend le type choisi
+  if (dr?.adjust?.fid && e.target.value !== "cat") {   // figurine d'un des sets : elle sort du set (fiche à elle), puis prend le type choisi
     const v = e.target.value, { it: host, fid } = dr.adjust, nm = dr.info?.name || fid;
     const what = { tofig: "une figurine seule", toset: "un set", partial: "un set partiel", moc: "un set MOC", fig: "une figurine MOC" }[v];
     if (!await confirmBox(`Sortir « ${nm} » du set « ${itemName(host)} » et en faire ${what} ?`, { ok: "Transformer",
@@ -10051,7 +10226,7 @@ $("#cuKindSel").onchange = async e => {
     const num = ((await pickCatalogFig(`« ${itemName(dr.item)} » devient une figurine`, dr.photoUrl || curPhoto(dr.item.id))) || "").trim();   // recherche (nom, numéro, photo, photo de la fiche)
     if (!num) return back();
     if (!await confirmBox(`Transformer « ${itemName(dr.item)} » en figurine ${num} ?`, { ok: "Transformer",
-      warn: "La fiche prend le nom, la photo et la cote de la figurine dans le catalogue. Sa liste, sa quantité, ses notes, ses tâches, ses accessoires, ses apparences et votre photo sont gardés"
+      warn: "La fiche prend le nom, la photo et la cote de la figurine dans le catalogue. Sa liste, sa quantité, ses notes, ses tâches, ses accessoires, ses apparences et la photo sont gardés"
         + (dr.kind === "custom" ? " ; sa liste de pièces de MOC ne sert plus." : " ; ses figurines rangées dedans redeviennent seules.") })) return back();
     try { await api(`/api/items/${dr.item.id}/to-fig`, { method: "POST", body: { number: num } }); await load(); openEdit(dr.item.id); toast(`Fiche transformée en figurine ${num}`); }
     catch (err) { toast(err.message); back(); }
@@ -10071,7 +10246,7 @@ $("#cuKindSel").onchange = async e => {
     const num = ((await ask(`« ${itemName(dr.item)} » devient un set`, "Numéro du set (ex : 75192)")) || "").trim();
     if (!num) return back();
     const ok = await confirmBox(`Transformer « ${itemName(dr.item)} » en set ${num} ?`, { ok: "Transformer",
-      warn: "La fiche prend le nom, la photo et la cote du set dans le catalogue. Sa liste, sa quantité, ses notes, ses tâches et votre photo sont gardées"
+      warn: "La fiche prend le nom, la photo et la cote du set dans le catalogue. Sa liste, sa quantité, ses notes, ses tâches et la photo sont gardées"
         + (dr.kind === "custom" ? " ; sa liste de pièces et son estimation de MOC ne servent plus." : ".") });
     if (!ok) return back();
     try { await api(`/api/items/${dr.item.id}/to-set`, { method: "POST", body: { number: num } }); await load(); openEdit(dr.item.id); toast(`Fiche transformée en set ${num}`); }
@@ -10083,7 +10258,7 @@ $("#cuKindSel").onchange = async e => {
     const what = { moc: "un set MOC", partial: "un set partiel", fig: "une figurine MOC" }[v];
     const ok = await confirmBox(`Transformer « ${itemName(dr.item)} » en ${what} ?`, { ok: "Transformer",
       warn: v === "fig" && dr.kind === "fig" ? "" : "Sa cote du catalogue ne compte plus : sa valeur viendra de ses pièces"
-        + (v === "fig" ? " (scannez ou ajoutez ses pièces)." : " (une tâche « Ajouter la liste de pièces » est créée).")
+        + (v === "fig" ? " (scanner ou ajouter ses pièces)." : " (une tâche « Ajouter la liste de pièces » est créée).")
         + (dr.kind === "fig" ? "" : " Ses figurines sont gardées en figurines seules.") });
     if (!ok) { e.target.value = "cat"; syncKindBtn(); return; }
     try { await api(`/api/items/${dr.item.id}/to-custom`, { method: "POST", body: { type: v } }); await load(); openEdit(dr.item.id); toast(`Fiche transformée en ${what}`); }
@@ -10105,7 +10280,7 @@ $("#cuCam").onchange = e => $("#cuFile").onchange(e);
 function drawMocInfo() {
   const f = state.draft?.mocFile, mi = state.draft?.item?.moc_info;
   const info = $("#cuPartsInfo");
-  if (f?.text) info.innerHTML = `📋 XML collé (${nf.format((f.text.match(/<ITEM>/gi) || []).length)} lignes ITEM) : il sera importé et chiffré à l'enregistrement${mi ? " (vous choisirez : écraser les pièces actuelles ou les compléter)" : ""}.`;
+  if (f?.text) info.innerHTML = `📋 XML collé (${nf.format((f.text.match(/<ITEM>/gi) || []).length)} lignes ITEM) : il sera importé et chiffré à l'enregistrement${mi ? " (au choix : écraser les pièces actuelles ou les compléter)" : ""}.`;
   else if (f?.remove) info.textContent = "La liste de pièces sera retirée à l'enregistrement.";
   else if (f?.lots) info.textContent = `📋 ${nf.format(f.lots.length)} références de l'inventaire (${nf.format(f.lots.reduce((a, x) => a + (x.qty || 1), 0))} pièces) : importées à l'enregistrement.`;
   else if (mi) info.textContent = "";   // liste déjà importée : rien à rappeler ici
@@ -10168,7 +10343,7 @@ async function openMocParts(it) {
           ${rbSetUrl(it) ? `<a class="btn small-btn" href="${esc(rbSetUrl(it))}" target="_blank" rel="noopener">🔎 Le set sur BrickLink</a>` : ""}
           ${rebSetUrl(it) ? `<a class="btn small-btn" href="${esc(rebSetUrl(it))}" target="_blank" rel="noopener">🔎 Le set sur Rebrickable</a>` : ""}
           <button type="button" class="btn small-btn danger-ghost" data-clear>🗑️ Retirer la liste</button></div>
-        <div data-xmlbox hidden><textarea data-xmltxt rows="5" class="moc-xml" spellcheck="false" placeholder="Collez ici le XML BrickLink de la liste de pièces (Rebrickable : Inventory → Export → BrickLink XML)"></textarea>
+        <div data-xmlbox hidden><textarea data-xmltxt rows="5" class="moc-xml" spellcheck="false" placeholder="Coller ici le XML BrickLink de la liste de pièces (Rebrickable : Inventory → Export → BrickLink XML)"></textarea>
           <div class="est-actions" style="justify-content:flex-end;margin:6px 0 10px"><button type="button" class="btn primary" data-xmlgo>Importer</button></div></div>
         <p class="hint" style="margin:0 0 8px" data-sum></p>
         <div class="moc-lots" data-list></div>`;
@@ -10198,7 +10373,7 @@ async function openMocParts(it) {
     }
     const total = lots.reduce((a, x) => a + x.qty, 0);
     $("[data-clear]", body).hidden = !lots.length; $("[data-order]", body).hidden = !lots.length;
-    $("[data-sum]", body).innerHTML = (lots.length ? `${nf.format(lots.length)} références · ${nf.format(total)} pièces · touchez une pièce pour ses actions` : "Aucune pièce pour le moment : importez un XML ou recherchez des pièces.")
+    $("[data-sum]", body).innerHTML = (lots.length ? `${nf.format(lots.length)} références · ${nf.format(total)} pièces · toucher une pièce pour ses actions` : "Aucune pièce pour le moment : importer un XML ou rechercher des pièces.")
       + (r.pending ? ` · <span class="spinner"></span> noms des pièces en cours de récupération (${r.pending})…` : "");
     draw();
     if (r.pending) timer = setTimeout(() => fetchLots(false), 5000);
@@ -10216,7 +10391,7 @@ $("#btnFigParts").onclick = () => state.draft?.item && openFigParts(state.draft.
 $("#btnSwapParts").onclick = () => state.draft?.item && openFigParts(state.draft.item.id, "#set");
 $("#btnShowParts").onclick = () => {
   const dr = state.draft; if (!dr?.info?.number) return;
-  if (dr.kind !== "fig" && dr.item && (dr.item.kind || "set") === "set" && !isWish(dr.item.list_id)) return openFigParts(dr.item.id, "#set");   // set de ma collection : ses pièces et leurs actions
+  if (dr.kind !== "fig" && dr.item && (dr.item.kind || "set") === "set" && !isWish(dr.item.list_id)) return openFigParts(dr.item.id, "#set");   // set de la collection : ses pièces et leurs actions
   openPartsToOrder({ fig: dr.kind === "fig", number: dr.info.number, name: dr.item ? itemName(dr.item) : dr.info.name, item: dr.item || null });
 };
 
@@ -10260,7 +10435,7 @@ async function openPartsToOrder({ fig, number, name, item, rows: given }) {
   body.innerHTML = `<div class="toolbar" style="margin:0 0 10px">
       <input type="search" data-q placeholder="Filtrer : nom, référence, couleur…">
       <button type="button" class="btn" data-all>Tout cocher</button><button type="button" class="btn" data-none>Tout décocher</button></div>
-    <p class="hint" style="margin:0 0 8px">${nf.format(rows.length)} références · ${nf.format(rows.reduce((a, r) => a + r.qty, 0))} pièces${fig ? "" : " (hors figurines)"}. Cochez celles à commander et ajustez la quantité.</p>
+    <p class="hint" style="margin:0 0 8px">${nf.format(rows.length)} références · ${nf.format(rows.reduce((a, r) => a + r.qty, 0))} pièces${fig ? "" : " (hors figurines)"}. Cocher celles à commander et ajuster la quantité.</p>
     <div class="order-list" data-list></div>
     <div class="est-actions order-foot">
       <label>Liste<select data-target>${lists.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select></label>
@@ -10348,7 +10523,7 @@ async function openFigParts(itemId, figId = "", opts = {}) {
       try { await post({ rb_fig: list[0].fig_num }); await load(); return show(); } catch (e) { toast(e.message); }
     }
     chooseVersion.manual = false;
-    body.innerHTML = `<p class="ask">Plusieurs versions possibles : laquelle correspond à votre figurine ? (à choisir une seule fois)</p>
+    body.innerHTML = `<p class="ask">Plusieurs versions possibles : laquelle correspond à la figurine ? (à choisir une seule fois)</p>
       <div class="results">${list.map((m, k) => `<button class="res" data-k="${k}"><img src="${img(m.image)}" alt="" loading="lazy">
         <div><div class="t">${esc(m.name)}</div><div class="s">${esc(m.fig_num)}${m.num_parts ? ` · ${m.num_parts} pièces` : ""}${m.from !== "nom" ? ` · dans le set ${esc(m.from)}` : ""}</div></div></button>`).join("")
         || `<div class="loading">Aucune figurine trouvée sur Rebrickable.</div>`}</div>`;
@@ -10381,7 +10556,7 @@ async function openFigParts(itemId, figId = "", opts = {}) {
     const swapOf = k => swaps.find(x => x.k === k);
     const price = x => x?.unit == null ? `<span class="muted small">prix introuvable</span>` : money(x.unit);
     const mlObjs = [];   // une entrée par ligne : la pièce dont on montre le prix constaté
-    body.innerHTML = (isSet ? `<p class="hint" style="margin-top:0">Pièces du set (hors figurines). Touchez une pièce : commander, cocher dans un inventaire, copier ou déplacer vers une autre fiche, remplacer, retirer.</p>
+    body.innerHTML = (isSet ? `<p class="hint" style="margin-top:0">Pièces du set (hors figurines). Toucher une pièce : commander, cocher dans un inventaire, copier ou déplacer vers une autre fiche, remplacer, retirer.</p>
         <input type="search" data-pf placeholder="Filtrer : nom, référence, couleur…" style="width:100%;margin-bottom:8px" value="${esc(show.flt || "")}">`
       : `<p class="hint" style="margin-top:0">Version Rebrickable <b>${esc(it.rb_fig)}</b> · <button type="button" class="link" data-ver>changer de version</button></p>`) + `
       <div class="sw-top" style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px"><button type="button" class="btn small-btn" data-addpart>+ Ajouter une pièce</button>
@@ -10570,7 +10745,7 @@ function mountReview(box, f, colors, { onDone, rescanNow } = {}) {
   const rowHtml = (sl, k) => {
     const st = stateOf(sl), part = partOf(sl, st), c = isCand(st.choice) ? sl.cands[+st.choice.slice(1)] : null;
     const tone = st.ok ? "ok" : st.choice === "notfound" ? "miss" : part && sl.low && st.choice === "c0" ? "check" : "";
-    const meta = part ? [part.part, c ? `${c.score} %` : "votre recherche", st.color != null ? `${swatch(rgbOf(st.color))} ${esc(colorName(st.color))}` : "couleur ?", st.qty > 1 ? `×${st.qty}` : ""].filter(Boolean).join(" · ") : "";
+    const meta = part ? [part.part, c ? `${c.score} %` : "la recherche", st.color != null ? `${swatch(rgbOf(st.color))} ${esc(colorName(st.color))}` : "couleur ?", st.qty > 1 ? `×${st.qty}` : ""].filter(Boolean).join(" · ") : "";
     const shot = sl.thumb ? `<button type="button" class="rv-zoom rv-shot" data-zimg="${esc(sl.thumb)}" data-zalt="Sur ta photo" title="Sur ta photo" aria-label="Agrandir l'objet de la photo"><img src="${sl.thumb}" alt=""></button>` : "";
     const main = part
       ? `${shot}${zoomBtn(pimg(part, st.color), part.name, true)}<span class="rv-txt"><span class="rv-lbl">${esc(sl.label)}${tone === "check" ? ` <em class="rv-check">à vérifier</em>` : ""}</span><b>${esc(part.name)}</b><small>${meta}</small>${sl.note ? `<small class="rv-note">${esc(sl.note)}</small>` : ""}</span>`
@@ -10582,7 +10757,7 @@ function mountReview(box, f, colors, { onDone, rescanNow } = {}) {
     const editor = editing !== k ? "" : `<div class="rv-editor">
         ${sl.cands.length ? `<div class="rv-sub">Propositions</div><div class="rv-cands">${sl.cands.map((x, j) => `<button type="button" class="rv-cand ${st.choice === "c" + j ? "on" : ""}" data-pick="${k}:${j}">
           <img src="${img(pimg(x, st.color))}" alt=""><span>${esc(x.name.slice(0, 60))}</span><small>${x.part} · ${x.score} %</small></button>`).join("")}
-          ${st.custom ? `<button type="button" class="rv-cand ${st.choice === "custom" ? "on" : ""}" data-pick="${k}:custom"><img src="${img(st.custom.image)}" alt=""><span>${esc(st.custom.name.slice(0, 60))}</span><small>votre recherche</small></button>` : ""}</div>` : ""}
+          ${st.custom ? `<button type="button" class="rv-cand ${st.choice === "custom" ? "on" : ""}" data-pick="${k}:custom"><img src="${img(st.custom.image)}" alt=""><span>${esc(st.custom.name.slice(0, 60))}</span><small>la recherche</small></button>` : ""}</div>` : ""}
         <div class="rv-chips">
           ${/^(bras|mains)/.test(sl.key) ? `<button type="button" class="chip ${st.choice === "included" ? "on" : ""}" data-set="${k}:included">Inclus dans le torse</button>` : ""}
           <button type="button" class="chip ${st.choice === "none" ? "on" : ""}" data-set="${k}:none">Aucune pièce</button>
@@ -10609,7 +10784,7 @@ function mountReview(box, f, colors, { onDone, rescanNow } = {}) {
         ${f.mode === "exploded" ? `<span class="muted small">Scan des pièces séparées</span>` : ""}</div>
       ${scanning ? `<div class="loading"><span class="spinner"></span>Scan des pièces en cours…</div>
         <div class="rv-acts" style="justify-content:center"><button type="button" class="btn small-btn" data-cancelscan>✕ Annuler le scan</button></div>` : empty ? `
-      <p class="hint">Photographiez les pièces du MOC <b>séparées</b>, à plat, espacées, sur un fond uni clair : chaque pièce repérée est listée, à valider. Vous pouvez scanner en plusieurs fois ; les pièces validées s'ajoutent à la liste du MOC.</p>` : `
+      <p class="hint">Photographier les pièces du MOC <b>séparées</b>, à plat, espacées, sur un fond uni clair : chaque pièce repérée est listée, à valider. Le scan peut se faire en plusieurs fois ; les pièces validées s'ajoutent à la liste du MOC.</p>` : `
       <div class="rv-rows">${f.slots.map(rowHtml).join("")}
         ${extra.map((x, j) => `<div class="rv-row ok"><div class="rv-main">${zoomBtn(x.image, x.name, true)}<span class="rv-txt"><span class="rv-lbl">Pièce ajoutée</span><b>${esc(x.name)}</b><small>${esc(x.part)} · ${swatch(rgbOf(x.color_id))} ${esc(x.color_fr)}${x.qty > 1 ? " · ×" + x.qty : ""}</small></span>
           <span class="rv-acts2"><button type="button" class="rv-edit" data-rmx="${j}" aria-label="Retirer" title="Retirer">✕</button></span></div></div>`).join("")}</div>
@@ -10696,7 +10871,7 @@ function mountReview(box, f, colors, { onDone, rescanNow } = {}) {
     if (!f.analysed || f.scan === "running") return;
     on("[data-ok]", b => {
       const k = +b.dataset.ok, st = stateOf(f.slots[k]);
-      if (isCand(st.choice) && st.color == null) { editing = k; draw(); toast("Choisissez la couleur"); return; }
+      if (isCand(st.choice) && st.color == null) { editing = k; draw(); toast("Choisir la couleur"); return; }
       st.ok = !st.ok; persist(); draw();
     });
     on("[data-edit]", b => { const k = +b.dataset.edit; editing = editing === k ? -1 : k; draw(); });
@@ -10850,7 +11025,7 @@ async function openMocReview() {
   const d = document.createElement("div");
   d.className = "modal over review-modal";
   d.innerHTML = `<div class="modal-box review-box"><div class="modal-head"><h2>🧪 MOC à valider</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div>
-    <p class="hint" style="margin-top:0">Pour chaque pièce : vérifiez la proposition (touchez l'image pour l'agrandir), choisissez-en une autre ou cherchez-la vous-même, puis ✓. « Valider la figurine » enregistre ses pièces (avec son estimation) et la retire de cette page. Vos choix sont gardés si vous fermez la page.</p>
+    <p class="hint" style="margin-top:0">Pour chaque pièce : vérifier la proposition (toucher l'image pour l'agrandir), en choisir une autre ou la chercher, puis ✓. « Valider la figurine » enregistre ses pièces (avec son estimation) et la retire de cette page. Les choix sont gardés si la page est fermée.</p>
     <div data-body>${loading("Chargement des propositions…")}</div></div>`;
   document.body.append(d);
   $("[data-x]", d).onclick = () => { d.remove(); load(); };
@@ -10874,7 +11049,7 @@ async function drawMocReview(force, rescanNow = false) {
   box.innerHTML = ""; box.hidden = true;
   if (state.draft?.kind !== "custom") return;
   const isSet = $("input[name=cutype]:checked")?.value !== "fig";
-  if (!it) { box.hidden = isSet; box.innerHTML = `<p class="hint rv-new">${isSet ? "" : "🔍 Après l'ajout, la photo sera scannée automatiquement pour proposer ses pièces, à valider ensuite dans cette fiche (pas de scan si vous ajoutez vous-même ses pièces ici)."}</p>`; return; }
+  if (!it) { box.hidden = isSet; box.innerHTML = `<p class="hint rv-new">${isSet ? "" : "🔍 Après l'ajout, la photo sera scannée automatiquement pour proposer ses pièces, à valider ensuite dans cette fiche (pas de scan si ses pièces sont ajoutées ici à la main)."}</p>`; return; }
   const validated = isSet ? it.moc_scan !== "done" && it.moc_scan !== "running" : (!!it.moc_info || it.moc_reviewed) && !["done", "running"].includes(it.moc_scan);
   if (validated && !force) return;   // pièces déjà validées : le scan ne sert qu'à la création d'une figurine MOC
   box.hidden = false; box.innerHTML = loading("Chargement du scan…");
@@ -10925,7 +11100,7 @@ async function openPartInfo(p) {
   catch (e) { $("[data-b]", d).innerHTML = `<div class="loading">${esc(e.message)}</div>`; return; }
   const c = (r.colors || []).find(x => x.color_id === r.color_id);
   const yrs = r.year_from ? (r.year_to && r.year_to !== r.year_from ? `${r.year_from} – ${r.year_to}` : `${r.year_from}`) : "";
-  const tag = o => o === "collection" ? `<span class="pill ok">Dans ma collection</span>` : o === "wishlist" ? `<span class="pill">⭐ Souhait</span>` : o ? `<span class="pill">Dans mes listes</span>` : "";
+  const tag = o => o === "collection" ? `<span class="pill ok">Dans la collection</span>` : o === "wishlist" ? `<span class="pill">⭐ Souhait</span>` : o ? `<span class="pill">Dans les listes</span>` : "";
   const mine = r.sets.filter(x => x.owned === "collection").length;
   $("[data-b]", d).innerHTML = `<div class="pi-top">
       <button type="button" class="pi-img" data-zoom><img src="${img(r.image || p.image)}" alt=""></button>
@@ -10936,7 +11111,7 @@ async function openPartInfo(p) {
         <div class="pi-meta">${(r.elements || []).length ? `Élément${r.elements.length > 1 ? "s" : ""} ${r.elements.slice(0, 3).map(esc).join(", ")} · ` : ""}${siteLinksOf(["BrickLink", blSale("P", r.bricklink || p.part || r.part_num || "")], boSearch(r.bricklink || p.part || r.part_num || "")).map(([t, u]) => `<a class="ext" ${t === "BrickLink" ? "data-bllink" : ""} href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>`).join(" ")}${(p.part_num || r.part_num) ? ` <a class="ext" href="${esc(rbPartUrl(p.part_num || r.part_num))}" target="_blank" rel="noopener">Rebrickable ↗</a>` : ""}</div></div></div>
     ${r.no_color ? `<p class="hint">Cette pièce n'existe dans aucun set officiel en <b>${esc(col)}</b>.${r.colors.length ? ` Couleurs existantes : ${r.colors.slice(0, 12).map(x => `${swatch(x.rgb)} ${esc(x.color_fr)}`).join(", ")}.` : ""}</p>`
       : r.color_id == null ? `<p class="hint">Couleur inconnue : impossible de lister les sets.</p>`
-      : `<h3 class="pi-h">Apparaît dans ${nf.format(r.count)} set${r.count > 1 ? "s" : ""}${mine ? ` <span class="muted small">· dont ${mine} dans ma collection</span>` : ""}</h3>
+      : `<h3 class="pi-h">Apparaît dans ${nf.format(r.count)} set${r.count > 1 ? "s" : ""}${mine ? ` <span class="muted small">· dont ${mine} dans la collection</span>` : ""}</h3>
         ${r.sets.length ? `<div class="pi-sets">${r.sets.map(x => `<button type="button" class="pi-set" data-set="${esc(x.set_num)}" title="Ouvrir la fiche du set">
           <img src="${img(x.image)}" alt="" loading="lazy" data-zset="${esc(x.image || "")}" title="Agrandir la photo"><span><b>${esc(x.set_num.replace(/-1$/, ""))}</b> ${esc(x.name || "")}
           <small>${[x.year, x.pieces ? nf.format(x.pieces) + " pcs" : ""].filter(Boolean).join(" · ")}</small>${tag(x.owned)}</span></button>`).join("")}</div>
@@ -11018,7 +11193,7 @@ function drawMocLots() {
   $$("[data-ml]", box).forEach(b => b.onclick = e => {   // ⋯ : ses fonctions ; ailleurs : en grand, avec Détail / Remplacer / Retirer
     const mb = e.target.closest("[data-menu]"), k = +b.dataset.ml, x = lots[k];
     const acts = [["🔎 Détail de la pièce", () => openPartInfo(x)], ["🔁 Remplacer", () => replace(k)], ["🗑️ Retirer", () => remove(k)],
-      ...(x.unit == null || x.approx ? [[x.approx ? "💶 Mettre mon prix (estimé d'après des pièces similaires)" : "💶 Mettre un prix", () => setManualPrice(x)]] : [])];
+      ...(x.unit == null || x.approx ? [[x.approx ? "💶 Mettre un prix (estimé d'après des pièces similaires)" : "💶 Mettre un prix", () => setManualPrice(x)]] : [])];
     if (mb) return actionMenu(mb, acts);
     if (boBehav("partZoom") && x.image) { openZoom.actions = acts; return openZoom(img(x.image), x.name || x.part); }
     openPartInfo(x);   // appui sur la vignette : la fiche de la pièce (⋯ : ses fonctions)
@@ -11078,7 +11253,7 @@ $("#cuSearch").onclick = () => {
   state.replacing = it ? { id: it.id, name: it.custom_name || "", list_id: it.list_id, quantity: it.quantity || 1, notes: it.notes || "" } : null;
   const name = $("#cuName").value.trim() || $("#cuRef").value.trim();
   openAdd();
-  if (state.replacing) $("#replaceNote").hidden = false, $("#replaceNote").textContent = `Remplacement de « ${state.replacing.name} » : choisissez le bon set ou la bonne figurine, le MOC sera remplacé.`;
+  if (state.replacing) $("#replaceNote").hidden = false, $("#replaceNote").textContent = `Remplacement de « ${state.replacing.name} » : choisir le bon set ou la bonne figurine, le MOC sera remplacé.`;
   if (name) { $("#searchInput").value = name; $("#searchForm").dispatchEvent(new Event("submit", { cancelable: true })); }
 };
 $("#cuFile").onchange = async e => {
@@ -11100,7 +11275,7 @@ $("#btnAcquired").onclick = () => {
   $("#btnAcquired").hidden = true;
   $("#listLegend").textContent = "Déplacer dans la collection";
   updateEstimate();
-  toast("Vérifiez l'état puis enregistrez");
+  toast("Vérifier l'état puis enregistrer");
 };
 $("#stepConfig").addEventListener("change", updateEstimate);
 
@@ -11113,7 +11288,7 @@ $("#stepConfig").onsubmit = async e => {
     const sd = dr?.swapDraft && (own ? dr.swapDraft.id === own.id && !dr.swapDraft.fid : host && dr.swapDraft.id === host.id && dr.swapDraft.fid === fid) ? dr.swapDraft : null;
     const list = sd ? sd.list : own ? own.fig_swaps : host ? host.fig_mods?.[fid]?.fig_swaps : null;
     const N = own ? Math.max(1, (parseInt($("#cfgQty").value, 10) || 1) - inSetN()) : Math.max(0, parseInt($("#cfgQty").value, 10) || 0), need = modCopiesRaw(list);
-    if ((own || host) && N > 0 && need > N && await confirmBox(`Vous passez à ${N} figurine${N > 1 ? "s" : ""}, mais ${need} ont des pièces modifiées. Ramener les pièces modifiées à ${N} figurine${N > 1 ? "s" : ""} ?`,
+    if ((own || host) && N > 0 && need > N && await confirmBox(`Passage à ${N} figurine${N > 1 ? "s" : ""}, mais ${need} ont des pièces modifiées. Ramener les pièces modifiées à ${N} figurine${N > 1 ? "s" : ""} ?`,
         { ok: "Ajuster", no: "Garder tel quel", danger: false })) {
       const next = splitSwaps(list, N, need)[0];
       if (sd) sd.list = next;   // (brouillon de la fiche : envoyé plus bas)
@@ -11144,7 +11319,7 @@ $("#stepConfig").onsubmit = async e => {
   let todoAsk = null;
   if (state.draft.noPrice && !state.draft.item) Object.assign(body, { no_price_ok: true, name_hint: state.draft.info?.name || "", image_hint: state.draft.info?.image || "" });   // ajout sans cote
   if (!state.draft.item && (state.draft.kind || "set") === "set" && !state.draft.info?.image && !body.photo_url && state.draft.photo) {
-    try { body.photo_url = (await api("/api/upload", { method: "POST", body: state.draft.photo })).url; } catch {}   // pas d'image du catalogue : ma photo
+    try { body.photo_url = (await api("/api/upload", { method: "POST", body: state.draft.photo })).url; } catch {}   // pas d'image du catalogue : la photo
   }
   if (body.custom && !body.custom_name) {
     const v = await ask("Nom de la fiche", "Ex : Voiture de police perso, Pilote inconnu…", "");
@@ -11194,7 +11369,7 @@ $("#stepConfig").onsubmit = async e => {
       try { r = await api("/api/items/" + old.id, { method: "PUT", body: { ...body, _base: state.draft.base_u ?? old.updated_at ?? 0 } }); }
       catch (err) {   // fiche modifiée ailleurs depuis son ouverture : on demande avant d'écraser
         if (err.status !== 409) throw err;
-        if (!await confirmBox(err.message + " Rouvrez la fiche pour voir la version à jour.", { ok: "Enregistrer quand même", danger: true, no: "Ne pas enregistrer" })) { b.disabled = false; return; }
+        if (!await confirmBox(err.message + " Rouvrir la fiche pour voir la version à jour.", { ok: "Enregistrer quand même", danger: true, no: "Ne pas enregistrer" })) { b.disabled = false; return; }
         r = await api("/api/items/" + old.id, { method: "PUT", body: { ...body, _force: true } });
       }
       state.draft.base_u = r.updated_at;
@@ -11208,7 +11383,7 @@ $("#stepConfig").onsubmit = async e => {
           (diff("parts", "portion", "fig_counts", "missing_minifigs", "with_minifigs") || mocFile) && "Pièces", diff("accessories") && "Accessoires"].filter(Boolean),
           state.draft.todosAtOpen || []];   // (une tâche ajoutée pendant cette visite n'est pas proposée : elle vient d'être créée)
       }
-    } else if (state.draft.adjust?.fid) {   // minifig d'un de mes sets : nouveau nombre de cette figurine dans le set (et sa photo)
+    } else if (state.draft.adjust?.fid) {   // minifig d'un des sets : nouveau nombre de cette figurine dans le set (et sa photo)
       const { it, fid } = state.draft.adjust, mfs = it.info?.minifigs || [];
       if (state.draft.figNamePend) { const p = state.draft.figNamePend;   // (son nom, en brouillon)
         await api(`/api/items/${p.host.id}/fig-name`, { method: "POST", body: { fig: p.fid, name: p.name } }); state.draft.figNamePend = null; }
@@ -11234,7 +11409,7 @@ $("#stepConfig").onsubmit = async e => {
       await load(); b.disabled = false; nav.back = true; openSetFig(fid, it.id, true); return;   // (figurine d'un set : sa fiche reste ouverte, à jour, en lecture)
     } else if (figsOnlyMode()) {   // uniquement les minifigs du set, ajoutées en minifigs seules
       const todo = Object.entries(state.draft.figOnly || {}).filter(([, n]) => n > 0);
-      if (!todo.length) { toast("Choisissez au moins une figurine avec +"); b.disabled = false; return; }
+      if (!todo.length) { toast("Choisir au moins une figurine avec +"); b.disabled = false; return; }
       for (const [fid, n] of todo) {
         const have = ownedCopies(fid, true).find(i => i.list_id === body.list_id);
         if (have) await api("/api/items/" + have.id, { method: "PUT", body: { quantity: (have.quantity || 1) + n } });
@@ -11292,7 +11467,7 @@ $("#modalSave").onclick = async () => {   // 💾 : enregistrer, après confirma
 };
 $("#btnDeleteItem").onclick = async () => {
   const it = state.draft.item, a = state.draft.adjust;
-  if (!it && a?.fid && a.it) {   // figurine d'un de mes sets (pas de fiche à elle) : retirée de CE set — son nombre y passe à 0, comme la quantité 0 enregistrée avec 💾
+  if (!it && a?.fid && a.it) {   // figurine d'un des sets (pas de fiche à elle) : retirée de CE set — son nombre y passe à 0, comme la quantité 0 enregistrée avec 💾
     const host = a.it, fid = a.fid, mfs = host.info?.minifigs || [], nm = setFigName() || state.draft.info?.name || fid, n = setFigCount();
     if (!n) return;
     if (!await confirmBox(`Retirer « ${nm} »${n > 1 ? ` (ses ${n} exemplaires)` : ""} du set « ${itemName(host)} » ? Le set reste dans la collection, sans cette figurine. Pour la remettre : fiche du set, bouton « + 🟡 Figurine » (elle y est proposée en tête, marquée « manquante »).`, { ok: "Retirer", danger: true })) return;
@@ -11303,7 +11478,7 @@ $("#btnDeleteItem").onclick = async () => {
     return;
   }
   if (!it) return;
-  if (it._withSetN) {   // fiche unique (figurine seule + la même dans un de mes sets) : seules celles sans set sont supprimées
+  if (it._withSetN) {   // fiche unique (figurine seule + la même dans un des sets) : seules celles sans set sont supprimées
     const hosts = [...new Set(state.items.filter(x => x._merged === it && x._in).map(x => itemName(x._in)))], n = it._withSetN, q = it.quantity || 1;
     if (!await confirmBox(`Supprimer ${q > 1 ? `les ${q} « ${itemName(it)} » sans set` : `« ${itemName(it)} » (celle sans set)`} ? ${n > 1 ? `Les ${n} rangées` : "Celle rangée"} dans « ${hosts.join(" », « ")} » ${n > 1 ? "restent dans le set et retrouvent leur" : "reste dans le set et retrouve sa"} propre carte.`, { ok: "Supprimer", danger: true })) return;
     await api("/api/items/" + it.id, { method: "DELETE" });
@@ -11405,7 +11580,7 @@ async function restoreWhere() {
   const b = savedWhere.base || (savedWhere.open?.t === "item" ? { t: "item", id: savedWhere.open.id } : null);   // ancien format
   try {
     if (b?.t === "item" && itemById(b.id)) openEdit(b.id);
-    else if (b?.t === "pick" && b.fromSet && b.kind === "fig") openFigSheet(b.number, b.fromSet);   // figurine d'un de mes sets
+    else if (b?.t === "pick" && b.fromSet && b.kind === "fig") openFigSheet(b.number, b.fromSet);   // figurine d'un des sets
     else if (b?.t === "pick") { openAdd(); await (b.kind === "fig" ? pickFig : pickSet)(b.number, { number: b.number, type: b.kind }); }
     else if (b?.t === "search") { openAdd(); $("#searchInput").value = b.q; $("#searchForm").dispatchEvent(new Event("submit", { cancelable: true })); }
   } catch {}

@@ -305,11 +305,11 @@ def wiki_memo(perso=False):
            ".memo-steps li.here{border:2px solid #d01012;box-shadow:0 0 0 4px rgba(208,16,18,.15)}"
            ".memo-here-tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#d01012;color:#fff;font-size:12px;font-weight:700}"
            ".memo-where{padding:10px 12px;border-radius:12px;background:rgba(208,16,18,.1);font-weight:600;margin:10px 0}</style>"
-           # « 📍 Vous en êtes là » : ?ici=2 (ou 4,5) &nom=… — l'étape en cours de l'élément d'où l'on vient (21/11 nuit)
+           # « 📍 Étape en cours » : ?ici=2 (ou 4,5) &nom=… — l'étape en cours de l'élément d'où l'on vient (21/11 nuit)
            "<script>addEventListener('DOMContentLoaded',()=>{const q=new URLSearchParams(location.search),ici=(q.get('ici')||'').split(',').map(Number).filter(n=>n>0);"
            "if(!ici.length)return;const id=(location.hash.match(/^#\\/([\\w-]+)/)||[])[1],a=id&&document.getElementById('p-'+id);if(!a)return;const lis=[...a.querySelectorAll('.memo-steps li')],m=Math.min(...ici);"
-           "lis.forEach((li,k)=>{if(ici.includes(k+1)){li.classList.add('here');li.insertAdjacentHTML('beforeend','<span class=\"memo-here-tag\">📍 Vous en êtes là</span>');}else if(k+1<m)li.classList.add('done');});"
-           "const w=document.createElement('p');w.className='memo-where';w.textContent='📍 '+(q.get('nom')?q.get('nom')+' : ':'')+'vous en êtes à l\\'étape '+ici.join(' et ')+' sur '+lis.length+'.';"
+           "lis.forEach((li,k)=>{if(ici.includes(k+1)){li.classList.add('here');li.insertAdjacentHTML('beforeend','<span class=\"memo-here-tag\">📍 Étape en cours</span>');}else if(k+1<m)li.classList.add('done');});"
+           "const w=document.createElement('p');w.className='memo-where';w.textContent='📍 '+(q.get('nom')?q.get('nom')+' : ':'')+'étape '+ici.join(' et ')+' sur '+lis.length+'.';"
            "a.querySelector('.memo-steps')?.before(w);});</script>")
     pages = []
     for k, c in enumerate(cards):

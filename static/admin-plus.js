@@ -12,7 +12,7 @@
 const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch {} return null; };
 let expertUI = ls("bo-expert") === "1";
 const P = () => { try { return BOF()?.plus || null; } catch { return null; } };   // moteur des fonctions avancées, dans l'aperçu
-const needPreview = () => note("L'aperçu doit afficher <b>le site (connecté)</b> pour lister vos variables et essayer vos formules : choisissez « Le site (connecté) » au-dessus de l'aperçu.", "warn");
+const needPreview = () => note("L'aperçu doit afficher <b>le site (connecté)</b> pour lister les variables et essayer les formules : choisir « Le site (connecté) » au-dessus de l'aperçu.", "warn");
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const sz = n => n >= 1e9 ? (n / 1e9).toFixed(1).replace(".", ",") + " Go" : n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " Mo" : Math.max(1, Math.round(n / 1e3)) + " Ko";
 const dt = t => t ? new Date(t * 1000).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—";
@@ -20,12 +20,12 @@ const xbtn = (title, onclick) => el("button", { type: "button", class: "x", titl
 
 /* ------------------------------------------------------------------ rubriques ajoutées (dernier élément : 1 = « fonctions avancées ») */
 const NEW = [
-  ["calculs", "🧮", "Calculs et variables", "Des champs calculés par une formule (plus-value, prix par pièce…) et vos propres variables.", 1],
+  ["calculs", "🧮", "Calculs et variables", "Des champs calculés par une formule (plus-value, prix par pièce…) et les propres variables.", 1],
   ["regles", "⚡", "Règles « si… alors »", "Si une fiche remplit une condition : étiquette, pastille, couleur de carte, message, bloc masqué.", 1],
-  ["tuiles", "📊", "Tuiles et totaux", "Vos propres totaux, à côté de Sets / Figurines / Pièces.", 1],
-  ["vues", "🔎", "Vues, tris et filtres", "Des listes filtrées prêtes à ouvrir depuis le menu, vos propres tris et filtres.", 1],
+  ["tuiles", "📊", "Tuiles et totaux", "Les propres totaux, à côté de Sets / Figurines / Pièces.", 1],
+  ["vues", "🔎", "Vues, tris et filtres", "Des listes filtrées prêtes à ouvrir depuis le menu, les propres tris et filtres.", 1],
   ["catalogue", "📚", "Corrections du catalogue", "Corriger un nom, un thème, une année, une image ou un prix venus du catalogue.", 1],
-  ["tableur", "📑", "Tableur (CSV)", "Exporter vos fiches vers un tableur ; remplir vos champs en masse depuis un tableur.", 1],
+  ["tableur", "📑", "Tableur (CSV)", "Exporter les fiches vers un tableur ; remplir les champs en masse depuis un tableur.", 1],
   ["sauvegardes", "💾", "Sauvegardes", "Sauvegarder, télécharger, restaurer la collection ; tout emporter dans un .zip.", 0],
   ["serveur", "🩺", "État et journal", "Santé du serveur, place disponible, journal, redémarrage.", 0],
   ["fichiers", "🗂️", "Fichiers de données", "Voir et corriger n'importe quelle donnée enregistrée, ligne par ligne.", 1],
@@ -55,8 +55,8 @@ draw = function () { draw0(); $(".main").classList.toggle("wide", WIDE.includes(
 
 /* ------------------------------------------------------------------ serveur : appels, mode expert, données des rubriques */
 async function askExpert() {
-  const inp = el("input", { type: "password", placeholder: "Votre mot de passe", autocomplete: "current-password", onkeydown: e => { if (e.key === "Enter") inp.closest(".modal").querySelector(".primary").click(); } });
-  const pw = await modal("🔐 Mode expert", [para("Cette partie touche directement au serveur. Par sécurité, redonnez votre mot de passe (valable 2 heures)."), fld("Mot de passe", inp)], { ok: "Continuer", value: () => inp.value });
+  const inp = el("input", { type: "password", placeholder: "Le mot de passe", autocomplete: "current-password", onkeydown: e => { if (e.key === "Enter") inp.closest(".modal").querySelector(".primary").click(); } });
+  const pw = await modal("🔐 Mode expert", [para("Cette partie touche directement au serveur. Par sécurité, redonner le mot de passe (valable 2 heures)."), fld("Mot de passe", inp)], { ok: "Continuer", value: () => inp.value });
   if (!pw) return false;
   try { await api("/api/bo/x/expert", { password: pw }); return true; } catch (e) { toast(e.message); return false; }
 }
@@ -84,7 +84,7 @@ async function waitBack() {   // le serveur redémarre : on attend son retour
   toast("Le serveur redémarre…");
   await new Promise(r => setTimeout(r, 2500));
   for (let k = 0; k < 40; k++) { try { const r = await fetch("/api/ping", { cache: "no-store" }); if (r.ok) { toast("✔ Le serveur est revenu."); for (const key of Object.keys(X)) delete X[key]; pvReload(); draw(); return true; } } catch {} await new Promise(r => setTimeout(r, 1500)); }
-  toast("Le serveur ne répond pas encore : patientez, puis rechargez la page (au besoin : /backoffice/secours).");
+  toast("Le serveur ne répond pas encore : patienter, puis recharger la page (au besoin : /backoffice/secours).");
   return false;
 }
 const restart = async () => { if (!await sure("Redémarrer le serveur ?", "Le site sera indisponible une dizaine de secondes.", "Redémarrer")) return; if (await act(() => xapi("restart", {}))) waitBack(); };
@@ -128,7 +128,7 @@ function fxBox(value, on, fmt, ph) {   // saisie d'une formule, boutons « varia
   const pickFn = async () => { const p = P(); if (!p) return toast("L'aperçu doit afficher le site.");
     const v = await choose("Insérer une fonction", p.fns().map(f => ({ v: f.sig, label: f.sig, sub: f.doc }))); if (v) ins(v.replace(/\(.*$/, "") + "()", 1); };
   setTimeout(res, 0);
-  return el("div", { class: "fxb" }, ta, el("div", { class: "btns" }, btn("+ Variable", pickVar, "small", "Choisir une information de la fiche, un de vos champs, un de vos calculs"), btn("ƒ Fonction", pickFn, "small", "si, arrondi, min, max, jours_depuis…"),
+  return el("div", { class: "fxb" }, ta, el("div", { class: "btns" }, btn("+ Variable", pickVar, "small", "Choisir une information de la fiche, un des champs, un des calculs"), btn("ƒ Fonction", pickFn, "small", "si, arrondi, min, max, jours_depuis…"),
     ["+", "-", "*", "/", "&", "(", ")"].map(o => btn(o, () => ins(o === "(" || o === ")" ? o : " " + o + " "), "small", o === "&" ? "Coller deux textes bout à bout" : ""))), out);
 }
 const OPS = [["=", "est égal à"], ["<>", "est différent de"], [">", "est plus grand que"], ["<", "est plus petit que"], [">=", "est au moins"], ["<=", "est au plus"], ["contient", "contient"], ["sans", "ne contient pas"],
@@ -166,7 +166,7 @@ const CALC_PRESETS = [["Plus-value", "{valeur} - {prix_achat}", "euros"], ["Plus
 const newCalc = (label = "", expr = "", fmt = "") => change(c => { (c.calcs ||= []).push({ id: freeId(label || "calcul"), label: label || "Nouveau calcul", expr, ...(fmt ? { fmt } : {}) }); });
 VIEW.calculs = () => {
   const secs = [["", secName("_")], ...(cfg.secs || []).map(s => [s.id, s.label])];
-  return [head("Calculs et variables", "Un champ calculé affiche le résultat d'une formule sur chaque fiche (et sur les cartes, si vous voulez). Il se recalcule tout seul ; rien n'est enregistré dans vos données."),
+  return [head("Calculs et variables", "Un champ calculé affiche le résultat d'une formule sur chaque fiche (et sur les cartes, au choix). Il se recalcule tout seul ; rien n'est enregistré dans les données."),
     P() ? null : needPreview(),
     (cfg.calcs || []).map(f => el("div", { class: "ed" + (f.off ? " offed" : "") },
       fld("Nom affiché", txt(f.label, typing("calcs", f, "label"), "ex. : Plus-value"), `Pour l'utiliser dans une autre formule : <code>{${f.id}}</code>`),
@@ -176,7 +176,7 @@ VIEW.calculs = () => {
       typesRow("calcs", f), foot("calcs", f))),
     card((cfg.calcs || []).length ? "" : "Ajouter un calcul", el("div", { class: "btns" }, btn("+ Nouveau calcul", () => newCalc(), "primary"), CALC_PRESETS.map(([n, e, f]) => btn(n, () => newCalc(n, e, f), "small", e))),
       hint("Les boutons de droite sont des exemples tout prêts. Le calcul apparaît sur la fiche, dans le bloc « " + esc(secName("_")) + " » (ou celui choisi).")),
-    card("Mes variables", para("Une valeur que vous fixez une fois et réutilisez dans vos formules : un taux, un seuil, un budget…"),
+    card("Mes variables", para("Une valeur fixée une fois et réutilisée dans les formules : un taux, un seuil, un budget…"),
       (cfg.vars || []).map(v => el("div", { class: "crow v" }, txt(v.label, typing("vars", v, "label"), "Nom"), el("code", {}, "{" + v.id + "}"), txt(v.value, typing("vars", v, "value"), "Valeur"), xbtn("Supprimer", () => del("vars", v.id)))),
       btn("+ Nouvelle variable", async () => { const n = await ask("Nouvelle variable", "", "Son nom", { ph: "ex. : Taux de revente" }); if (n) change(c => { (c.vars ||= []).push({ id: freeId(n), label: n, value: "" }); }); })),
     helpCard()];
@@ -214,18 +214,18 @@ VIEW.regles = () => [head("Règles « si… alors »", "Quand une fiche remplit 
     el("div", { style: "height:8px" }), typesRow("auto", r), foot("auto", r))),
   card((cfg.auto || []).length ? "" : "Ajouter une règle", el("div", { class: "btns" }, btn("+ Nouvelle règle", () => add("auto", { label: "", cond: { rows: [{ v: "", op: "=", val: "" }] }, acts: [{ k: "tag", text: "", color: "#2563eb" }] }), "primary"),
     RULE_PRESETS.map(([n, o]) => btn(n, () => add("auto", clone(o)), "small"))),
-    hint("Les règles ne changent que ce qui s'affiche — sauf <b>📝 Tâche à faire</b> : une vraie tâche est ajoutée à chaque fiche qui remplit la condition (elle apparaît dans « À faire »), et retirée d'elle-même quand la fiche ne la remplit plus ou que la règle est coupée ; vos tâches écrites à la main ne sont jamais touchées. Après « Publier », les tâches suivent à la prochaine ouverture de l'appli. Dans un texte, <code>{nom}</code>, <code>{valeur}</code>… sont remplacés par ceux de la fiche.")),
+    hint("Les règles ne changent que ce qui s'affiche — sauf <b>📝 Tâche à faire</b> : une vraie tâche est ajoutée à chaque fiche qui remplit la condition (elle apparaît dans « À faire »), et retirée d'elle-même quand la fiche ne la remplit plus ou que la règle est coupée ; les tâches écrites à la main ne sont jamais touchées. Après « Publier », les tâches suivent à la prochaine ouverture de l'appli. Dans un texte, <code>{nom}</code>, <code>{valeur}</code>… sont remplacés par ceux de la fiche.")),
 ];
 
 /* ------------------------------------------------------------------ Tuiles et totaux */
 const AGG = [["sum", "Somme"], ["avg", "Moyenne"], ["count", "Nombre de fiches"], ["min", "Plus petite valeur"], ["max", "Plus grande valeur"]];
 const TILE_PRESETS = [["Total payé", { label: "Total payé", agg: "sum", expr: "{prix_achat}", fmt: "euros" }], ["Plus-value", { label: "Plus-value", agg: "sum", expr: "{valeur} - {prix_achat}", fmt: "euros" }],
   ["Sets retirés", { label: "Retirés de la vente", agg: "count", cond: { rows: [{ v: "retire", op: "vrai", val: "" }] } }], ["Valeur moyenne", { label: "Valeur moyenne", agg: "avg", expr: "{valeur}", fmt: "euros" }]];
-VIEW.tuiles = () => [head("Tuiles et totaux", "Vos propres chiffres, à côté de « Sets / Figurines / Pièces ». Ils se calculent sur la liste affichée."),
+VIEW.tuiles = () => [head("Tuiles et totaux", "Les propres chiffres, à côté de « Sets / Figurines / Pièces ». Ils se calculent sur la liste affichée."),
   P() ? null : needPreview(),
   (cfg.tiles || []).map(t => el("div", { class: "ed" + (t.off ? " offed" : "") },
     el("div", { class: "cols" }, fld("Titre de la tuile", txt(t.label, typing("tiles", t, "label"), "ex. : Total payé")), fld("Calcul", sel(t.agg || "sum", AGG, v => upd("tiles", t.id, x => { x.agg = v; })))),
-    fld(t.agg === "count" ? "De quoi ? (laissez vide pour compter les fiches)" : "De quoi ?", fxBox(t.expr, typing("tiles", t, "expr"), () => (cfg.tiles || []).find(x => x.id === t.id)?.fmt, "ex. : {prix_achat}")),
+    fld(t.agg === "count" ? "De quoi ? (laisser vide pour compter les fiches)" : "De quoi ?", fxBox(t.expr, typing("tiles", t, "expr"), () => (cfg.tiles || []).find(x => x.id === t.id)?.fmt, "ex. : {prix_achat}")),
     fld("Affiché comme", sel(t.fmt || "", FMT, opt("tiles", t, "fmt"))),
     el("div", { class: "fl" }, "SEULEMENT LES FICHES QUI… (facultatif)"), condBox(condGet("tiles", t.id), condSet("tiles", t.id)),
     foot("tiles", t))),
@@ -238,7 +238,7 @@ const SORTS = [["", "(ne pas changer le tri)"], ["modified", "Dernière modifica
 VIEW.vues = () => {
   let lists = []; try { lists = (BOF()?.lists() || []).filter(l => l.kind === "collection"); } catch {}
   const sortOpts = [...SORTS, ...(cfg.sorts || []).map(s => ["bo:" + s.id, "★ " + (s.label || "tri")])];
-  return [head("Vues, tris et filtres", "Une vue est une liste filtrée, prête à ouvrir d'un clic depuis le menu. Vos tris s'ajoutent à la liste « Trier par » ; vos filtres, au menu « ⚙️ Filtres »."),
+  return [head("Vues, tris et filtres", "Une vue est une liste filtrée, prête à ouvrir d'un clic depuis le menu. Les tris s'ajoutent à la liste « Trier par » ; les filtres, au menu « ⚙️ Filtres »."),
     P() ? null : needPreview(),
     el("h3", {}, "Vues enregistrées"),
     (cfg.views || []).map(v => el("div", { class: "ed" },
@@ -270,11 +270,11 @@ const movesCard = () => (cfg.moves || []).length ? card("Éléments déplacés",
     btn("Voir", () => flash(`bo-mv[data-bo-mv="${m.id}"] > *`, m.page), "small"), xbtn("Remettre à sa place d'origine", () => change(c => { c.moves = c.moves.filter(x => x.id !== m.id); }))))),
   el("div", { style: "height:8px" }), btn("↺ Tout remettre à sa place", () => change(c => { delete c.moves; }), "small danger")) : null;
 const souris0 = VIEW.souris;
-VIEW.souris = () => mode === "move" ? [head("Déplacer à la souris", "Attrapez n'importe quel élément dans l'aperçu et déposez-le ailleurs : avant ou après un autre élément."),
+VIEW.souris = () => mode === "move" ? [head("Déplacer à la souris", "Attraper n'importe quel élément dans l'aperçu et le déposer ailleurs : avant ou après un autre élément."),
   card("Mode d'emploi", el("ol", { class: "steps" },
-    el("li", { html: "Allez d'abord à l'endroit voulu avec « 👆 Utiliser le site » (ouvrir une fiche, le menu…)." }),
-    el("li", { html: "Revenez sur « ✋ Déplacer », puis <b>cliquez-glissez</b> l'élément : une <b>barre verte</b> montre où il se posera. Lâchez." }),
-    el("li", { html: "Les blocs d'une fiche et les entrées du menu changent d'<b>ordre</b> ; tout le reste est <b>déplacé</b> là où vous le posez, même dans une autre zone." })),
+    el("li", { html: "Aller d'abord à l'endroit voulu avec « 👆 Utiliser le site » (ouvrir une fiche, le menu…)." }),
+    el("li", { html: "Revenir sur « ✋ Déplacer », puis <b>cliquer-glisser</b> l'élément : une <b>barre verte</b> montre où il se posera. Lâchez." }),
+    el("li", { html: "Les blocs d'une fiche et les entrées du menu changent d'<b>ordre</b> ; tout le reste est <b>déplacé</b> là où il est posé, même dans une autre zone." })),
     hint("Un déplacement raté ? « ↶ Annuler », en haut. Les éléments que le site redessine sans cesse (cartes, tuiles) se règlent mieux dans « Cartes » et « Tuiles ».")),
   movesCard()] : [souris0(), movesCard()];
 window.BO_ADMIN.onMove = info => {
@@ -309,7 +309,7 @@ const CATF = [["name", "Nom"], ["theme", "Thème"], ["subtheme", "Sous-thème"],
 const CATP = { set: [["new_value", "Cote neuf (€)"], ["used_value", "Cote occasion (€)"]], fig: [["value", "Cote neuf (€)"], ["used", "Cote occasion (€)"]] };
 async function catEdit(key, base, cur) {   // base : ce que dit le catalogue ; cur : la correction déjà faite
   const fields = [...CATF, ...CATP[key.startsWith("fig:") ? "fig" : "set"]], inp = {};
-  const ok = await modal("Corriger « " + (base?.name || cur?.label || key) + " »", [para("Remplissez seulement ce qui est faux : le reste continue de venir du catalogue. Videz une case pour retirer sa correction."),
+  const ok = await modal("Corriger « " + (base?.name || cur?.label || key) + " »", [para("Remplir seulement ce qui est faux : le reste continue de venir du catalogue. Vider une case pour retirer sa correction."),
     fields.map(([k, l]) => fld(l, inp[k] = el("input", { type: "text", value: cur?.[k] ?? "", placeholder: base?.[k] != null ? "catalogue : " + base[k] : "" })))], { ok: "Enregistrer", wide: true });
   if (!ok) return;
   const f = {}; for (const [k] of fields) if (inp[k].value.trim()) f[k] = inp[k].value.trim();
@@ -318,8 +318,8 @@ async function catEdit(key, base, cur) {   // base : ce que dit le catalogue ; c
 }
 VIEW.catalogue = () => {
   const d = got("fixes", "fixes"), w = wait(d, "fixes");
-  const search = async () => { if (catQ.length < 2) return toast("Tapez au moins deux caractères."); const r = await act(() => xapi("catalog?q=" + encodeURIComponent(catQ))); if (r) { catHits = r.hits; draw(); } };
-  return [head("Corrections du catalogue", "Le nom, le thème, l'année, l'image ou un prix d'un set ou d'une figurine sont faux ? Corrigez-les ici : votre correction passe par-dessus le catalogue, partout sur le site, et y reste même quand le catalogue est relu."),
+  const search = async () => { if (catQ.length < 2) return toast("Taper au moins deux caractères."); const r = await act(() => xapi("catalog?q=" + encodeURIComponent(catQ))); if (r) { catHits = r.hits; draw(); } };
+  return [head("Corrections du catalogue", "Le nom, le thème, l'année, l'image ou un prix d'un set ou d'une figurine sont faux ? Ils se corrigent ici : la correction passe par-dessus le catalogue, partout sur le site, et y reste même quand le catalogue est relu."),
     note("Ces corrections s'appliquent <b>tout de suite</b> (pas de brouillon ni de « Publier »)."),
     card("Chercher un set ou une figurine", line(el("input", { type: "search", value: catQ, placeholder: "Numéro ou nom…", oninput: e => { catQ = e.target.value.trim(); }, onkeydown: e => { if (e.key === "Enter") search(); } }), btn("Chercher", search, "primary")),
       catHits && (catHits.length ? el("div", { class: "pickl", style: "max-height:40vh;margin-top:8px" }, catHits.map(h => el("button", { type: "button", onclick: () => catEdit(h.key, h, d?.fixes?.[h.key]) }, h.name || h.key, el("small", {}, h.key.replace(/^fig:/, "figurine ")))))
@@ -363,28 +363,28 @@ VIEW.tableur = () => {
     if (idc < 0) return toast("Il faut une colonne « id » (celle de l'export) pour reconnaître les fiches.");
     const fs = (cfg.fields || []).filter(f => f.type !== "item" && f.type !== "list"), map = headR.map(h => fs.find(f => f.id === nrm(h) || nrm(f.label) === nrm(h)) || null);
     const used = map.filter(Boolean);
-    if (!used.length) return toast("Aucune colonne ne porte le nom d'un de vos champs personnalisés.");
+    if (!used.length) return toast("Aucune colonne ne porte le nom d'un des champs personnalisés.");
     const out = rows.map(r => ({ id: (r[idc] || "").trim(), x: Object.fromEntries(map.map((f, i) => f ? [f.id, csvValue(f, r[i])] : null).filter(Boolean)) })).filter(r => r.id);
     if (!await sure("Importer ces valeurs ?", `${out.length} ligne(s). Champs reconnus : <b>${used.map(f => esc(f.label)).join(", ")}</b>.<br>Une case vide efface la valeur du champ. Une sauvegarde de la collection est faite juste avant.`, "Importer")) return;
     const r = await act(() => xapi("values-bulk", { rows: out })); if (r) { toast(`✔ ${r.changed} fiche(s) mise(s) à jour.`); pvReload(); } });
-  return [head("Tableur (CSV)", "Travaillez vos fiches dans un tableur (Excel, LibreOffice, Google Sheets) : exportez-les, puis réimportez vos champs personnalisés remplis en masse."),
-    card("1. Exporter", para("Cochez les colonnes voulues. Le fichier s'ouvre directement dans un tableur."),
+  return [head("Tableur (CSV)", "Travailler les fiches dans un tableur (Excel, LibreOffice, Google Sheets) : les exporter, puis réimporter les champs personnalisés remplis en masse."),
+    card("1. Exporter", para("Cocher les colonnes voulues. Le fichier s'ouvre directement dans un tableur."),
       el("div", { class: "checks" }, vars.map(v => chk(v.label, csvCols.has(v.id), on => { on ? csvCols.add(v.id) : csvCols.delete(v.id); }))),
       el("div", { style: "height:10px" }), btn("⬇ Exporter (.csv)", exp, "primary")),
-    card("2. Importer des valeurs", para("Gardez la colonne <b>id</b> de l'export. Les colonnes qui portent le nom d'un de vos <b>champs personnalisés</b> sont importées ; les autres sont ignorées (le nom, la valeur… ne se modifient pas ici)."),
+    card("2. Importer des valeurs", para("Garder la colonne <b>id</b> de l'export. Les colonnes qui portent le nom d'un des <b>champs personnalisés</b> sont importées ; les autres sont ignorées (le nom, la valeur… ne se modifient pas ici)."),
       btn("⬆ Importer un fichier .csv…", () => pickFile(".csv,text/csv", imp)),
-      (cfg.fields || []).length ? null : hint("Vous n'avez pas encore de champ personnalisé : créez-en d'abord dans « Champs personnalisés »."))];
+      (cfg.fields || []).length ? null : hint("Pas encore de champ personnalisé : en créer d'abord dans « Champs personnalisés »."))];
 };
 
 /* ------------------------------------------------------------------ Sauvegardes */
 VIEW.sauvegardes = () => {
   const d = got("bk", "backups"), w = wait(d, "bk");
   const up = f => f.text().then(async t => { if (await act(() => xapi("backup-upload", { content: t }), "✔ Sauvegarde déposée : elle est dans la liste, prête à être restaurée.")) reload("bk"); });
-  const rest = async b => { if (!await sure("Restaurer cette sauvegarde ?", `La collection redeviendra celle du <b>${dt(b.t)}</b>. L'état actuel est d'abord sauvegardé : vous pourrez y revenir.`, "Restaurer")) return;
+  const rest = async b => { if (!await sure("Restaurer cette sauvegarde ?", `La collection redeviendra celle du <b>${dt(b.t)}</b>. L'état actuel est d'abord sauvegardé : retour possible.`, "Restaurer")) return;
     if (await act(() => xapi("restore", { name: b.name }), "✔ Collection restaurée.")) { pvReload(); reload("bk"); } };
   const zip = f => (async () => { if (!await sure("Restaurer cet export .zip ?", "Les données du serveur seront remplacées par celles du fichier (les fichiers remplacés sont gardés dans les sauvegardes), puis le serveur redémarrera.", "Restaurer")) return;
     if (await act(() => xapi("import-zip", f, true))) waitBack(); })();
-  return [head("Sauvegardes", "La collection est sauvegardée automatiquement chaque jour et avant chaque opération risquée. Ici, vous faites une copie quand vous voulez, vous la téléchargez, vous revenez en arrière."),
+  return [head("Sauvegardes", "La collection est sauvegardée automatiquement chaque jour et avant chaque opération risquée. Ici : faire une copie à tout moment, la télécharger, revenir en arrière."),
     card("Maintenant", el("div", { class: "btns" }, btn("💾 Sauvegarder la collection", async () => { if (await act(() => xapi("backup", {}), "✔ Sauvegarde faite.")) reload("bk"); }, "primary"),
       btn("⬆ Déposer une sauvegarde (.json)…", () => pickFile(".json,application/json", up)))),
     card("Sauvegardes gardées sur le serveur", w || (d.backups.length ? el("div", { class: "rowset" }, d.backups.map(b => line(
@@ -392,7 +392,7 @@ VIEW.sauvegardes = () => {
       el("a", { class: "b small", href: "/api/bo/x/backup-file?name=" + encodeURIComponent(b.name), download: b.name, title: "Télécharger" }, "⬇"), btn("Restaurer", () => rest(b), "small"),
       xbtn("Supprimer cette sauvegarde", async () => { if (await sure("Supprimer cette sauvegarde ?", esc(b.name), "Supprimer") && await act(() => xapi("backup-delete", { name: b.name }))) reload("bk"); }))))
       : el("p", { class: "hint" }, "Aucune sauvegarde pour l'instant."))),
-    card("Tout emporter ailleurs", para("Un fichier .zip avec <b>toutes</b> vos données (collection, réglages, back office), à ranger hors du serveur : c'est votre assurance en cas de panne."),
+    card("Tout emporter ailleurs", para("Un fichier .zip avec <b>toutes</b> les données (collection, réglages, back office), à ranger hors du serveur : c'est l'assurance en cas de panne."),
       el("div", { class: "btns" }, el("a", { class: "b", href: "/api/bo/x/export", download: "" }, "⬇ Exporter les données (.zip)"), el("a", { class: "b", href: "/api/bo/x/export?photos=1", download: "" }, "⬇ Données + mes photos (.zip)")),
       expertUI ? [el("div", { style: "height:10px" }), btn("⬆ Restaurer un export .zip…", () => pickFile(".zip,application/zip", zip), "danger"),
         hint("Depuis le réseau local (ou de partout si « Outils sensibles depuis Internet » est permis). Les mots de passe ne sont jamais dans l'export : ceux du serveur restent en place.")] : null)];
@@ -415,13 +415,13 @@ VIEW.serveur = () => {
         d.folders.map(f => el("div", {}, el("span", {}, f.name), el("b", {}, sz(f.size) + " · " + f.files + " fichiers")))),
         el("div", { style: "height:10px" }), el("div", { class: "btns" }, btn("⟳ Actualiser", () => reload("st", "log")), btn("↻ Redémarrer le serveur", restart, "danger"),
           el("a", { class: "b", href: "/backoffice/secours", target: "_blank", rel: "noopener", title: "Page indépendante : remettre une version précédente du code, redémarrer" }, "🛟 Page de secours")),
-        d.disk.free < 5e8 ? note("⚠ Il reste peu de place sur le disque : supprimez d'anciennes sauvegardes, ou baissez la limite des images dans « Paramètres du serveur ».", "warn") : null),
+        d.disk.free < 5e8 ? note("⚠ Il reste peu de place sur le disque : supprimer d'anciennes sauvegardes, ou baisser la limite des images dans « Paramètres du serveur ».", "warn") : null),
       card("Actions faites depuis le back office", d.journal.length ? el("div", { class: "logbox", style: "max-height:22vh" }, d.journal.map(l => { const [t, a, x] = l.split("\t"); return el("div", {}, t.slice(5, 16) + "  " + a + (x ? " — " + x : "")); }))
         : el("p", { class: "hint" }, "Rien pour l'instant."))],
     card("Journal du serveur", line(el("input", { type: "search", value: logQ, placeholder: "Filtrer…", oninput: e => { logQ = e.target.value; draw(); } }), chk("Erreurs seulement", logErr, v => { logErr = v; draw(); }), btn("⟳", () => reload("log"), "small")),
       el("div", { style: "height:8px" }), !lg ? el("p", { class: "hint" }, "Chargement…") : lg.erreur ? note("⚠ " + esc(lg.erreur), "warn")
         : el("div", { class: "logbox" }, lines.length ? lines.map(l => el("div", { class: bad.test(l) ? "er" : "" }, l)) : "Aucune ligne."),
-      hint("Une ligne rouge signale un souci. Copiez-la telle quelle si vous demandez de l'aide."))];
+      hint("Une ligne rouge signale un souci : à copier telle quelle pour demander de l'aide."))];
 };
 
 /* ------------------------------------------------------------------ Fichiers de données */
@@ -433,20 +433,20 @@ async function valueEdit(title, cur, withKey) {   // fenêtre : type + valeur (�
   const ty = el("select", {}, [["str", "Texte"], ["num", "Nombre"], ["bool", "Oui / Non"], ["null", "Vide"], ["json", "Groupe ou liste (JSON)"]].map(([v, l]) => el("option", { value: v }, l))); ty.value = t0;
   const ta = el("textarea", { rows: 6, spellcheck: false, style: "font-family:ui-monospace,Consolas,monospace;font-size:12.5px", value: cur === undefined || cur === null ? "" : typeof cur === "object" ? JSON.stringify(cur, null, 1) : String(cur) });
   for (;;) {
-    const ok = await modal(title, [withKey && fld("Nom de la ligne", key), fld("Type", ty), fld("Valeur", ta, "Oui / Non : écrivez « oui » ou « non ». Groupe ou liste : au format JSON, ex. <code>{}</code> ou <code>[]</code>.")], { ok: "Enregistrer", wide: true });
+    const ok = await modal(title, [withKey && fld("Nom de la ligne", key), fld("Type", ty), fld("Valeur", ta, "Oui / Non : écrire « oui » ou « non ». Groupe ou liste : au format JSON, ex. <code>{}</code> ou <code>[]</code>.")], { ok: "Enregistrer", wide: true });
     if (!ok) return null;
     const s = ta.value; let v;
     if (ty.value === "num") { v = parseFloat(s.replace(",", ".")); if (isNaN(v)) { toast("Ce n'est pas un nombre."); continue; } }
     else if (ty.value === "bool") v = /^(oui|vrai|true|1)$/i.test(s.trim());
     else if (ty.value === "null") v = null;
-    else if (ty.value === "json") { try { v = JSON.parse(s || "{}"); } catch { toast("JSON illisible : vérifiez les accolades, crochets et guillemets."); continue; } }
+    else if (ty.value === "json") { try { v = JSON.parse(s || "{}"); } catch { toast("JSON illisible : vérifier les accolades, crochets et guillemets."); continue; } }
     else v = s;
     return { key: key.value.trim(), value: v };
   }
 }
 VIEW.fichiers = () => {
   if (!fFile) { const d = got("files", "files"), w = wait(d, "files");
-    return [head("Fichiers de données", "Tout ce que l'application enregistre est ici, fichier par fichier. Vous pouvez tout voir et tout corriger, ligne par ligne : une copie du fichier est gardée avant chaque écriture."),
+    return [head("Fichiers de données", "Tout ce que l'application enregistre est ici, fichier par fichier. Tout se voit et tout se corrige, ligne par ligne : une copie du fichier est gardée avant chaque écriture."),
       note("À utiliser quand aucune autre rubrique ne permet la correction. Une valeur fausse ici peut dérégler l'application : en cas de doute, faites d'abord une sauvegarde.", "warn"),
       w || el("table", { class: "tb" }, el("tr", {}, el("th", {}, "Fichier"), el("th", {}, "Contenu"), el("th", {}, "Taille"), el("th", {}, "Modifié"), el("th", {})),
         d.files.map(f => el("tr", {}, el("td", {}, el("b", {}, f.name)), el("td", {}, f.doc), el("td", {}, sz(f.size)), el("td", {}, dt(f.t)),
@@ -486,20 +486,20 @@ VIEW.parametres = () => {
     w || [card("Réglages appliqués tout de suite", el("div", { class: "rowset" }, d.params.map(p => { const inp = el("input", { type: "number", class: "num", step: "any", value: p.value, min: p.min, max: p.max, onchange: () => set(p.key, inp.value) });
         return line(el("span", { class: "lab" }, el("b", {}, p.label), el("div", { class: "hint" }, (p.doc ? p.doc + " " : "") + "D'origine : " + String(p.default).replace(".", ",") + " " + p.unit)), inp, el("span", { class: "hint", style: "width:62px" }, p.unit),
           p.changed ? btn("↺", () => set(p.key, null), "small", "Remettre la valeur d'origine") : el("span", { style: "width:30px" })); }))),
-      card("Réglages de démarrage", para("Ceux-ci ne changent qu'au <b>redémarrage</b> du serveur. Laissez vide pour garder le réglage de l'installation."),
+      card("Réglages de démarrage", para("Ceux-ci ne changent qu'au <b>redémarrage</b> du serveur. Laisser vide pour garder le réglage de l'installation."),
         el("div", { class: "rowset" }, d.env.map(e => { const inp = el("input", { type: "text", value: e.value ?? "", placeholder: e.now ? "actuel : " + e.now : "(non réglé)" });
           return line(el("span", { class: "lab" }, el("b", {}, e.label), el("div", { class: "hint" }, e.doc)), inp, btn("Enregistrer", () => env(e.key, inp.value.trim() === "" ? null : inp.value.trim()), "small")); })),
-        d.dirty ? [el("div", { style: "height:8px" }), note("Un réglage de démarrage a changé : redémarrez pour l'appliquer.", "warn"), btn("↻ Redémarrer le serveur", restart, "danger")] : null,
-        hint("Depuis le réseau local (ou de partout si « Outils sensibles depuis Internet » est permis). Si vous changez le port, l'adresse du site change : notez-la avant de redémarrer."))]];
+        d.dirty ? [el("div", { style: "height:8px" }), note("Un réglage de démarrage a changé : redémarrer pour l'appliquer.", "warn"), btn("↻ Redémarrer le serveur", restart, "danger")] : null,
+        hint("Depuis le réseau local (ou de partout si « Outils sensibles depuis Internet » est permis). Changer le port change l'adresse du site : la noter avant de redémarrer."))]];
 };
 
 /* ------------------------------------------------------------------ Code de l'application */
 let cFile = "", cDoc = null, cRestart = false;
 VIEW.code = () => {
   if (!cFile) { const d = got("cf", "code-files"), w = wait(d, "cf");
-    return [head("Code de l'application", "Les fichiers du programme lui-même. À n'ouvrir que pour une correction précise — par exemple un morceau de code qu'on vous a fourni."),
+    return [head("Code de l'application", "Les fichiers du programme lui-même. À n'ouvrir que pour une correction précise — par exemple un morceau de code fourni par quelqu'un."),
       note("<b>Trois filets de sécurité</b> : la syntaxe est vérifiée avant d'enregistrer ; chaque version précédente est gardée et peut être remise d'un clic ; si le serveur ne redémarre plus après une modification, " +
-        "l'ancienne version est remise toute seule. En dernier recours : la <a href=\"/backoffice/secours\" target=\"_blank\" rel=\"noopener\">🛟 page de secours</a> (notez son adresse : <code>/admin/secours</code>).", "warn"),
+        "l'ancienne version est remise toute seule. En dernier recours : la <a href=\"/backoffice/secours\" target=\"_blank\" rel=\"noopener\">🛟 page de secours</a> (noter son adresse : <code>/admin/secours</code>).", "warn"),
       cRestart ? [note("Un fichier <code>.py</code> a été modifié : il ne sera pris en compte qu'après un redémarrage.", "warn"), btn("↻ Redémarrer le serveur", async () => { await restart(); cRestart = false; }, "danger"), el("div", { style: "height:10px" })] : null,
       w || el("table", { class: "tb" }, el("tr", {}, el("th", {}, "Fichier"), el("th", {}, "Rôle"), el("th", {}, "Taille"), el("th", {}, "Modifié"), el("th", {}, "Versions gardées"), el("th", {})),
         d.files.map(f => el("tr", {}, el("td", {}, el("b", {}, f.file)), el("td", {}, ROLE[f.file] || ""), el("td", {}, sz(f.size)), el("td", {}, dt(f.t)), el("td", {}, f.versions || "—"),
@@ -514,19 +514,19 @@ VIEW.code = () => {
   const findNext = q => { if (!q) return; const i = ta.value.toLowerCase().indexOf(q.toLowerCase(), ta.selectionEnd); const j = i < 0 ? ta.value.toLowerCase().indexOf(q.toLowerCase()) : i; if (j < 0) return toast("Introuvable.");
     ta.focus(); ta.setSelectionRange(j, j + q.length); ta.scrollTop = Math.max(0, (ta.value.slice(0, j).split("\n").length - 8) * 18.1); };
   const ver = el("select", {}, [el("option", { value: "" }, cDoc.versions.length ? "Versions précédentes (" + cDoc.versions.length + ")…" : "Aucune version précédente"), ...cDoc.versions.map(v => el("option", { value: v.id }, fmtId(v.id) + " · " + sz(v.size)))]);
-  const back = async () => { if (!ver.value) return toast("Choisissez d'abord une version."); if (!await sure("Remettre cette version ?", `« ${esc(cFile)} » redeviendra tel qu'il était le <b>${fmtId(ver.value)}</b>. La version actuelle est gardée, vous pourrez y revenir.`, "Remettre")) return;
+  const back = async () => { if (!ver.value) return toast("Choisir d'abord une version."); if (!await sure("Remettre cette version ?", `« ${esc(cFile)} » redeviendra tel qu'il était le <b>${fmtId(ver.value)}</b>. La version actuelle est gardée : retour possible.`, "Remettre")) return;
     const r = await act(() => xapi("code-restore", { file: cFile, id: ver.value }), "✔ Version remise."); if (r) { if (r.restart) cRestart = true; reopen(); } };
-  const see = async () => { if (!ver.value) return toast("Choisissez d'abord une version."); const r = await act(() => xapi("code-version?file=" + encodeURIComponent(cFile) + "&id=" + ver.value));
+  const see = async () => { if (!ver.value) return toast("Choisir d'abord une version."); const r = await act(() => xapi("code-version?file=" + encodeURIComponent(cFile) + "&id=" + ver.value));
     if (r) modal(cFile + " — version du " + fmtId(ver.value), el("textarea", { class: "code", style: "height:60vh", readOnly: true, wrap: "off", value: r.content }), { ok: false, cancel: "Fermer", wide: true }); };
   return [head("Code de l'application", ""),
-    el("div", { class: "crumb" }, el("button", { type: "button", onclick: async () => { if (ta.value !== cDoc.content && !await sure("Quitter sans enregistrer ?", "Vos modifications de ce fichier seront perdues.", "Quitter")) return; cFile = ""; cDoc = null; draw(); } }, "← Tous les fichiers"), "·", el("b", {}, cFile),
+    el("div", { class: "crumb" }, el("button", { type: "button", onclick: async () => { if (ta.value !== cDoc.content && !await sure("Quitter sans enregistrer ?", "Les modifications de ce fichier seront perdues.", "Quitter")) return; cFile = ""; cDoc = null; draw(); } }, "← Tous les fichiers"), "·", el("b", {}, cFile),
       el("span", { class: "hint" }, ROLE[cFile] || "")),
-    cRestart ? note("Un fichier <code>.py</code> a été modifié : redémarrez le serveur (liste des fichiers, ou « État et journal ») pour l'appliquer.", "warn") : null,
+    cRestart ? note("Un fichier <code>.py</code> a été modifié : redémarrer le serveur (liste des fichiers, ou « État et journal ») pour l'appliquer.", "warn") : null,
     line(save, el("input", { type: "search", placeholder: "Chercher… (Entrée)", style: "max-width:220px", onkeydown: e => { if (e.key === "Enter") findNext(e.target.value); } }),
       el("input", { type: "number", class: "num", placeholder: "ligne", min: 1, onkeydown: e => { if (e.key === "Enter") gotoLine(+e.target.value); }, title: "Aller à la ligne (Entrée)" }), el("span", { class: "grow" }), ver, btn("Voir", see, "small"), btn("Remettre", back, "small")),
     el("div", { style: "height:8px" }), ta,
     hint(cFile.endsWith(".py") ? "Fichier du serveur : après l'enregistrement, il faut redémarrer. S'il empêche le serveur de démarrer, l'ancienne version revient toute seule."
-      : "Fichier de l'écran : pris en compte dès l'enregistrement (rechargez la page du site).")];
+      : "Fichier de l'écran : pris en compte dès l'enregistrement (recharger la page du site).")];
 };
 const ROLE = { "server.py": "Le serveur : toutes les routes, les prix, les calculs", "sources.py": "Catalogues et sites extérieurs (API)", "auth.py": "Mot de passe et sessions", "backoffice.py": "Back office : réglages et injection",
   "backoffice_outils.py": "Back office : outils du serveur", "detourage.py": "Détourage des photos", "static/app.js": "L'application (écran privé)", "static/style.css": "Styles du site", "static/index.html": "Page de l'application",
@@ -537,15 +537,15 @@ const ROLE = { "server.py": "Le serveur : toutes les routes, les prix, les calcu
 
 /* ------------------------------------------------------------------ Accueil et « Mes modifications » complétés */
 VIEW.accueil = () => [
-  head("Bienvenue dans le back office", "Ici, vous changez l'apparence et l'organisation du site — et, si besoin, vous l'entretenez — sans ligne de commande."),
-  copie && note("🧪 Vous êtes sur la <b>copie de travail</b> : rien de ce que vous faites ici ne touche le vrai site."),
+  head("Bienvenue dans le back office", "Ici se changent l'apparence et l'organisation du site — et, si besoin, son entretien — sans ligne de commande."),
+  copie && note("🧪 Ici, la <b>copie de travail</b> : rien de ce qui se fait ici ne touche le vrai site."),
   card("Comment ça marche", el("ol", { class: "steps" },
-    el("li", { html: "<b>Vous modifiez</b> avec les rubriques de gauche, ou directement dans l'aperçu : « 🖱️ Cliquer pour modifier » et « ✋ Déplacer »." }),
-    el("li", { html: "<b>L'aperçu à droite</b> montre le résultat tout de suite. C'est un brouillon : vous seul le voyez." }),
+    el("li", { html: "<b>Modifier</b> avec les rubriques de gauche, ou directement dans l'aperçu : « 🖱️ Cliquer pour modifier » et « ✋ Déplacer »." }),
+    el("li", { html: "<b>L'aperçu à droite</b> montre le résultat tout de suite. C'est un brouillon, visible ici seulement." }),
     el("li", { html: "<b>« ✔ Publier sur le site »</b>, en haut, l'applique pour de bon." })),
     hint("Rien n'est définitif : « ↶ Annuler », « Abandonner le brouillon » et « Historique et secours » permettent toujours de revenir en arrière.")),
   card("Fonctions avancées", para(expertUI ? "L'interrupteur <b>Fonctions avancées</b> (en haut) est allumé : calculs, règles « si… alors », tuiles, vues, corrections du catalogue, tableur, fichiers de données, paramètres et code sont dans le menu."
-      : "Besoin d'aller plus loin ? Allumez <b>Fonctions avancées</b> (en haut) : calculs et variables, règles « si… alors », tuiles, vues, corrections du catalogue, tableur, fichiers de données, paramètres du serveur, code."),
+      : "Besoin d'aller plus loin ? Allumer <b>Fonctions avancées</b> (en haut) : calculs et variables, règles « si… alors », tuiles, vues, corrections du catalogue, tableur, fichiers de données, paramètres du serveur, code."),
     hint("Les outils du serveur agissent tout de suite (pas de brouillon). Les plus sensibles — code, démarrage, restauration .zip — ne répondent que depuis le réseau local, sauf réglage contraire dans « Mots de passe et sécurité ».")),
   GROUPS.slice(1).map(([title, ids]) => { const vis = ids.filter(id => !isX(id) || expertUI); return vis.length ? [el("h3", { style: "margin:16px 0 8px" }, title),
     el("div", { class: "tiles" }, vis.map(id => { const [, ic, nm, ds] = PANELS.find(p => p[0] === id); return el("button", { type: "button", onclick: () => show(id) }, el("b", {}, ic + " " + nm), el("span", {}, ds)); }))] : null; }),

@@ -230,10 +230,10 @@ def api(h, method, name, b):
     if method != "POST":
         return refuse("Introuvable", 404)
     if name in ("login", "setup", "password", "app-password") and A.too_many_attempts(ip):
-        return refuse("Trop de tentatives. Réessayez dans 15 minutes.", 429)
+        return refuse("Trop de tentatives. Réessayer dans 15 minutes.", 429)
     if name == "login":   # {password, remember}
         if not configured():
-            return refuse("Le mot de passe du back office n'est pas encore créé : ouvrez /backoffice", 409)
+            return refuse("Le mot de passe du back office n'est pas encore créé : ouvrir /backoffice", 409)
         if not check(text("password")):
             return failed("mot de passe du back office", "Mot de passe incorrect", 401)
         A.clear_failures(ip)
@@ -247,9 +247,9 @@ def api(h, method, name, b):
         if configured():
             return refuse("Le mot de passe du back office existe déjà", 403)
         if not A.valid_session(h.token()):
-            return refuse("Connectez-vous d'abord à la Briquothèque", 401)
+            return refuse("Connexion à la Briquothèque d'abord", 401)
         if b.get("compris") is not True:
-            return refuse("Cochez d'abord « J'ai lu et compris ».")
+            return refuse("Cocher d'abord « J'ai lu et compris ».")
         pw = text("password")
         if b.get("same") is True:   # le même que celui de l'application : on le redemande, puis on reprend son empreinte
             if not _app_check(pw):
@@ -307,7 +307,7 @@ def api(h, method, name, b):
         cookies = []
         if "remote_tools" in b:
             if not _srv.backoffice_outils.local_only(h):
-                return refuse("Ce réglage ne se change que depuis le réseau local (chez vous) : c'est lui qui protège le serveur depuis Internet.", 403)
+                return refuse("Ce réglage ne se change que depuis le réseau local (à la maison) : c'est lui qui protège le serveur depuis Internet.", 403)
             with _lock:
                 d = _read()
                 d["remote_tools"] = b.get("remote_tools") is True
@@ -356,12 +356,12 @@ Sur tablette ou téléphone il est <b style="display:inline">déconseillé</b> :
 <script>
 const S = __STATE__, $ = s => document.querySelector(s), box = $("#box"), msg = $("#msg");
 if (matchMedia("(max-width: 900px)").matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && innerWidth < 1100)) $("#device").hidden = false;
-const WARN = `<div class="warn"><b>⚠️ Vous entrez dans les entrailles de la Briquothèque.</b>
+const WARN = `<div class="warn"><b>⚠️ Ici, les entrailles de la Briquothèque.</b>
 <ul><li>Tout ce qui se règle ici change <b style="display:inline">réellement</b> le site (apparence, fiches, données, et même le code) : à manier avec prudence.
 Les réglages d'apparence passent par un brouillon et se publient ; les outils du serveur agissent tout de suite.</li>
-<li>Avant un gros changement : <b style="display:inline">Sauvegardes → Créer une sauvegarde</b>. En cas de souci d'affichage, ajoutez <code>?bo=off</code> à l'adresse du site.</li></ul></div>
-<div class="warn"><b>🔑 Ne perdez surtout pas le mot de passe du back office.</b>Il ne peut pas être retrouvé depuis l'application.
-S'il est perdu, il faudra supprimer le fichier <code>data/backoffice_auth.json</code> sur le serveur (accès aux fichiers nécessaire), puis revenir ici en créer un nouveau. Notez-le en lieu sûr.</div>
+<li>Avant un gros changement : <b style="display:inline">Sauvegardes → Créer une sauvegarde</b>. En cas de souci d'affichage, ajouter <code>?bo=off</code> à l'adresse du site.</li></ul></div>
+<div class="warn"><b>🔑 Le mot de passe du back office ne doit surtout pas se perdre.</b>Il ne peut pas être retrouvé depuis l'application.
+S'il est perdu, il faudra supprimer le fichier <code>data/backoffice_auth.json</code> sur le serveur (accès aux fichiers nécessaire), puis revenir ici en créer un nouveau. À noter en lieu sûr.</div>
 <div class="warn"><b>🖥️ Optimisé pour ordinateur.</b>Tablette et téléphone sont déconseillés.</div>`;
 async function post(name, body) {
   const r = await fetch("/api/bo/" + name, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
@@ -372,21 +372,21 @@ async function post(name, body) {
 const go = () => location.replace("/backoffice");
 function run(btn, fn) { return async e => { e && e.preventDefault(); msg.textContent = ""; btn.disabled = true; try { await fn(); } catch (err) { msg.textContent = err.message; btn.disabled = false; } }; }
 if (S.state === "need-app") {
-  box.innerHTML = `<p>Le back office n'a pas encore de mot de passe. Pour le créer, <b>connectez-vous d'abord à la Briquothèque</b>, puis revenez ici.</p><a class="btn" href="/login">Se connecter à la Briquothèque</a>`;
+  box.innerHTML = `<p>Le back office n'a pas encore de mot de passe. Pour le créer, <b>se connecter d'abord à la Briquothèque</b>, puis revenir ici.</p><a class="btn" href="/login">Se connecter à la Briquothèque</a>`;
 } else if (S.state === "setup") {
   let same = false;
-  box.innerHTML = `<p><b>Première visite :</b> choisissez le mot de passe du back office.</p>` + WARN + `
+  box.innerHTML = `<p><b>Première visite :</b> choisir le mot de passe du back office.</p>` + WARN + `
     <div class="tabs"><button type="button" id="tNew" class="on">Un mot de passe à part</button><button type="button" id="tSame">Le même que la Briquothèque</button></div>
     <form id="f"><div id="pNew"><label for="p1">Mot de passe du back office (${S.min} caractères au moins)</label><input type="password" id="p1" autocomplete="new-password">
       <label for="p2">Le même, une seconde fois</label><input type="password" id="p2" autocomplete="new-password"></div>
-      <div id="pSame" hidden><label for="p3">Votre mot de passe de la Briquothèque (pour confirmer)</label><input type="password" id="p3" autocomplete="current-password">
-      <p class="hint">Le back office s'ouvrira avec ce même mot de passe. Vous pourrez le changer ensuite dans « Mots de passe et sécurité ».</p></div>
+      <div id="pSame" hidden><label for="p3">Le mot de passe de la Briquothèque (pour confirmer)</label><input type="password" id="p3" autocomplete="current-password">
+      <p class="hint">Le back office s'ouvrira avec ce même mot de passe, modifiable ensuite dans « Mots de passe et sécurité ».</p></div>
       <label class="chk"><input type="checkbox" id="ok"><span>J'ai lu et compris : c'est à manier avec prudence, et je ne dois pas perdre ce mot de passe.</span></label>
       <button class="primary" id="b">Créer le mot de passe et entrer</button></form>`;
   const tab = s => { same = s; $("#tNew").classList.toggle("on", !s); $("#tSame").classList.toggle("on", s); $("#pNew").hidden = s; $("#pSame").hidden = !s; msg.textContent = ""; };
   $("#tNew").onclick = () => tab(false); $("#tSame").onclick = () => tab(true);
   $("#f").onsubmit = run($("#b"), async () => {
-    if (!$("#ok").checked) throw new Error("Cochez d'abord « J'ai lu et compris ».");
+    if (!$("#ok").checked) throw new Error("Cocher d'abord « J'ai lu et compris ».");
     if (!same) { if ($("#p1").value.length < S.min) throw new Error("Le mot de passe doit faire au moins " + S.min + " caractères."); if ($("#p1").value !== $("#p2").value) throw new Error("Les deux mots de passe ne sont pas identiques."); }
     await post("setup", { password: same ? $("#p3").value : $("#p1").value, same, compris: true }); go();
   });
@@ -394,7 +394,7 @@ if (S.state === "need-app") {
   box.innerHTML = `<p><b>Bienvenue.</b> Avant d'entrer, trois choses à savoir :</p>` + WARN + `
     <label class="chk"><input type="checkbox" id="ok"><span>J'ai lu et compris : c'est à manier avec prudence, et je ne dois pas perdre ce mot de passe.</span></label>
     <button class="primary" id="b">Entrer dans le back office</button>`;
-  $("#b").onclick = run($("#b"), async () => { if (!$("#ok").checked) throw new Error("Cochez d'abord « J'ai lu et compris »."); await post("compris"); go(); });
+  $("#b").onclick = run($("#b"), async () => { if (!$("#ok").checked) throw new Error("Cocher d'abord « J'ai lu et compris »."); await post("compris"); go(); });
 } else {
   box.innerHTML = `<form id="f"><label for="p">Mot de passe du back office</label><input type="password" id="p" autocomplete="current-password" autofocus>
     <label class="chk"><input type="checkbox" id="rem"><span>Rester connecté sur cet ordinateur (${S.days} jours ; sinon ${S.hours} heures)</span></label>

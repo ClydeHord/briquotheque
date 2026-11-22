@@ -10,7 +10,7 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
 - [Photos](#photos)
 - [Prix et estimation](#prix-et-estimation)
 - [Inventaires](#inventaires)
-- [À commander](#à-commander)
+- [Commandes](#commandes)
 - [Liste de souhaits et À surveiller](#liste-de-souhaits-et-à-surveiller)
 - [Nouveautés](#nouveautés)
 - [Pages publiques et partage](#pages-publiques-et-partage)
@@ -231,15 +231,17 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
 
 **À quoi ça sert** : vérifier qu'un set est complet, pièce par pièce, et savoir ce qu'il manque.
 
-- Ouvrez l'inventaire d'un set : chaque pièce est **OK**, **à commander** ou **exclue**, avec sa quantité.
+- L'inventaire d'un set : chaque pièce est **OK**, **à commander** ou **exclue**, avec sa quantité.
 - **Remplacer une couleur** (pièce de rechange d'une autre couleur) ; **scanner des pièces** en photo pour les cocher.
 - L'avancement (pièces vérifiées / total) s'affiche dans le menu ; ordre : non vérifiées, à commander, commandées, OK, exclues.
 - Les pièces à commander **restent dans l'inventaire** : **🧾 Exporter en XML** les copie au format BrickLink ; une fois commandées
-  (lues dans vos commandes, ou « 📦 Commandée » à la main), elles affichent « Commandée le … » et le montant payé ; **✔ OK** à la réception.
+  (lues dans les commandes, ou « 📦 Commandée » à la main), elles affichent « Commandée le … » et le montant payé ; **✔ OK** à la réception.
+- Un inventaire n'est rattaché à **aucune fiche** (rangé par numéro de set) ; **🗑️** (en haut) le supprime : ses pièces commandées passent
+  dans « Commandes », celles à commander non.
 
 ---
 
-## À commander
+## Commandes
 
 **À quoi ça sert** : la liste d'achats — pièces et figurines achetées quand l'occasion se présente — avec ce qu'elle coûtera.
 
@@ -253,6 +255,12 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
   jamais de « ✔ OK » automatique.
 - **✔ OK** à la réception : figurine → créer sa fiche ; pièce → la remettre où elle manquait (ou décider quoi en faire) ;
   **🧹 Nettoyer** retire ce qui est reçu.
+- Trois sections : **🛒 À commander**, **📦 Commandées**, **✔ Reçues** ; sur ordinateur, jusqu'à quatre références par ligne.
+- Ligne commandée : **🛒 À commander** demande s'il faut changer son statut ou préparer une nouvelle commande ;
+  **🔁 Commander à nouveau** : plusieurs couleurs d'un coup, une ligne chacune.
+- **➕ Commandées en plus** : commandé mais attribué à aucune fiche — ✔ OK, 🧩 attribuer à une fiche, 📋 vers un inventaire (même
+  un inventaire qui ne contient pas la pièce) ; zoom en grand sur la photo.
+- **☑ Sélection** : cases à cocher et actions groupées (OK, Commandée, À commander, Commander à nouveau…).
 
 ---
 

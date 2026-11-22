@@ -5,8 +5,8 @@
    les explications viennent des bulles (title) de ses boutons. Fichier à part (chargé après app.js). */
 (() => {
   const H = {   // aide par page : [sélecteur, nom, explication]
-    liste: ["Une liste de votre collection", [
-      ["#btnMenu", "Menu", "Vos listes, À faire, inventaires, statistiques, réglages."],
+    liste: ["Une liste de la collection", [
+      ["#btnMenu", "Menu", "Les listes, À faire, inventaires, statistiques, réglages."],
       ["#topTotal", "Valeur totale", "La valeur estimée de toute la collection."],
       ["#topViews", "Raccourcis", "Tout, Sets, Figurines, Pièces… : changer de vue d'un appui."],
       ["#btnAdd", "+ (ajouter)", "Ajouter un set, une figurine ou un MOC : numéro, nom, photo, code-barres, ou un post Instagram."],
@@ -24,15 +24,15 @@
     souhaits: ["Liste de souhaits", [
       ["#btnAdd", "+ (ajouter)", "Ajouter un set ou une figurine souhaité."],
       ["#btnNovelties", "✨ Nouveautés", "Les sets à venir et les sorties récentes de LEGO.com."],
-      ["#btnGiftList", "👀 À surveiller", "Les sets que vous surveillez (prix, retrait prévu)."],
+      ["#btnGiftList", "👀 À surveiller", "Les sets surveillés (prix, retrait prévu)."],
       ["#btnGiftLink", "Lien public", "Copier le lien de la page publique « À surveiller »."],
       ["#filter", "Filtre", "Ne montrer que ce qui contient ce texte."],
       ["#sort", "Tri", "Ordre d'affichage des souhaits."],
-      ["#items .card", "Un souhait", "Prix magasin, neuf, occasion (drapeau : zone du prix). Un appui ouvre la fiche ; « Je l'ai acquis » le passe dans la collection."],
+      ["#items .card", "Un souhait", "Prix magasin, neuf, occasion (drapeau : zone du prix). Un appui ouvre la fiche ; « ✔ Acquis » le passe dans la collection."],
     ]],
-    commander: ["À commander", [
+    commander: ["Commandes", [
       ["#btnAdd", "+", "Ajouter une pièce (référence, nom, photo) ou une figurine à commander."],
-      ["#btnOrderBL", "Exporter en XML", "Copie la liste au format BrickLink et ouvre l'import de votre wanted list (seulement ce qui n'est pas encore exporté)."],
+      ["#btnOrderBL", "Exporter en XML", "Copie dans le presse-papier, au format XML de BrickLink, les pièces encore à commander."],
       ["#btnCleanParts", "🧹 Nettoyer", "Retire de la liste ce qui est marqué reçu (✔ OK)."],
       ["#stats", "Tuiles", "Coût estimé (selon l'état voulu de chaque ligne), éléments, références, sets concernés."],
       ["#items .bl-cond", "État voulu", "N'importe, Neuf ou Occasion (any / new / used de BrickLink). N'importe : le neuf de France d'abord, sinon le moins cher."],
@@ -54,15 +54,15 @@
       ["#btnShowParts", "🔶 Pièces", "Toutes les pièces, avec leur prix."],
       ["#btnPlans", "📘 Plan", "La notice de montage LEGO."],
       ["#btnSwapParts", "🔁 Échanger des pièces", "Noter les pièces retirées ou remplacées (décote « modifié »)."],
-      ["#btnAsPartial", "🧩 Set partiel", "Vous n'avez qu'une partie du set."],
+      ["#btnAsPartial", "🧩 Set partiel", "Une partie du set seulement."],
       ["#btnIsMoc", "🛠️ Enregistrer comme MOC", "La photo n'est pas ce set : la garder comme MOC."],
-      ["#cfgList", "Liste", "Dans quelle liste ranger cette fiche (figurine : aussi « À commander »)."],
+      ["#cfgList", "Liste", "Dans quelle liste ranger cette fiche (figurine : aussi « Commandes »)."],
       ["#btnCfgNewList", "+", "Créer une liste sans quitter la fiche."],
       ["#cfgStatus .tag-add", "+ Étiquette", "Poser une étiquette sur la fiche (Complet, Amélioré, Modifié, Set partiel, MOC). Le ✕ à côté d'une étiquette la retire de cette fiche."],
-      ["#cfgQty", "Quantité", "Nombre d'exemplaires identiques. Figurine que vous avez aussi dans des sets : le total, sets compris."],
+      ["#cfgQty", "Quantité", "Nombre d'exemplaires identiques. Figurine aussi présente dans des sets : le total, sets compris."],
       ["#btnDupFig", "⧉ Copier / Déplacer", "Set, set partiel, MOC : une copie de la fiche. Figurine : copier un exemplaire, le ranger dans un set, le déplacer vers un autre set ou l'en sortir."],
       ['#addBar [data-add="acc"]', "+ 🗡️ Accessoire", "Une mini-construction (nom, photo). Sa liste de pièces (XML), facultative, lui donne un prix, ajouté à la valeur de la fiche."],
-      ["#figList .fq-more", "⋯ (figurine du set)", "Quantité, voir la fiche, échanger des pièces, copier, déplacer, supprimer (je ne l'ai pas)."],
+      ["#figList .fq-more", "⋯ (figurine du set)", "Quantité, voir la fiche, échanger des pièces, copier, déplacer, supprimer (pas dans la collection)."],
       ["#figPartsList .fq-more", "⋯ (pièce)", "Détail, commander, échanger, 🔢 modifier la quantité (lot de figurines), retirer."],
       ["#cfgInSets .in-set-row .set-step", "− / + d'un set", "Combien d'exemplaires de cette figurine sont dans ce set."],
       ["#cfgInSets .in-sets-solo", "Seules (sans set)", "Combien d'exemplaires de cette figurine ne sont dans aucun set."],
@@ -72,7 +72,7 @@
       ["#cfgUnbuilt", "🚧 À construire", "Le set n'est pas encore monté."],
       ["#btnEvo", "📈 Évolution", "L'historique du prix."],
       ["#modalGift", "👀", "À surveiller (souhait)."],
-      ["#btnAcquired", "✔ Je l'ai acquis", "Le souhait passe dans la collection."],
+      ["#btnAcquired", "✔ Acquis", "Le souhait passe dans la collection."],
       ["#btnDeleteItem", "Supprimer", "Retirer la fiche (confirmation demandée)."],
       ["#btnSave", "Enregistrer / Ajouter", "Enregistrer la fiche dans la liste choisie."],
     ]],
@@ -91,7 +91,7 @@
     ]],
     inventaire: ["Inventaire", [
       ["[data-s=\"ok\"]", "✔ OK", "La pièce est là."],
-      ["[data-s=\"order\"]", "🛒 À commander", "Elle manque : elle partira dans « À commander » (quantité avec − / +)."],
+      ["[data-s=\"order\"]", "🛒 À commander", "Elle manque : elle partira dans « Commandes » (quantité avec − / +)."],
       ["[data-color]", "🎨", "Changer la couleur de cette pièce."],
       ["[data-otherpart]", "🔁", "La remplacer par une autre pièce (équivalents, recherche, photo)."],
       ["[data-s=\"x\"]", "✕", "Exclure la pièce (ne compte pas)."],
@@ -99,8 +99,8 @@
     ]],
   };
   const TXT = {   // pages sans boutons à montrer : une explication
-    stats: ["Statistiques", "Valeur et évolution de la collection, répartition par thème, année, état ; un appui sur une barre liste les sets concernés. En bas : les visites de vos pages publiques."],
-    nov: ["Nouveautés", "Les sets à venir et les sorties récentes de LEGO.com, sans ceux que vous avez déjà. Un appui ouvre la fiche ; « 👀 » pour surveiller, « Je l'ai » pour l'ajouter. Les thèmes suivis se choisissent en haut."],
+    stats: ["Statistiques", "Valeur et évolution de la collection, répartition par thème, année, état ; un appui sur une barre liste les sets concernés. En bas : les visites des pages publiques."],
+    nov: ["Nouveautés", "Les sets à venir et les sorties récentes de LEGO.com, sans ceux déjà dans la collection. Un appui ouvre la fiche ; « 👀 » pour surveiller, « ⭐ » pour la liste de souhaits. Les thèmes suivis se choisissent en haut."],
     reglages: ["Réglages", "Chaque section se règle à part : prix (BrickLink), estimations (boîte, plan, décote « modifié »), codes API, Instagram, pages publiques, sécurité, documentation. Les changements s'enregistrent avec le bouton de la section."],
   };
   const vis = el => { if (!el) return null; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && getComputedStyle(el).visibility !== "hidden" ? r : null; };
@@ -151,8 +151,8 @@
     ov.innerHTML = `<div class="help-marks"></div><div class="help-panel" role="dialog" aria-label="Aide">
       <div class="help-head"><b>? ${esc(title)}</b><span><button type="button" class="help-min" title="Replier / déplier les explications">▾</button><button type="button" class="help-x" aria-label="Fermer">✕</button></span></div>
       <div class="help-body">${text ? `<p>${esc(text)}</p>` : ""}${rows.length ? `<ol class="help-list">${rows.map(r => `<li data-n="${r.n}"><span class="help-k">${r.n}</span><span><b>${esc(r.name)}</b>${r.text ? ` — ${esc(r.text)}` : ""}</span></li>`).join("")}</ol>` : (!text ? "<p>Rien à expliquer ici.</p>" : "")}
-      ${MEMO[typeof pg === "string" ? pg : ""] ? `<p class="help-foot"><a href="${esc((pg === "inventaire" ? [...document.querySelectorAll("body > .modal")].filter(x => !x.hidden).pop()?.dataset.memo : pg === "commander" ? document.querySelector("#stats")?.dataset.memo : "") || "/aide-memoire#/" + MEMO[pg])}" target="_blank" rel="noopener">📌 Aide-mémoire : ${pg === "inventaire" || pg === "commander" ? "où j'en suis" : "la suite des étapes"}</a></p>` : ""}
-      <p class="help-foot">Faites défiler la page : les numéros suivent. Touchez une explication pour voir son bouton ; ▾ replie ce panneau.</p></div></div>`;
+      ${MEMO[typeof pg === "string" ? pg : ""] ? `<p class="help-foot"><a href="${esc((pg === "inventaire" ? [...document.querySelectorAll("body > .modal")].filter(x => !x.hidden).pop()?.dataset.memo : pg === "commander" ? document.querySelector("#stats")?.dataset.memo : "") || "/aide-memoire#/" + MEMO[pg])}" target="_blank" rel="noopener">📌 Aide-mémoire : ${pg === "inventaire" || pg === "commander" ? "étape en cours" : "la suite des étapes"}</a></p>` : ""}
+      <p class="help-foot">Faites défiler la page : les numéros suivent. Toucher une explication pour voir son bouton ; ▾ replie ce panneau.</p></div></div>`;
     document.body.append(ov);
     const marks = ov.querySelector(".help-marks"), panel = ov.querySelector(".help-panel");
     const place = () => {   // repères des boutons visibles (recalculés au défilement)

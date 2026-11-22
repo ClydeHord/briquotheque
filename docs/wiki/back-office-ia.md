@@ -1,6 +1,6 @@
 # Briquothèque — Notice du back office (condensé pour IA)
 
-Généré le 22/11/2026 00:51.
+Généré le 22/11/2026 18:03.
 
 Consigne pour l'IA : ce texte est la notice complète du back office de Briquothèque (les coulisses : apparence, textes, fiches, étiquettes, pages, sauvegardes… sans code), une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur cette notice : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si la notice ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -10,22 +10,22 @@ Le **back office** est l'atelier de la Briquothèque : on y change son apparence
 des pages, on y fait les sauvegardes, on y corrige une donnée — **sans écrire de code et sans ligne de commande**.
 
 **⚠️ Ce sont les entrailles de l'application.** Ce qui se règle ici change réellement le site. Rien de grave ne peut arriver
-si vous suivez trois habitudes : regarder l'**aperçu** avant de publier, faire une **sauvegarde** avant un gros changement,
-et vous souvenir de `?bo=off` (voir En cas de problème).
+en suivant trois habitudes : regarder l'**aperçu** avant de publier, faire une **sauvegarde** avant un gros changement,
+et se souvenir de `?bo=off` (voir En cas de problème).
 
 #### Y entrer
 
-- Dans la Briquothèque : **⚙️ Réglages → 🛠 Back office → Ouvrir le back office**. Ou tapez directement l'adresse de votre site suivie de
+- Dans la Briquothèque : **⚙️ Réglages → 🛠 Back office → Ouvrir le back office**. Ou taper directement l'adresse de le site suivie de
 `/backoffice`.
 
-- **La première fois**, le back office vous demande de créer **son mot de passe** (10 caractères au moins). Il faut être connecté à la
-Briquothèque ce jour-là. Deux choix : un mot de passe **à part**, ou **le même** que celui de la Briquothèque (on vous le redemande pour confirmer).
+- **La première fois**, le back office demande de créer **son mot de passe** (10 caractères au moins). Il faut être connecté à la
+Briquothèque ce jour-là. Deux choix : un mot de passe **à part**, ou **le même** que celui de la Briquothèque (il est redemandé pour confirmer).
 
-- Cochez « J'ai lu et compris », puis **Créer le mot de passe et entrer**.
+- Cocher « J'ai lu et compris », puis **Créer le mot de passe et entrer**.
 
-**🔑 Ne perdez surtout pas ce mot de passe.** Il ne peut pas être retrouvé depuis l'application. S'il est perdu, il faut supprimer
+**🔑 Ce mot de passe ne doit surtout pas se perdre.** Il ne peut pas être retrouvé depuis l'application. S'il est perdu, il faut supprimer
 le fichier `data/backoffice_auth.json` sur le serveur (il faut donc un accès aux fichiers du serveur), puis rouvrir
-`/backoffice` pour en créer un nouveau. Notez-le dans un endroit sûr.
+`/backoffice` pour en créer un nouveau. À noter dans un endroit sûr.
 
 Première visite : création du mot de passe du back office
 
@@ -43,7 +43,7 @@ s'il a été oublié (Mots de passe et sécurité).
 
 #### Ordinateur conseillé
 
-Le back office est pensé pour un **ordinateur** : grand écran et souris. Sur tablette ou téléphone, il s'ouvre mais vous prévient :
+Le back office est pensé pour un **ordinateur** : grand écran et souris. Sur tablette ou téléphone, il s'ouvre mais prévient :
 « cliquer pour modifier » et « déplacer à la souris » y sont peu pratiques, et les panneaux sont à l'étroit.
 
 Les fois suivantes : la porte du back office
@@ -54,11 +54,11 @@ Trois colonnes : à gauche les **rubriques**, au milieu les **réglages** de la 
 
 #### Brouillon, puis « Publier »
 
-- **Vous modifiez** dans une rubrique. L'aperçu à droite montre le résultat tout de suite.
+- **Modifier** dans une rubrique. L'aperçu à droite montre le résultat tout de suite.
 
-- C'est un **brouillon** : vous seul le voyez. Il est enregistré automatiquement (« brouillon enregistré », en haut).
+- C'est un **brouillon**, visible ici seulement. Il est enregistré automatiquement (« brouillon enregistré », en haut).
 
-- **✔ Publier sur le site** l'applique pour de bon. Un petit mot vous est proposé pour vous y retrouver plus tard dans l'historique.
+- **✔ Publier sur le site** l'applique pour de bon. Un petit mot est proposé pour s'y retrouver plus tard dans l'historique.
 
 **↶ Annuler / ↷ Rétablir** (ou Ctrl + Z / Ctrl + Y) reviennent en arrière pas à pas. **Abandonner le brouillon** jette tout ce qui n'est pas publié.
 
@@ -69,7 +69,7 @@ Trois colonnes : à gauche les **rubriques**, au milieu les **réglages** de la 
 - **👆 Utiliser le site** : l'aperçu se comporte comme le site (pour aller à l'endroit à modifier).
 **🖱️ Cliquer pour modifier** : un clic sélectionne un élément. **✋ Déplacer** : on attrape un élément et on le pose ailleurs.
 
-- 🖥️ ▭ 📱 : largeur d'ordinateur, de tablette, de téléphone. **− 100 % +** : zoom de l'aperçu (gardé sur l'appareil). « Montrer ce qui est masqué » laisse voir en transparence ce que vous avez caché.
+- 🖥️ ▭ 📱 : largeur d'ordinateur, de tablette, de téléphone. **− 100 % +** : zoom de l'aperçu (gardé sur l'appareil). « Montrer ce qui est masqué » laisse voir en transparence ce qui est caché.
 
 - L'aperçu s'ouvre toujours sur l'**accueil** (pas sur la dernière fiche ouverte dans l'appli).
 
@@ -86,7 +86,7 @@ L'accueil : toutes les rubriques, classées
 #### Publier
 
 « ✔ Publier sur le site » demande un mot facultatif (« nouvelles couleurs », « page à vendre »…). Chaque publication est gardée dans
-Historique et secours : vous pouvez reprendre n'importe laquelle.
+Historique et secours : n'importe laquelle peut être reprise.
 
 Publier : un mot pour s'y retrouver
 
@@ -97,11 +97,11 @@ Réglages, une carte — se sélectionne et se règle. Ouvrir : Modifier à la s
 
 #### Choisir un élément
 
-- Ouvrez **Modifier à la souris** : l'aperçu passe en « 🖱️ Cliquer pour modifier ».
+- Ouvrir **Modifier à la souris** : l'aperçu passe en « 🖱️ Cliquer pour modifier ».
 
-- **Cliquez l'élément** dans l'aperçu : il s'entoure d'orange. Le bouton « ⬆ Sélectionner ce qui l'entoure » remonte d'un cran (la zone qui le contient).
+- **Cliquer l'élément** dans l'aperçu : il s'entoure d'orange. Le bouton « ⬆ Sélectionner ce qui l'entoure » remonte d'un cran (la zone qui le contient).
 
-- Besoin d'aller ailleurs (ouvrir une fiche, le menu, la page Réglages) ? Repassez sur « 👆 Utiliser le site », allez-y, puis revenez sur
+- Besoin d'aller ailleurs (ouvrir une fiche, le menu, la page Réglages) ? Repasser sur « 👆 Utiliser le site », y aller, puis revenir sur
 « 🖱️ Cliquer pour modifier ».
 
 #### Ce qu'on peut faire d'un élément
@@ -128,8 +128,8 @@ Pour **changer l'apparence d'un bouton** (ou de n'importe quel élément) :
 
 - **Une icône** : un émoji ou un petit texte, placé avant le texte, après, ou **à la place** du texte (avec sa taille).
 
-- **Une image** : « 🖼️ Choisir… » ouvre vos images (ou en envoie une). Elle se place avant ou après le texte, **à la place** du texte
-(un bouton-image), ou **en fond** de l'élément. Réglez sa largeur et sa hauteur.
+- **Une image** : « 🖼️ Choisir… » ouvre les images (ou en envoie une). Elle se place avant ou après le texte, **à la place** du texte
+(un bouton-image), ou **en fond** de l'élément. Régler sa largeur et sa hauteur.
 
 #### Lien et action au clic
 
@@ -138,8 +138,8 @@ Pour **changer l'apparence d'un bouton** (ou de n'importe quel élément) :
 - **Quand on clique dessus** : comme à l'origine · ne rien faire · demander une confirmation · ouvrir une adresse · une liste ·
 « Toute la collection » · une vue · une page créée · une fiche · « + Nouveau » · la recherche · les Réglages · remonter · revenir en arrière.
 
-**Exemple.** Vous voulez que le logo ouvre votre tableau de bord : cliquez le logo → « Quand on clique dessus » →
-« Ouvrir une page créée » → « Tableau de bord ». Si un jour vous supprimez cette page, le logo reprend simplement son comportement d'origine.
+**Exemple.** Pour que le logo ouvre le tableau de bord : cliquer le logo → « Quand on clique dessus » →
+« Ouvrir une page créée » → « Tableau de bord ». Si un jour cette page est supprimée, le logo reprend simplement son comportement d'origine.
 
 #### Décalage, échelle, rotation
 
@@ -149,9 +149,9 @@ Icône ou image d'un bouton, lien, action au clic, décalage
 
 #### Tout replacer à la souris
 
-- Au-dessus de l'aperçu, choisissez **✋ Déplacer**.
+- Au-dessus de l'aperçu, choisir **✋ Déplacer**.
 
-- **Attrapez** un élément (cliquez, gardez appuyé), **glissez** : une barre verte montre où il se posera (avant ou après l'élément survolé).
+- **Attraper** un élément (cliquer, garder appuyé), **glisser** : une barre verte montre où il se posera (avant ou après l'élément survolé).
 
 - **Lâchez**. Échap annule. Chaque déplacement est listé dans la rubrique, avec un bouton pour le défaire.
 
@@ -162,10 +162,10 @@ Le mode « ✋ Déplacer »
 
 #### Le clic droit : tous les outils d'un élément
 
-Dans l'aperçu, **cliquez du bouton droit** sur n'importe quel élément, quel que soit le mode (« Utiliser le site », « Cliquer pour modifier », « Déplacer ») :
+Dans l'aperçu, **cliquer du bouton droit** sur n'importe quel élément, quel que soit le mode (« Utiliser le site », « Cliquer pour modifier », « Déplacer ») :
 un menu s'ouvre, avec le nom de l'élément en titre.
 
-- **✏️ Modifier** : ouvre ses réglages (texte, style, lien, action…), comme si vous l'aviez cliqué en mode « Cliquer pour modifier ».
+- **✏️ Modifier** : ouvre ses réglages (texte, style, lien, action…), comme un clic en mode « Cliquer pour modifier ».
 
 - **👁 Masquer** : il disparaît du site (la case « Montrer ce qui est masqué », au-dessus de l'aperçu, le fait réapparaître en transparence).
 
@@ -179,7 +179,7 @@ un menu s'ouvre, avec le nom de l'élément en titre.
 
 - **⤴️ Élément parent** : le même menu pour ce qui le contient (le bouton → sa barre → le bloc…).
 
-- **↩️ Annuler ses modifications** : retire tout ce que vous avez changé sur cet élément (textes, style, ajouts, déplacement).
+- **↩️ Annuler ses modifications** : retire tout ce qui a été changé sur cet élément (textes, style, ajouts, déplacement).
 
 Tout passe par le brouillon : ↶ Annuler défait la dernière action, et rien n'est visible sur le site avant « Publier ».
 **Maj + clic droit** ouvre le menu habituel du navigateur.
@@ -196,7 +196,7 @@ Ouvrir : Apparence ↗
 
 - **Coins arrondis**, **police**, **taille générale** du site.
 
-**Exemple : passer le site en bleu.** Apparence → palette « Bleu » → regardez l'aperçu → Publier.
+**Exemple : passer le site en bleu.** Apparence → palette « Bleu » → regarder l'aperçu → Publier.
 
 Apparence : nom, logo, couleurs, arrondis, police
 
@@ -223,26 +223,26 @@ Boutons et tailles
 
 Ouvrir : Textes ↗
 
-- « Choisir dans la page » liste les textes visibles dans l'aperçu ; ou tapez vous-même le texte à remplacer.
+- « Choisir dans la page » liste les textes visibles dans l'aperçu ; ou taper soi-même le texte à remplacer.
 
-- Indiquez par quoi le remplacer. Le remplacement vaut partout où ce texte apparaît (boutons, titres, messages).
+- Indiquer par quoi le remplacer. Le remplacement vaut partout où ce texte apparaît (boutons, titres, messages).
 
 **Exemple.** Remplacer « Liste de souhaits » par « Mes envies » : une ligne suffit, le menu, les titres et les boutons suivent.
 
-Pour renommer un seul élément précis, préférez Modifier à la souris.
+Pour renommer un seul élément précis, préférer Modifier à la souris.
 
 Remplacer un mot ou une phrase partout
 
 ## Étiquettes et pastilles
 
 Les **étiquettes** sont les petits mots posés sous le nom d'une fiche (« Modifié », « MOC », « Set partiel »…) ; les **pastilles** sont
-posées sur l'image (« Retiré », « Neuf », « ×2 »…). Vous pouvez modifier celles de l'application et créer les vôtres. Ouvrir : Étiquettes et pastilles ↗
+posées sur l'image (« Retiré », « Neuf », « ×2 »…). Celles de l'application se modifient, et d'autres se créent. Ouvrir : Étiquettes et pastilles ↗
 
 #### Créer une étiquette
 
 - **+ Nouvelle étiquette** (ou un exemple prêt à adapter : « 💰 Plus de 100 € », « 🕰️ Avant 2000 », « 📦 Avec sa boîte »…).
 
-- Son **texte** (il peut reprendre une valeur de la fiche : `{annee}`, `{theme}`, un de vos champs…), son **icône**, son
+- Son **texte** (il peut reprendre une valeur de la fiche : `{annee}`, `{theme}`, un des champs…), son **icône**, son
 **genre** (étiquette sous le nom, ou pastille sur l'image), ses **couleurs**.
 
 - **Affichée si la fiche remplit…** : une ou plusieurs conditions (« Valeur estimée » « est plus grand que » « 100 »). Sans condition : toutes les fiches.
@@ -251,17 +251,17 @@ Le compteur indique combien de fiches la remplissent.
 - **Sur quelles fiches** (sets, figurines, MOC…), **où** (cartes, haut de la fiche), et « **Proposer dans le menu ⚙️ Filtres** » pour
 pouvoir ne montrer que ces fiches-là.
 
-**Exemple : une étiquette « À vendre ».** 1) Rubrique « Champs personnalisés » : créez une case à cocher « À vendre ».
-2) Ici : nouvelle étiquette « 🏷️ À vendre », condition « À vendre » « est oui », cochez « Proposer dans ⚙️ Filtres ».
-3) Publiez. Cochez la case sur les fiches concernées : l'étiquette apparaît, et le menu Filtres propose « À vendre ».
+**Exemple : une étiquette « À vendre ».** 1) Rubrique « Champs personnalisés » : créer une case à cocher « À vendre ».
+2) Ici : nouvelle étiquette « 🏷️ À vendre », condition « À vendre » « est oui », cocher « Proposer dans ⚙️ Filtres ».
+3) Publier. Cocher la case sur les fiches concernées : l'étiquette apparaît, et le menu Filtres propose « À vendre ».
 
-Vos étiquettes : texte, icône, couleurs, condition
+Les étiquettes : texte, icône, couleurs, condition
 
 #### Modifier une étiquette de l'application
 
 Chaque étiquette et chaque pastille d'origine a son bouton **Modifier** :
 
-- **Nouveau texte** et icône (pour celles qui comptent, écrivez `{n}` à la place du nombre : « {n} fig. en plus »).
+- **Nouveau texte** et icône (pour celles qui comptent, écrire `{n}` à la place du nombre : « {n} fig. en plus »).
 
 - **Couleurs** : texte, fond, bordure.
 
@@ -290,8 +290,8 @@ Sur le site : « MOC » renommé en « 🎨 Création », étiquettes et calcul 
 
 Ouvrir : Fiches ↗ Pour chaque type de fiche (set, figurine, MOC, set partiel, figurine personnalisée, et leurs versions « liste de souhaits ») :
 
-- **l'ordre des blocs** : glissez la poignée ⠿, ou ▲ ▼ ;
-- **masquer** un bloc dont vous ne vous servez pas ;
+- **l'ordre des blocs** : glisser la poignée ⠿, ou ▲ ▼ ;
+- **masquer** un bloc qui ne sert pas ;
 
 - **renommer** le titre d'un bloc.
 
@@ -301,22 +301,22 @@ Le squelette d'une fiche : ordre et visibilité des blocs
 
 #### Champs personnalisés
 
-Ouvrir : Champs personnalisés ↗ Ajoutez vos informations aux fiches : texte court ou long, nombre, montant, date, case à cocher, liste de choix, étoiles, lien, fiche liée, liste liée.
+Ouvrir : Champs personnalisés ↗ Ajouter les informations aux fiches : texte court ou long, nombre, montant, date, case à cocher, liste de choix, étoiles, lien, fiche liée, liste liée.
 
 - **+ Nouveau champ** : son nom, son type, sur quelles fiches.
 
-- Rangez-le dans un **bloc** (par défaut « Informations personnelles », que vous pouvez renommer ou multiplier).
+- Le ranger dans un **bloc** (par défaut « Informations personnelles », à renommer ou multiplier au besoin).
 
-- Cochez « sur les cartes » pour le montrer aussi dans les listes.
+- Cocher « sur les cartes » pour le montrer aussi dans les listes.
 
 Un champ devient une **variable** : utilisable dans les étiquettes, les calculs, les règles, les filtres, les pages.
 
-Vos propres champs sur les fiches
+Les propres champs sur les fiches
 
 #### Liens automatiques
 
-Ouvrir : Liens automatiques ↗ Un bouton ajouté en bas des fiches, vers le site de votre choix. Dans l'adresse, `{numero}`, `{nom}`,
-`{annee}`, `{theme}` (ou un de vos champs) sont remplacés par ceux de la fiche.
+Ouvrir : Liens automatiques ↗ Un bouton ajouté en bas des fiches, vers le site de le choix. Dans l'adresse, `{numero}`, `{nom}`,
+`{annee}`, `{theme}` (ou un des champs) sont remplacés par ceux de la fiche.
 
 **Exemple.** Nom : « BrickLink » — adresse : `https://www.bricklink.com/v2/search.page?q={numero}`. Des modèles tout prêts sont proposés.
 
@@ -330,24 +330,24 @@ Les cartes des listes
 
 #### Menu
 
-Ouvrir : Menu ↗ L'ordre des entrées (glisser ⠿), les entrées masquées, **chaque entrée renommée ou masquée une à une** (« Chaque entrée du menu » : Nouveautés, Calendrier des sorties, Réglages…), des **traits de séparation** en plus (« + Ajouter un trait de séparation »), et vos **raccourcis** : vers une adresse, une liste, une fiche, une vue.
-Les pages que vous créez et vos vues enregistrées y apparaissent aussi, et s'ordonnent ici.
+Ouvrir : Menu ↗ L'ordre des entrées (glisser ⠿), les entrées masquées, **chaque entrée renommée ou masquée une à une** (« Chaque entrée du menu » : Nouveautés, Calendrier des sorties, Réglages…), des **traits de séparation** en plus (« + Ajouter un trait de séparation »), et les **raccourcis** : vers une adresse, une liste, une fiche, une vue.
+Les pages créées et les vues enregistrées y apparaissent aussi, et s'ordonnent ici.
 
 Le menu latéral
 
 ## Pages
 
-Une idée nouvelle ? **Créez une page.** Un tableau de bord, la liste des sets à vendre, vos notes, une page publique à partager…
+Une idée nouvelle ? **Créer une page.** Un tableau de bord, la liste des sets à vendre, les notes, une page publique à partager…
 Une page se compose de **blocs** empilés. Ouvrir : Pages ↗
 
 #### Créer une page
 
 - **📄 Page vide**, **📊 Tableau de bord** (totaux, fiches les plus chères, derniers ajouts) ou **📝 Page de notes**.
 
-- Donnez-lui un **titre** et une **icône**. Elle apparaît dans le **menu latéral** (décochez « Dans le menu latéral » pour une page
+- Lui donner un **titre** et une **icône**. Elle apparaît dans le **menu latéral** (décocher « Dans le menu latéral » pour une page
 ouverte seulement par un bouton ou un raccourci clavier).
 
-Vos pages, et trois modèles pour démarrer
+Les pages, et trois modèles pour démarrer
 
 #### Les blocs
 
@@ -357,9 +357,9 @@ Vos pages, et trois modèles pour démarrer
 
 | 📝 Texte | Un texte : `**gras**`, `*italique*`, `[texte du lien](https://…)`, lignes commençant par `- ` pour une liste.
 
-| 💡 Encadré coloré | Une information mise en avant, de la couleur de votre choix.
+| 💡 Encadré coloré | Une information mise en avant, de la couleur de le choix.
 
-| 🖼️ Image | Une de vos images, avec largeur, légende et lien facultatifs.
+| 🖼️ Image | Une des images, avec largeur, légende et lien facultatifs.
 
 | 🔘 Bouton | Un bouton qui ouvre une adresse, une liste, une vue, une page, une fiche…
 
@@ -367,7 +367,7 @@ Vos pages, et trois modèles pour démarrer
 
 | 🔢 Total (tuile) | Un nombre de fiches, une somme, une moyenne, un minimum, un maximum.
 
-| 📋 Tableau | Un tableau de fiches, colonnes au choix (vos champs et calculs compris).
+| 📋 Tableau | Un tableau de fiches, colonnes au choix (les champs et calculs compris).
 
 | ➖ Trait · ↕️ Espace | Pour aérer.
 
@@ -379,15 +379,15 @@ Chaque bloc prend **toute la largeur, la moitié ou un tiers** : trois tuiles «
 ⠿ et ▲ ▼ changent l'ordre.
 
 **Exemple : une page « À vendre ».** Page vide → bloc « Encadré coloré » (« Sets que je vends, contactez-moi ») → bloc « Liste de fiches »,
-condition « À vendre » « est oui », triées par « Valeur estimée ». Ajoutez un bloc « Total » : somme de `{valeur}`, même condition.
+condition « À vendre » « est oui », triées par « Valeur estimée ». Ajouter un bloc « Total » : somme de `{valeur}`, même condition.
 
 L'éditeur d'une page : ses blocs, et le résultat en direct
 
 #### Page publique
 
-Cochez « **Publique** » : la page reçoit une adresse `/p/son-adresse`, visible **sans connexion**, à donner à qui vous voulez.
+Cocher « **Publique** » : la page reçoit une adresse `/p/son-adresse`, visible **sans connexion**, à donner à qui on veut.
 Les visiteurs n'y voient que les blocs **sans données** (titres, textes, encadrés, images, boutons vers une adresse, HTML, cadres) —
-jamais vos fiches, vos totaux ni vos prix.
+jamais les fiches, les totaux ni les prix.
 
 La page, dans le site
 
@@ -399,12 +399,12 @@ Ouvrir : Page « Réglages » de l'appli ↗
 
 - **⚙️ Ouvrir la page Réglages dans l'aperçu** pour voir le résultat en direct.
 
-- Glissez les sections (⠿ ou ▲ ▼) pour changer leur **ordre** ; tapez un nouveau **titre** ; décochez « visible » pour **masquer** une section.
+- Glisser les sections (⠿ ou ▲ ▼) pour changer leur **ordre** ; taper un nouveau **titre** ; décocher « visible » pour **masquer** une section.
 
-- Pour une **option précise** (une ligne, un bouton, un texte de la page Réglages) : « 🖱️ Cliquer pour modifier », puis cliquez-la dans l'aperçu.
-Vous pouvez aussi y **ajouter** un texte, un lien ou une image (« Ajouter quelque chose à côté »).
+- Pour une **option précise** (une ligne, un bouton, un texte de la page Réglages) : « 🖱️ Cliquer pour modifier », puis cliquer dessus dans l'aperçu.
+On peut aussi y **ajouter** un texte, un lien ou une image (« Ajouter quelque chose à côté »).
 
-Une section masquée garde ses réglages. Le back office reste toujours accessible par `/backoffice`, même si vous masquez sa section.
+Une section masquée garde ses réglages. Le back office reste toujours accessible par `/backoffice`, même si sa section est masquée.
 
 Les sections de la page Réglages : ordre, titres, visibilité
 
@@ -420,20 +420,20 @@ Dans la Briquothèque : la section « 🛠 Back office » des Réglages
 
 Ouvrir : Comportements ↗
 
-- **À l'ouverture du site** : par quoi commencer (toute la collection, une liste, une vue, une de vos pages) ; ce qui est montré (tout, les sets, les figurines).
+- **À l'ouverture du site** : par quoi commencer (toute la collection, une liste, une vue, une des pages) ; ce qui est montré (tout, les sets, les figurines).
 
-- **Tri par défaut** : pour « Toute la collection », pour une liste, pour une liste de souhaits. (Votre choix du moment, liste par liste, reste prioritaire.)
+- **Tri par défaut** : pour « Toute la collection », pour une liste, pour une liste de souhaits. (Le choix du moment, liste par liste, reste prioritaire.)
 
-- **Raccourcis clavier** : une touche (avec Ctrl ou Alt si vous voulez) → une action : nouvelle fiche, ouvrir une page, une liste, la recherche…
+- **Raccourcis clavier** : une touche (avec Ctrl ou Alt au choix) → une action : nouvelle fiche, ouvrir une page, une liste, la recherche…
 
-- **Clics et liens modifiés** : la liste de tout ce que vous avez changé avec « Lien et action au clic », avec un bouton pour le retirer.
+- **Clics et liens modifiés** : la liste de tout ce qui a été changé avec « Lien et action au clic », avec un bouton pour le retirer.
 
 - **Figurines identiques** : regrouper ou non, proposer ou non « est-ce celle de ce set ? » (voir ci-dessous).
 
 - **Prix et variations** : ne pas afficher les flèches ↑ ↓ ~ à côté des prix ; masquer le bouton « 🔍 Comprendre les variations » des statistiques ;
 **apparence des flèches** — affichées d'office ou non dans la vue générale (le bouton 📈 de l'appli les montre ou les cache à la volée), « ~ » quand le prix
 est stable, pourcentage, taille (curseur). Les seuils de hausse et de baisse se règlent dans l'application (Réglages → 🧮 Estimations). L'aperçu suit en direct ; « Publier » les applique ; « ↺ Revenir aux valeurs
-enregistrées » retire vos changements.
+enregistrées » retire les changements.
 
 - **Fiches et pièces** : ouvrir les fiches directement en modification (sans la clé 🔧) ; toucher une pièce l'agrandit au lieu d'ouvrir sa fiche.
 
@@ -442,17 +442,17 @@ enregistrées » retire vos changements.
 - **Divers** : le titre de l'onglet du navigateur ; réduire les animations.
 
 - **Avancé : script libre** (facultatif) : un morceau de JavaScript exécuté une fois au chargement de l'application — jamais sur les pages publiques.
-S'il casse l'affichage : ajoutez `?bo=off` à l'adresse du site, puis videz la case.
+S'il casse l'affichage : ajouter `?bo=off` à l'adresse du site, puis vider la case.
 
 **Exemple.** Touche `n` → « Ajouter une fiche » ; touche `t` → « Ouvrir une page créée : Tableau de bord ».
-Un raccourci n'agit jamais pendant que vous tapez dans une case.
+Un raccourci n'agit jamais pendant la frappe dans une case.
 
 Ce que fait le site : départ, tri, raccourcis, clics
 
 #### Figurines identiques
 
-D'origine, une même figurine que vous avez **à la fois seule et dans un set** (ou dans plusieurs sets) n'a qu'**une carte**, marquée « ×N », et
-qu'une fiche ; et quand vous ajoutez un set dont vous aviez déjà une figurine seule, l'application demande **« est-ce celle de ce set ? »**.
+D'origine, une même figurine présente **à la fois seule et dans un set** (ou dans plusieurs sets) n'a qu'**une carte**, marquée « ×N », et
+qu'une fiche ; et à l'ajout d'un set dont une figurine était déjà là, seule, l'application demande **« est-ce celle de ce set ? »**.
 Deux cases règlent cela :
 
 - **Ne pas regrouper…** : chaque exemplaire retrouve sa carte (celle du set, celle achetée à part). L'aperçu le montre tout de suite ; les pages
@@ -474,11 +474,11 @@ Ouvrir : Images ↗ Les images des boutons, des pages et des éléments ajoutés
 
 - Chaque image a une **adresse** (`/bo-img/…`) : « Copier l'adresse », ou plus simple, le bouton « 🖼️ Choisir… » présent partout où une image est demandée.
 
-- La bibliothèque indique si une image est **utilisée** ; supprimez celles qui ne servent plus.
+- La bibliothèque indique si une image est **utilisée** ; supprimer celles qui ne servent plus.
 
 Effet immédiat : pas besoin de publier pour envoyer ou supprimer une image.
 
-Votre bibliothèque d'images
+La bibliothèque d'images
 
 ## Avancé : calculs, règles, tuiles, vues
 
@@ -486,8 +486,8 @@ Ces rubriques apparaissent quand l'interrupteur **Fonctions avancées** est allu
 
 #### Calculs et variables
 
-Ouvrir : Calculs et variables ↗ Un **calcul** est un champ dont la valeur vient d'une formule ; il s'affiche sur la fiche, et sur les cartes si vous le cochez.
-Une **variable** est une valeur à vous (un taux, un seuil) réutilisable dans les formules.
+Ouvrir : Calculs et variables ↗ Un **calcul** est un champ dont la valeur vient d'une formule ; il s'affiche sur la fiche, et sur les cartes si la case est cochée.
+Une **variable** est une valeur perso (un taux, un seuil) réutilisable dans les formules.
 
 | On écrit | Pour
 
@@ -505,7 +505,7 @@ Une **variable** est une valeur à vous (un taux, un seuil) réutilisable dans l
 Âge du set : `annee(aujourdhui()) - {annee}` · Mention : `si({valeur} > 100 ; "précieux" ; "courant")`.
 
 Parmi les variables d'une fiche : `{statut}` (Complet, Amélioré, Modifié, Set partiel, MOC — comme l'étiquette calculée),
-`{etiquettes}` (celles posées à la main), `{exemplaires}` (le total d'une figurine, seule et dans vos sets), `{dans_un_set}`,
+`{etiquettes}` (celles posées à la main), `{exemplaires}` (le total d'une figurine, seule et dans les sets), `{dans_un_set}`,
 `{accessoires}` (valeur des accessoires chiffrés par leurs pièces). Exemple : une vue « Modifiés » = condition « État de la fiche » « = » « Modifié ».
 
 Le résultat s'affiche en direct sous la formule, sur une fiche d'exemple ; une erreur est expliquée en français. L'aide-mémoire, en bas de la rubrique,
@@ -525,7 +525,7 @@ Une règle : si la fiche vaut plus de 100 €, alors…
 Ouvrir : Tuiles et totaux ↗ Une tuile de plus au-dessus des listes : nombre de fiches, somme, moyenne, minimum ou maximum d'une formule, avec une condition facultative
 (« valeur moyenne », « nombre de sets de plus de 100 € »…).
 
-Vos totaux, à côté de ceux de l'application
+Les totaux, à côté de ceux de l'application
 
 #### Vues, tris et filtres
 
@@ -533,9 +533,9 @@ Ouvrir : Vues, tris et filtres ↗
 
 - Une **vue** est une liste filtrée prête à ouvrir depuis le menu (« Précieux », « À construire cet hiver »…).
 
-- Un **tri** à vous s'ajoute au menu « ⇅ Tri » du site (marqué ★).
+- Un **tri** créé ici s'ajoute au menu « ⇅ Tri » du site (marqué ★).
 
-- Un **filtre** à vous s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).
+- Un **filtre** créé ici s'ajoute au menu « ⚙️ Filtres » (section « Mes filtres »).
 
 #### Tous les éléments : rien n'est verrouillé
 
@@ -547,15 +547,15 @@ fermés, fenêtres, éléments déjà masqués). Une recherche et un tri par zon
 
 - **🙈 Masquer** / **👁 Afficher** d'un appui.
 
-Ouvrez dans l'aperçu une fiche, les Réglages ou une autre page, puis « ⟳ Relire l'aperçu » pour en lister les éléments. Les noms, icônes,
+Ouvrir dans l'aperçu une fiche, les Réglages ou une autre page, puis « ⟳ Relire l'aperçu » pour en lister les éléments. Les noms, icônes,
 colonnes, blocs et entrées n'ont plus de limite pratique (seule reste la taille d'un envoi : 16 Mo).
 
 #### Éléments d'origine : modifier l'existant
 
-Ouvrir : origine ↗ Ce que l'application propose déjà, à votre main :
+Ouvrir : origine ↗ Ce que l'application propose déjà, à la main :
 
 - **Tris** (menu « Trier par »), **Filtres** (menu « ⚙️ Filtres ») et **tuiles du haut** : un nouveau nom (vide : celui d'origine), « masquer »,
-et ↑ ↓ pour l'ordre — brouillon, puis « Publier ». Les tuiles changent selon la page : ouvrez dans l'aperçu celle à régler, puis « ⟳ Relire les tuiles ».
+et ↑ ↓ pour l'ordre — brouillon, puis « Publier ». Les tuiles changent selon la page : ouvrir dans l'aperçu celle à régler, puis « ⟳ Relire les tuiles ».
 
 - **Calculs d'origine** : la formule de chacun expliquée (boîte, livret de plans, exemplaire modifié, seuils des flèches) et son pourcentage,
 modifiable — effet **immédiat**, sans « Publier » (ce sont les réglages du serveur, les mêmes que dans l'appli : Réglages → 🧮 Estimations).
@@ -575,15 +575,15 @@ Une fiche telle qu'elle est enregistrée
 
 #### Corrections du catalogue
 
-Ouvrir : Corrections du catalogue ↗ Un nom, un thème, une année, un nombre de pièces, une image ou un prix du catalogue est faux ? Cherchez le set ou la figurine,
-remplissez seulement ce qui est faux : votre correction passe par-dessus le catalogue, pour toutes les fiches concernées. Videz la case pour la retirer.
+Ouvrir : Corrections du catalogue ↗ Un nom, un thème, une année, un nombre de pièces, une image ou un prix du catalogue est faux ? Chercher le set ou la figurine,
+remplir seulement ce qui est faux : la correction passe par-dessus le catalogue, pour toutes les fiches concernées. Vider la case pour la retirer.
 
 Corriger ce qui vient du catalogue
 
 #### Tableur (CSV)
 
-Ouvrir : Tableur (CSV) ↗ **Exporter** vos fiches (colonnes au choix, champs et calculs compris) vers Excel ou LibreOffice. **Importer** un fichier pour
-remplir vos champs personnalisés en masse : gardez la colonne « id », modifiez les autres, réimportez.
+Ouvrir : Tableur (CSV) ↗ **Exporter** les fiches (colonnes au choix, champs et calculs compris) vers Excel ou LibreOffice. **Importer** un fichier pour
+remplir les champs personnalisés en masse : garder la colonne « id », modifier les autres, réimporter.
 
 Vers un tableur, et retour
 
@@ -591,21 +591,21 @@ Vers un tableur, et retour
 
 #### Mes modifications
 
-Ouvrir : Mes modifications ↗ La liste de tous vos réglages, rubrique par rubrique : « Montrer » fait clignoter l'élément dans l'aperçu, ✕ retire le réglage.
+Ouvrir : Mes modifications ↗ La liste de tous les réglages, rubrique par rubrique : « Montrer » fait clignoter l'élément dans l'aperçu, ✕ retire le réglage.
 C'est ici qu'on retrouve un élément **masqué** pour le faire réapparaître.
 
-Tout ce que vous avez changé, au même endroit
+Tout ce qui a été changé, au même endroit
 
 #### Historique et secours
 
 Ouvrir : Historique et secours ↗
 
-- **Reprendre** une ancienne publication : elle devient votre brouillon ; vérifiez, puis publiez.
+- **Reprendre** une ancienne publication : elle devient le brouillon ; vérifier, puis publier.
 
-- **↺ Tout remettre d'origine** : vide le brouillon de tous vos réglages.
+- **↺ Tout remettre d'origine** : vide le brouillon de tous les réglages.
 
-- **Exporter / Importer** vos réglages dans un fichier (pour les garder ailleurs, ou les transférer). Un fichier importé est vérifié et remis d'aplomb par le serveur ;
-il arrive dans le brouillon : regardez l'aperçu avant de publier, et n'importez que des fichiers de confiance.
+- **Exporter / Importer** les réglages dans un fichier (pour les garder ailleurs, ou les transférer). Un fichier importé est vérifié et remis d'aplomb par le serveur ;
+il arrive dans le brouillon : regarder l'aperçu avant de publier, et n'importez que des fichiers de confiance.
 
 - **Feuille de style libre** (pour qui connaît le CSS) : facultatif.
 
@@ -624,7 +624,7 @@ Ouvrir : Sauvegardes ↗
 - **Télécharger** une sauvegarde pour la garder ailleurs ; en **déposer** une ; **restaurer** (l'état actuel est d'abord sauvegardé).
 
 - **Tout emporter** : un export `.zip` de toutes les données (avec ou sans les photos). Les mots de passe n'y sont jamais ;
-vos **clés API** (Rebrickable, BrickLink…), elles, y sont : gardez ce fichier pour vous.
+les **clés API** (Rebrickable, BrickLink…), elles, y sont : garder ce fichier pour soi.
 
 **Avant un gros changement :** Sauvegardes → « Sauvegarder la collection ».
 
@@ -649,7 +649,7 @@ Tous les appareils devront se reconnecter.
 - **Sessions** : combien sont ouvertes, « Fermer les autres », se déconnecter.
 
 - **Outils sensibles depuis Internet** : le code, les réglages de démarrage, la restauration d'un .zip et la page de secours ne répondent que
-depuis le **réseau local** (chez vous). Une case permet de les ouvrir aussi depuis Internet ; elle ne se change que depuis le réseau local.
+depuis le **réseau local** (à la maison). Une case permet de les ouvrir aussi depuis Internet ; elle ne se change que depuis le réseau local.
 
 Mots de passe et sécurité
 
@@ -691,11 +691,11 @@ Le code de l'application, avec trois filets de sécurité
 
 | Ce qui se passe | Quoi faire
 
-| Un réglage rend le site illisible ou inutilisable | Ajoutez `?bo=off` à la fin de l'adresse du site : il s'affiche **sans aucune personnalisation**.
-Puis ouvrez `/backoffice` (jamais personnalisé, toujours utilisable) → « Mes modifications » pour retirer le réglage fautif,
+| Un réglage rend le site illisible ou inutilisable | Ajouter `?bo=off` à la fin de l'adresse du site : il s'affiche **sans aucune personnalisation**.
+Puis ouvrir `/backoffice` (jamais personnalisé, toujours utilisable) → « Mes modifications » pour retirer le réglage fautif,
 ou « Historique et secours » pour reprendre une version d'avant.
 
-| Un élément a disparu | Aperçu → cochez « Montrer ce qui est masqué » ; ou « Mes modifications » → ✕ sur la ligne « masqué ».
+| Un élément a disparu | Aperçu → cocher « Montrer ce qui est masqué » ; ou « Mes modifications » → ✕ sur la ligne « masqué ».
 
 | Un clic ne fait plus rien | « Comportements » → « Clics et liens modifiés » → ✕.
 
@@ -703,16 +703,16 @@ ou « Historique et secours » pour reprendre une version d'avant.
 
 | Une donnée a été abîmée | « Sauvegardes » → Restaurer la sauvegarde d'avant.
 
-| Le site ne répond plus après une modification du code | Attendez dix secondes (l'ancienne version revient seule). Sinon : `/backoffice/secours` →
+| Le site ne répond plus après une modification du code | Attendre dix secondes (l'ancienne version revient seule). Sinon : `/backoffice/secours` →
 mot de passe du back office → « Afficher les versions gardées » → remettre la version d'avant → Redémarrer.
 
 | Mot de passe de la Briquothèque oublié | Back office → « Mots de passe et sécurité » → « Changer le mot de passe de la Briquothèque ».
 
-| Mot de passe du back office oublié | Il ne se retrouve pas : supprimez `data/backoffice_auth.json` sur le serveur, puis rouvrez `/backoffice`.
+| Mot de passe du back office oublié | Il ne se retrouve pas : supprimer `data/backoffice_auth.json` sur le serveur, puis rouvrir `/backoffice`.
 
-| « Trop de tentatives » | Attendez 15 minutes. Une adresse bannie se débloque dans Réglages → Sécurité de la Briquothèque.
+| « Trop de tentatives » | Attendre 15 minutes. Une adresse bannie se débloque dans Réglages → Sécurité de la Briquothèque.
 
-| Un outil répond « seulement depuis le réseau local » | Ouvrez le back office depuis chez vous ; ou cochez « Outils sensibles depuis Internet » (depuis chez vous).
+| Un outil répond « seulement depuis le réseau local » | Ouvrir le back office depuis la maison ; ou cocher « Outils sensibles depuis Internet » (depuis la maison).
 
 #### Ce que le back office ne fait pas
 
@@ -723,26 +723,26 @@ La page de secours : /backoffice/secours
 
 ## Dix recettes pas à pas
 
-- **Changer la couleur du site.** Apparence → choisissez une palette → Publier.
+- **Changer la couleur du site.** Apparence → choisir une palette → Publier.
 
-- **Mettre votre logo.** Apparence → Logo → « Choisir un fichier… » → Publier.
+- **Mettre le logo.** Apparence → Logo → « Choisir un fichier… » → Publier.
 
 - **Renommer « MOC » en « Création ».** Étiquettes et pastilles → ligne « MOC » → Modifier → Nouveau texte : « Création » → Publier.
 
-- **Un bouton avec une image.** Images → envoyez l'image. Modifier à la souris → cliquez le bouton → « Icône ou image » → « Une image » →
-« 🖼️ Choisir… » → place « à la place du texte » → réglez largeur et hauteur → Publier.
+- **Un bouton avec une image.** Images → envoyer l'image. Modifier à la souris → cliquer le bouton → « Icône ou image » → « Une image » →
+« 🖼️ Choisir… » → place « à la place du texte » → régler largeur et hauteur → Publier.
 
-- **Masquer une section des Réglages.** Page « Réglages » de l'appli → décochez « visible » sur la section → Publier.
+- **Masquer une section des Réglages.** Page « Réglages » de l'appli → décocher « visible » sur la section → Publier.
 
 - **Un champ « Emplacement » sur les sets.** Champs personnalisés → + Nouveau champ → « Emplacement », texte court, fiches « Sets » → Publier.
-Remplissez-le ensuite sur chaque fiche.
+Le remplir ensuite sur chaque fiche.
 
-- **Une étiquette pour les sets chers.** Étiquettes et pastilles → exemple « 💰 Plus de 100 € » → ajustez le montant → Publier.
+- **Une étiquette pour les sets chers.** Étiquettes et pastilles → exemple « 💰 Plus de 100 € » → ajuster le montant → Publier.
 
 - **Un tableau de bord en page de départ.** Pages → « 📊 Tableau de bord ». Puis Comportements → Page de départ → « Une page créée… » → Tableau de bord → Publier.
 
 - **Une page publique de contact.** Pages → Page vide → blocs Texte et Bouton (« Ouvrir une adresse » : `mailto:contact@example.org`) →
-cochez « Publique » → Publier → donnez l'adresse `/p/…`.
+cocher « Publique » → Publier → donner l'adresse `/p/…`.
 
-- **Revenir à hier.** Historique et secours → « Reprendre » sur la publication d'hier → vérifiez l'aperçu → Publier.
+- **Revenir à hier.** Historique et secours → « Reprendre » sur la publication d'hier → vérifier l'aperçu → Publier.
 
