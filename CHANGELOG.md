@@ -9,6 +9,35 @@ Les nouveautés de Briquothèque, version par version (la plus récente en haut)
 - **« 🔁 Commander à nouveau » : plusieurs couleurs d'un coup** (chacune sa quantité, une ligne par couleur) ; dans **☑ Sélection**, « 🔁 Commander à nouveau » pour toutes les lignes cochées. Sur ordinateur, « Commandée le … » seule sur sa ligne, les boutons dessous ; sur téléphone, ✔ OK plus étroit. Sur une ligne commandée, **un seul bouton « 🛒 À commander »** qui demande : changer le statut de cette ligne, ou préparer une nouvelle commande.
 - **Fenêtres de choix plus lisibles** (« À commander », « Vers quel inventaire ? »…) : une ligne sans photo n'est plus écrasée ; sur ordinateur, deux grandes cartes par ligne, photo et texte plus gros.
 - **Inventaire : 🗑️ Supprimer toujours possible** — corbeille en haut (à côté de ✏️) et bouton en bas, ses pièces commandées sont déplacées dans « Commandes » (pas celles à commander).
+- **Fiche d'un MOC** : ses pièces ne s'affichent plus dans la fiche, seulement dans « 🔶 Pièces » (comme un set partiel).
+- **Inventaire : tirer pour actualiser** (vers le bas, depuis le haut de la page) ; plus de bouton ↻ en haut.
+- **Inventaire complet, jamais sans issue** : bouton « 🚧 Prêt à construire : créer sa fiche » dès que tout est OK, et la question à l'ouverture d'un inventaire déjà complet (pièces passées OK depuis « Commandes »…).
+- **Inventaire : « 📷 Scanner des pièces »** ouvre la recherche de pièce (appareil photo, image collée ou référence) ; la liste se filtre sur la pièce trouvée. Plus de « 📋 Coller » à côté.
+- **Recherche réparée** : elle ne trouvait plus rien depuis que BrickEconomy refuse l'accès ; elle cherche maintenant sets et figurines par Rebrickable (en français et en anglais) et une référence de figurine (sw0002…) par BrickLink.
+- **Ajout d'un set** : la fiche est créée tout de suite, les prix arrivent en coulisse.
+- **Inventaire** : « 🔎 Rechercher » (l'ancien scan de plusieurs pièces par photo est retiré) ; un nouvel inventaire apparaît tout de suite dans le menu ; 4 colonnes sur grand écran.
+- **Commandes** : même barre sur ordinateur que sur téléphone ; « Exportée » seulement sur une ligne encore à commander, son ✕ au bout de la ligne.
+- **Souhaits** : l'état souhaité se change sans passer en modification ; pas de ✔ Acquis sur « À surveiller » ; ⭐ dans le titre de la liste de souhaits (sans ✏️) ; plus de suggestion de liste.
+- **Fiche** : liens tout en bas, sous les prix ; plus de case vide à côté de « Quantité » ; ✏️ au bout de chaque pièce d'un MOC.
+- **Nouveautés** : un set en réassort ne passe plus pour une sortie du lendemain.
+- **Pages publiques** : « À surveiller » affiche la note de chaque fiche.
+- **Vitesse** : glisser une fiche plus léger (thème Verre sans flou sur les cartes) ; fenêtres opaques dans le thème Verre ; notes libres de « À faire » visibles aussitôt.
+- **Lexique** : ⧉ copier, 🔁 remplacer, ✕ retirer, 🗑️ supprimer, ✔ valider — partout.
+- **Mode démo retiré.**
+- **Un seul menu « Liste »** partout (fiche, inventaire complet, souhait acquis) : même bouton avec logos, même fenêtre.
+- **Encore plus rapide** : scripts et styles compressés (app.js 1 Mo → 312 Ko) et jamais retéléchargés s'ils n'ont pas changé ; collection recalculée en coulisse après chaque enregistrement.
+- **« 🔶 Pièces » d'un MOC** toujours visibles, même sans clé Rebrickable ni internet ; l'inventaire en page se ferme aussi depuis les pastilles du haut ; 🗑️ et ✔ partout.
+- **Priorité à l'écran** : tout ce qui tourne en fond (relevés de prix, images, inventaires, commandes…) passe après ce qui est en cours à l'écran — naviguer, ouvrir une fiche et chercher ses prix, rechercher ; les tâches de fond attendent que l'écran soit calme et tournent en priorité basse.
+- **Tri par défaut** enfin gardé : le menu de gauche le respecte (plus de « Dernière modification » imposé), et il est enregistré sur le serveur — le même sur tous les appareils.
+- **Inventaire complet** : une seule fenêtre — la liste où mettre la fiche (à choisir, rien d'office ; ★ marque la suggestion : celle qui a le plus de sets de son thème) et le type de fiche : 📦 Set complet, 🧩 Set partiel, 🛠️ MOC, ou « Pas encore ».
+- **Plus rapide** : la collection (« /api/lists ») est gardée en mémoire tant que rien n'a changé — environ 20 fois plus rapide à chaque rafraîchissement.
+- **Inventaire complet → « Oui »** : la fiche se crée en coulisse (le formulaire ne s'affiche plus), la liste reste utilisable, confirmation quand c'est enregistré.
+- **Inventaire en vraie page** (comme « Commandes ») : il occupe la zone principale, menu et en-tête restent visibles ; un clic dans le menu le referme ; sur ordinateur, les pièces sur deux colonnes (trois sur grand écran).
+- **« Commandes » : le menu ☰ propose les filtres** (Toutes, À commander, Commandées, OK, ☑ Sélection) à la place des tris ; plus de rangée de pastilles ; ☰ surligné quand un filtre est actif. Sur téléphone : liens à la ligne si besoin, « 📦 Commandée » sur une ligne.
+- **Souhait acquis** : « ✔ Acquis » demande la liste (aucune d'office ; ★ = la liste qui a le plus de sets du même thème), puis enregistre le set dans la collection, coché « 🚧 À construire », sans autre question ; tout set passé de la liste de souhaits à la collection va dans « À construire ».
+- **Liens** : plus de « Voir sur : » devant ; « LEGO » au lieu de « LEGO.com ».
+- **« Commandes » : section 🧾 Exportées** à part ; « Exportée en XML » se retire d'un ✕.
+- **Liens BrickOwl** de retour partout, à côté de BrickLink (application et pages publiques).
 - **Lisibilité** : plus aucun texte sous 11 px (étiquettes des chiffres, « Modifiée », « sans figurines »), petits boutons agrandis ; un peu plus gros sur ordinateur.
 - **Souhait : « État souhaité »** — boutons 📦 Neuf / ♻️ Occasion plus petits.
 - **Un inventaire n'est rattaché à aucune fiche** : toujours rangé par numéro de set (plus de « Dans la collection »), quantités d'un set.

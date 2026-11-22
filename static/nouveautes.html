@@ -130,7 +130,7 @@ function draw() {
     z.innerHTML = (all.length > 1 ? `<div class="zoom-row"><img class="zg-main" src="${all[0]}" alt=""><div class="zoom-side">${all.map((u, k) =>
       `<button type="button" class="zs-pic ${k ? "" : "on"}" data-zs="${k}"><img src="${u}" alt=""></button>`).join("")}</div></div>` : `<img src="${all[0] || im.dataset.set || im.src}" alt="">`)
       + (fig && x ? `<div class="zg-set">Dans le set « ${esc(x.name)} » (${esc(x.number)})${x.price != null ? " · " + money(x.price) : ""}</div>` : "")
-      + (url ? `<a class="zg-lego" href="${esc(url)}" target="_blank" rel="noopener">🔗 ${fig ? "Le set sur lego.com" : "Voir sur lego.com"}</a>` : "")
+      + (url ? `<a class="zg-lego" href="${esc(url)}" target="_blank" rel="noopener">🔗 ${fig ? "Le set sur LEGO" : "LEGO"}</a>` : "")
       + (fig && x?.kind === "new" && im.dataset.name ? ` <a class="zg-lego" href="https://www.bricklink.com/v2/search.page?q=${encodeURIComponent(im.dataset.name)}#T=M" target="_blank" rel="noopener">🔎 La figurine sur BrickLink</a> <a class="zg-lego" href="https://rebrickable.com/search/?q=${encodeURIComponent(im.dataset.name)}&search_type=minifig" target="_blank" rel="noopener">🔎 Sur Rebrickable</a>` : "");   // déjà sortie : recherche BrickLink (page publique : sans appel à l'API)
     z.onclick = e => {
       if (e.target.closest(".zg-lego")) return;   // le lien s'ouvre, l'image reste

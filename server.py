@@ -174,7 +174,68 @@ def _load(path, default):
 _UP_RE = re.compile(r"/api/upload/([0-9a-f]{16,40})")
 
 
+# ---- PRIORITÉ À L'ÉCRAN (22/11) : les tâches de fond passent après ce qui est en cours à l'écran (voir p_priorite_ecran.py)
+import urllib.request as _ur_prio
+_PRIO = {"t": 0.0}
+_prio_tl = threading.local()
+_PRIO_POLL = ("/api/ping", "/api/novelties/count", "/api/visits", "/api/scan-status", "/api/moc-scan-status", "/api/offline-pack", "/api/bo/x/status")
+
+
+def prio_seen(path):
+    """Requête de l'appli : l'écran est actif (sauf appels automatiques)."""
+    poll = str(path or "").startswith(_PRIO_POLL)
+    _prio_tl.fg = not poll
+    if not poll:
+        _PRIO["t"] = time.time()
+
+
+def prio_wait(maxw=20):
+    """Tâche de fond : attendre que l'écran soit calme depuis 3 s (au plus maxw secondes)."""
+    if getattr(_prio_tl, "fg", False):
+        return
+    end = time.time() + maxw
+    while time.time() - _PRIO["t"] < 3 and time.time() < end:
+        time.sleep(0.5)
+
+
+_urlopen0 = _ur_prio.urlopen
+
+
+def _urlopen_prio(*a, **k):
+    prio_wait()
+    return _urlopen0(*a, **k)
+
+
+_ur_prio.urlopen = _urlopen_prio
+_start0, _run0 = threading.Thread.start, threading.Thread.run
+
+
+def _start_prio(self):
+    self._bq_fg = getattr(_prio_tl, "fg", False)   # lancée par une action à l'écran : elle en garde la priorité
+    return _start0(self)
+
+
+def _run_prio(self):
+    tgt = getattr(self, "_target", None)
+    if getattr(tgt, "__name__", "") == "process_request_thread" or getattr(self, "_bq_fg", False):
+        _prio_tl.fg = bool(getattr(self, "_bq_fg", False))
+    else:
+        try:
+            os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), 10)   # (tâche de fond : priorité processeur basse)
+        except Exception:
+            pass
+    return _run0(self)
+
+
+threading.Thread.start, threading.Thread.run = _start_prio, _run_prio
+
+
 def _save(path, data):
+    if path == DB_FILE and not DEMO:
+        try:
+            lists_warm()   # (la collection recalculée en coulisse : prête pour l'écran — 22/11)
+        except NameError:
+            pass
     tmp = path + ".tmp"
     if path == DB_FILE and isinstance(data, dict):   # collection : liens parent / enfant vérifiés à chaque enregistrement (links_fix)
         try:
@@ -1892,10 +1953,15 @@ def novelties_build():
         now = int(time.time())
         for x in items.values():
             x["seen"] = (prev.get(x["number"]) or {}).get("seen") or now   # première apparition sur lego.com (départage les sets d'une même année)
-            m = re.search(rf"(?:\b\d{{1,2}}\s+)?({MOIS})\s+(\d{{4}})", x.get("when") or "", re.I)
-            x["release"] = f"{m.group(1).lower()} {m.group(2)}" if m else (prev.get(x["number"]) or {}).get("release") or ""   # vue « à venir » avant : son mois reste
-            d2 = re.search(rf"\b(\d{{1,2}})\s+({MOIS})\s+(\d{{4}})", x.get("when") or "", re.I)   # (date exacte « 1 janvier 2027 » : retenue — une fois sorti, il reste à son jour)
-            x["day"] = f"{d2.group(1)} {d2.group(2).lower()} {d2.group(3)}" if d2 else (prev.get(x["number"]) or {}).get("day") or ""
+            pv = prev.get(x["number"]) or {}
+            bo_ = "BACKORDER" in str(x.get("status") or "").upper()   # (réassort : « expédié d'ici le … » n'est PAS une date de sortie — 22/11)
+            if "BACKORDER" in str(pv.get("status") or "").upper():
+                pv = {**pv, "release": "", "day": ""}   # (date relevée pendant un réassort : oubliée)
+            wt = "" if bo_ else (x.get("when") or "")
+            m = re.search(rf"(?:\b\d{{1,2}}\s+)?({MOIS})\s+(\d{{4}})", wt, re.I)
+            x["release"] = f"{m.group(1).lower()} {m.group(2)}" if m else pv.get("release") or ""   # vue « à venir » avant : son mois reste
+            d2 = re.search(rf"\b(\d{{1,2}})\s+({MOIS})\s+(\d{{4}})", wt, re.I)   # (date exacte « 1 janvier 2027 » : retenue — une fois sorti, il reste à son jour)
+            x["day"] = f"{d2.group(1)} {d2.group(2).lower()} {d2.group(3)}" if d2 else pv.get("day") or ""
         items = {k: x for k, x in items.items() if x.get("pieces")}   # pas les « goodies » (sacs, trousses, vêtements…) : rien à construire
         _save(NOV_FILE, {"t": int(time.time()), "items": list(items.values()), "figs_done": False})
         nums, pc = {x["number"] for x in items.values()}, _parts_cache()
@@ -4265,7 +4331,10 @@ def moc_names_fill(parts):
     def run():
         try:
             for bl in parts:
-                cached_part_from_bricklink(bl)
+                try:
+                    cached_part_from_bricklink(bl)
+                except Exception:   # (sans clé / sans internet : la suivante ; réessayé à la prochaine ouverture — 22/11)
+                    continue
         finally:
             _mocnames["busy"] = False
     threading.Thread(target=run, daemon=True).start()
@@ -4476,7 +4545,66 @@ def acc_annotate(out, item):
     return round(total, 2)
 
 
-def offline_figs(query, limit=40):
+_rb_theme_names = {}
+
+
+def fallback_search(query):
+    """Recherche sans le catalogue des prix : sets (Rebrickable, la recherche et sa traduction anglaise), minifigs (celles connues de l'appli
+    et de Rebrickable : offline_fig_search), et une référence de minifig BrickLink exacte (sw0002…) par le catalogue BrickLink — 22/11.
+    Les demandes à Rebrickable partent EN MÊME TEMPS (une seule attente)."""
+    import concurrent.futures as cf
+    out, seen = [], set()
+    q = query.strip()
+    if sources.FIG_RE.match(q):   # référence exacte de minifig : en tête
+        f = (_load(CACHE_FILE, {}).get("fig:" + q.lower()) or {})
+        bl = None if f.get("name") else bl_fig_info(q.lower())
+        if f.get("name") or bl:
+            out.append({"type": "fig", "number": q.lower(), "name": f.get("name") or bl["name"], "image": f.get("image") or bl.get("image"),
+                        "value": f.get("value"), "years": f.get("years") or ([bl["year"]] if bl and bl.get("year") else None), "sets": (f.get("sets") or [])[:4]})
+            seen.add(("fig", q.lower()))
+    en = None
+    try:
+        en = sources.translate_fr(q)
+    except Exception:
+        pass
+    qs = [q] + ([en] if en and en.lower() != q.lower() else [])
+    def sets_of(qq):
+        if not sources.rebrickable_key():
+            return []
+        try:
+            return sources.rb("lego/sets/?page_size=30&ordering=-year&search=" + urllib.parse.quote(qq)).get("results") or []
+        except Exception:
+            return []
+    def themes():
+        if not _rb_theme_names and sources.rebrickable_key():
+            try:
+                _rb_theme_names.update({t["id"]: t.get("name") or "" for t in sources.rb("lego/themes/?page_size=1000").get("results") or []})
+            except Exception:
+                pass
+    def figs_of(qq):
+        try:
+            return offline_fig_search(qq)
+        except Exception:
+            return []
+    ex = cf.ThreadPoolExecutor(6)
+    fs = [ex.submit(sets_of, qq) for qq in qs], [ex.submit(figs_of, qq) for qq in qs], ex.submit(themes)
+    cf.wait(fs[0] + fs[1] + [fs[2]], timeout=20)
+    ex.shutdown(wait=False)
+    for fu in fs[0]:
+        for x in (fu.result() if fu.done() else []):
+            n = x.get("set_num") or ""
+            if n and ("set", n) not in seen:
+                out.append({"type": "set", "number": n, "name": x.get("name") or n, "image": x.get("set_img_url"), "year": x.get("year"),
+                            "theme": _rb_theme_names.get(x.get("theme_id"), ""), "pieces": x.get("num_parts")})
+                seen.add(("set", n))
+    for fu in fs[1]:
+        for r in (fu.result() if fu.done() else []):
+            if ("fig", r.get("number")) not in seen:
+                out.append(r); seen.add(("fig", r.get("number")))
+    return out
+
+
+def offline_fig_search(query, limit=40):
     """Catalogue des prix injoignable : minifigs dont le nom ou la référence contient la recherche —
     celles déjà connues de l'appli (fiches en cache, figurines des sets en cache), puis celles de Rebrickable (sans cote)."""
     words = re.findall(r"[^\W_]+", query.lower())
@@ -6721,6 +6849,107 @@ def trend_until():
 _tep = {"t": 0, "v": ""}
 
 
+_lists_c = {"k": None, "t": 0, "v": None}
+_LISTS_SELF = {"history.json", "value_log.json", "visits.json", "bans.json", "auth.json", "backoffice_auth.json", "bl_quota.json", "bl_nightly.json",
+               "claude-notes.json", "recette.json", "push_subs.json"}   # (écrits par le calcul lui-même, ou sans rapport)
+
+
+_lists_build = threading.Lock()
+_lists_warm = {"t": None}
+
+
+def lists_warm(delay=1.5, force=False):
+    """Après un enregistrement : la collection recalculée en coulisse (une seule fois pour une rafale d'enregistrements)."""
+    if _lists_warm["t"] and _lists_warm["t"].is_alive():
+        _lists_warm["again"] = True   # (déjà en cours : refait juste après, rien n'est perdu)
+        return
+    def run():
+        try:   # (pour l'écran : priorité normale, n'attend jamais que l'écran soit calme)
+            _prio_tl.fg = True
+            os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), 0)
+        except Exception:
+            pass
+        time.sleep(delay)
+        f = force
+        while True:
+            _lists_warm["again"] = False
+            try:
+                lists_payload(force=f)
+            except Exception as e:
+                print("Préchauffage de la collection :", e, flush=True)
+            if not _lists_warm.get("again"):
+                break
+            f = False   # (relancé : seulement si l'état a changé depuis)
+    _lists_warm["t"] = threading.Thread(target=run, daemon=True)
+    _lists_warm["t"].start()
+
+
+def lists_payload(force=False):
+    """Toute la collection pour l'appli (« /api/lists ») : gardée en mémoire, recalculée une seule fois à la fois (22/11)."""
+    if not force and _lists_c["v"] is not None and lists_cache_key() == _lists_c["k"]:
+        if time.time() - _lists_c["t"] >= 120:
+            lists_warm(0, force=True)   # (plus de 2 min : servie tout de suite, la version à jour se calcule en coulisse)
+        return _lists_c["v"]
+    with _lists_build:
+        _lk = lists_cache_key()   # (gardé en mémoire tant que rien n'a changé — 22/11)
+        if not force and _lk == _lists_c["k"] and _lists_c["v"] is not None:
+            return _lists_c["v"]
+        db = load_db()
+        cache = _load(CACHE_FILE, {})
+        kinds = list_kinds(db)
+        fig_info_fill([i["number"] for i in db["items"] if i.get("kind") == "fig" and not (cache.get("fig:" + i["number"]) or {}).get("name")])
+        items = [enrich(i, cache, kinds) for i in db["items"]]
+        trend_lists = {}
+        try:
+            record_day(items, kinds)
+            vl_record(db["items"], items, cache, kinds)   # journal des valeurs par fiche (« Comprendre les variations »)
+        except Exception as e:
+            print("Relevé du jour impossible :", e, flush=True)
+        try:   # (à part : un relevé du jour raté n'empêche pas les flèches)
+            trend_lists = vl_trends(items, kinds, cache)   # flèches de variation (chg de chaque fiche, totaux par liste)
+            cote_trends(items, cache)   # … et variation de chaque cote (détail des prix d'une fiche)
+        except Exception as e:
+            print("Variations impossibles :", e, flush=True)
+        fill_fr_names([i["number"] for i in db["items"] if i.get("kind", "set") == "set"]
+                      + [(inv.get("set") or "") for inv in (db.get("inventories") or {}).values()])
+        fill_fig_names([n for i in items for n in
+                        ([i["info"].get("name_en") or i["info"].get("name")] if i.get("kind") == "fig" and i.get("info") else
+                         [f.get("name_en") or f.get("name") for f in ((i.get("info") or {}).get("minifigs") or [])])])
+        return (_lists_keep(_lk, {"lists": db["lists"], "items": items, "mod_discount": mod_discount(), "box_bonus": box_bonus(), "plan_cut": plan_cut(),
+                               "ref_site": ref_site(), "bl_down": bl_down(), "bl_back": _load(sources.SETTINGS_FILE, {}).get("bl_back"), "site_logos": site_logos(), "trend": trend_cfg(), "trend_lists": trend_lists, "trend_ref": vl_ref(),   # flèches de variation à côté des prix (et le relevé comparé)
+                               "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "",   # thème de l'application (Réglages)
+                               **(perso.payload() if perso else {}),   # (extensions locales)
+                               "bl_zones": {**sources.bl_zone_cfg(), "order": sources.bl_zone_order()},   # zones BrickLink réglées (drapeaux, liens)
+                               "todo_cats": todo_cats(), "todo_icons": todo_icons(), "help_on": _load(sources.SETTINGS_FILE, {}).get("help_on", True) is not False, "free_todos": free_todos(), "bl_alert": None if DEMO else _bl_state["alert"],
+                               "keys_missing": [] if DEMO else [k for k, ok in (("rebrickable", sources.rebrickable_key()), ("bricklink", bl_on())) if not ok],
+                               "side_pub_hide": _load(sources.SETTINGS_FILE, {}).get("side_pub_hide") or [],   # (liens publics masqués dans le menu latéral)
+                               "sort_def": _load(sources.SETTINGS_FILE, {}).get("sort_def"),   # (tri par défaut, le même sur tous les appareils — 22/11)
+                               "demo_on": DEMO_SITE, "lego_urls": lego_urls()}))   # fiches : lien direct vers la page LEGO.com quand elle est connue
+
+
+_gz_cache = {}   # (fichiers texte compressés, par version — 22/11)
+
+
+def lists_cache_key():
+    """Clé de « /api/lists » gardé en mémoire : le jour + la dernière modification de MA collection et des réglages (les relevés de prix
+    écrits en fond ne comptent pas : ils arrivent par le recalcul en coulisse, toutes les 2 minutes au plus) — 22/11."""
+    mt = 0.0   # (tout fichier de données compte — notes libres, nouveautés masquées… — sauf les relevés de fond et les sauvegardes — 22/11)
+    try:
+        for e in os.scandir(DATA):
+            nm = e.name
+            if nm.endswith(".json") and not nm.startswith("cache") and ".avant" not in nm and nm not in _LISTS_SELF:
+                mt = max(mt, e.stat().st_mtime)
+    except OSError:
+        return None
+    return (time.strftime("%Y-%m-%d"), mt)
+
+
+def _lists_keep(k, v):
+    if k is not None:
+        _lists_c.update(k=k, t=time.time(), v=v)   # (rangée sous l'état d'AVANT le calcul : un enregistrement pendant le calcul la rend périmée — 22/11)
+    return v
+
+
 def trend_epoch():
     """Date de départ des variations (réglage « trend_epoch », AAAA-MM-JJ) : les relevés d'avant ne servent jamais de comparaison (22/11)."""
     if time.time() - _tep["t"] > 30:
@@ -7834,12 +8063,39 @@ class Handler(BaseHTTPRequestHandler):
             data = backoffice.inject(data, public=not auth.valid_session(self.token()), off="bo=off" in (urlparse(self.path).query or ""))
         if perso and os.path.basename(path) in ("index.html", "admin.html"):   # (extensions locales)
             data = perso.inject(data, os.path.basename(path))
-        self.send_response(200)
-        self.send_header("Content-Type", ctype or mimetypes.guess_type(path)[0] or "application/octet-stream")
+        ct = ctype or mimetypes.guess_type(path)[0] or "application/octet-stream"
+        texty = ct.startswith("text/") or ct in ("application/javascript", "application/json", "image/svg+xml", "application/manifest+json", "application/xml") \
+            or path.endswith((".js", ".css", ".html", ".json", ".svg", ".webmanifest"))
+        if texty:   # (texte : ETag + compression — 22/11)
+            etag = '"' + hashlib.md5(data).hexdigest()[:20] + '"'
+            if etag in (self.headers.get("If-None-Match") or ""):   # le navigateur a déjà cette version : rien à renvoyer
+                self.send_response(304)
+                self.send_header("ETag", etag)
+                self.send_header("Cache-Control", "public, max-age=604800" if cache else "no-cache")
+                self.end_headers()
+                return
+            if len(data) > 1400 and "gzip" in (self.headers.get("Accept-Encoding") or "").lower():
+                gz = _gz_cache.get(etag)
+                if gz is None:
+                    import gzip
+                    gz = gzip.compress(data, compresslevel=6)
+                    if len(_gz_cache) > 40:
+                        _gz_cache.clear()
+                    _gz_cache[etag] = gz
+                data = gz
+                self.send_response(200)
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Vary", "Accept-Encoding")
+            else:
+                self.send_response(200)
+            self.send_header("ETag", etag)
+        else:
+            self.send_response(200)
+        self.send_header("Content-Type", ct)
         self.send_header("Content-Length", str(len(data)))
         if cache:
             self.send_header("Cache-Control", "public, max-age=604800")
-        else:   # pages et scripts : toujours la dernière version après une mise à jour
+        else:   # pages et scripts : toujours la dernière version après une mise à jour (vérifiée par l'ETag)
             self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(data)
@@ -8361,6 +8617,7 @@ class Handler(BaseHTTPRequestHandler):
                 "quantity": it.get("quantity", 1), "condition": it.get("condition"), "bl_zone": bl_zone_of(it.get("kind", "set"), it["number"]),
                 "with_minifigs": it.get("with_minifigs", True), "missing": len(it.get("missing_minifigs") or []),
                 **({"has_box": bool(it.get("has_box")), "no_plan": bool(it.get("no_plan")), "also_used": bool(it.get("also_used"))} if it["list_id"] in watch else {}),
+                **({"note": str(it.get("notes") or "")[:800]} if it["list_id"] in watch and (it.get("notes") or "").strip() else {}),   # (« À surveiller » : la note, seulement là — 22/11)
                 "figs": sum(fig_have(it, info.get("minifigs") or []).values()) if it.get("kind", "set") == "set" and it.get("with_minifigs", True) else 0,
                 "portion": it.get("portion", 100), "portion_note": it.get("portion_note", ""), "display_name": (mods or {}).get("name") or it.get("display_name", ""),
                 "custom_type": it.get("custom_type"), "added_at": it.get("added_at"),
@@ -8407,6 +8664,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- routes
     def do_GET(self):
+        prio_seen(urlparse(self.path).path)   # (priorité à l'écran — 22/11)
         """Mode « fiche ouverte » pour /api/set/<n> et /api/fig/<n> (sauf ?refresh) : réponse tout de suite, relectures en fond."""
         u0 = urlparse(self.path)
         _quick.on = bool(re.fullmatch(r"/api/(?:set|fig)/[\w.-]+", u0.path)) and "refresh" not in parse_qs(u0.query)
@@ -8467,36 +8725,7 @@ class Handler(BaseHTTPRequestHandler):
             if p == "/api/offline-pack":   # paquet hors ligne (fiches jamais ouvertes) : caches seulement, voir offline_pack()
                 return self.send_json(offline_pack(), prefetch=False)   # (sans télécharger les centaines d'images citées : le serveur n'a qu'un processeur)
             if p == "/api/lists":
-                db = load_db()
-                cache = _load(CACHE_FILE, {})
-                kinds = list_kinds(db)
-                fig_info_fill([i["number"] for i in db["items"] if i.get("kind") == "fig" and not (cache.get("fig:" + i["number"]) or {}).get("name")])
-                items = [enrich(i, cache, kinds) for i in db["items"]]
-                trend_lists = {}
-                try:
-                    record_day(items, kinds)
-                    vl_record(db["items"], items, cache, kinds)   # journal des valeurs par fiche (« Comprendre les variations »)
-                except Exception as e:
-                    print("Relevé du jour impossible :", e, flush=True)
-                try:   # (à part : un relevé du jour raté n'empêche pas les flèches)
-                    trend_lists = vl_trends(items, kinds, cache)   # flèches de variation (chg de chaque fiche, totaux par liste)
-                    cote_trends(items, cache)   # … et variation de chaque cote (détail des prix d'une fiche)
-                except Exception as e:
-                    print("Variations impossibles :", e, flush=True)
-                fill_fr_names([i["number"] for i in db["items"] if i.get("kind", "set") == "set"]
-                              + [(inv.get("set") or "") for inv in (db.get("inventories") or {}).values()])
-                fill_fig_names([n for i in items for n in
-                                ([i["info"].get("name_en") or i["info"].get("name")] if i.get("kind") == "fig" and i.get("info") else
-                                 [f.get("name_en") or f.get("name") for f in ((i.get("info") or {}).get("minifigs") or [])])])
-                return self.send_json({"lists": db["lists"], "items": items, "mod_discount": mod_discount(), "box_bonus": box_bonus(), "plan_cut": plan_cut(),
-                                       "ref_site": ref_site(), "bl_down": bl_down(), "bl_back": _load(sources.SETTINGS_FILE, {}).get("bl_back"), "site_logos": site_logos(), "trend": trend_cfg(), "trend_lists": trend_lists, "trend_ref": vl_ref(),   # flèches de variation à côté des prix (et le relevé comparé)
-                                       "app_color": _load(sources.SETTINGS_FILE, {}).get("app_color") or "",   # thème de l'application (Réglages)
-                                       **(perso.payload() if perso else {}),   # (extensions locales)
-                                       "bl_zones": {**sources.bl_zone_cfg(), "order": sources.bl_zone_order()},   # zones BrickLink réglées (drapeaux, liens)
-                                       "todo_cats": todo_cats(), "todo_icons": todo_icons(), "help_on": _load(sources.SETTINGS_FILE, {}).get("help_on", True) is not False, "free_todos": free_todos(), "bl_alert": None if DEMO else _bl_state["alert"],
-                                       "keys_missing": [] if DEMO else [k for k, ok in (("rebrickable", sources.rebrickable_key()), ("bricklink", bl_on())) if not ok],
-                                       "side_pub_hide": _load(sources.SETTINGS_FILE, {}).get("side_pub_hide") or [],   # (liens publics masqués dans le menu latéral)
-                                       "demo_on": DEMO_SITE, "lego_urls": lego_urls()})   # fiches : lien direct vers la page LEGO.com quand elle est connue
+                return self.send_json(lists_payload())   # (calcul : lists_payload, préchauffé après chaque enregistrement — 22/11)
             if p == "/api/search":
                 query = (q.get("q") or [""])[0].strip()
                 if len(query) < 2:
@@ -8518,8 +8747,8 @@ class Handler(BaseHTTPRequestHandler):
                         res, more = sources.search_page(query, 1)
                     else:
                         res = sources.search(query)
-                except Exception:   # catalogue des prix injoignable : les minifigs connues de l'appli et celles de Rebrickable
-                    res = offline_figs(query)
+                except Exception:   # catalogue des prix injoignable : sets et minifigs par Rebrickable (API officielle), référence BrickLink (22/11)
+                    res = fallback_search(query)
                     return self.send_json({"results": res, "more": False, "be_down": True} if paged else res)
                 en = sources.translate_fr(query)
                 if en and en.lower() != query.lower():   # recherche en français : on cherche aussi la traduction
@@ -9028,9 +9257,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 it = next((i for i in load_db()["items"] if i["id"] == m.group(1)), None)
                 if not it or it.get("kind") != "custom":
                     return self.error("Introuvable", 404)
-                if not sources.rebrickable_key():
-                    return self.error("Il faut une clé API Rebrickable (Réglages)")
-                return self.send_json(moc_lots_detail(it))
+                return self.send_json(moc_lots_detail(it))   # (ses pièces sont dans la fiche : jamais refusé, même sans clé ni internet — 22/11)
             m = re.fullmatch(r"/api/set/([\w.-]+)/models", p)
             if m:
                 return self.send_json(get_models(m.group(1)))
@@ -9358,6 +9585,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
         return self.error("Introuvable", 404)
 
     def do_POST(self):
+        prio_seen(urlparse(self.path).path)   # (priorité à l'écran — 22/11)
         if self.demo_route() or self.guard():
             return
         p = urlparse(self.path).path
@@ -10449,6 +10677,16 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     mn = sources.BL_MIN_SALES
                 _settings_update(bl_zones=zs, bl_min=mn)
                 return self.send_json({"ok": True, **sources.bl_zone_cfg(), "order": sources.bl_zone_order()})
+            if p == "/api/settings/sort-def":   # {sort} : tri par défaut de la collection, gardé sur le serveur (22/11)
+                srt = str(self.json_body().get("sort") or "")[:30]
+                if srt and not re.fullmatch(r"[a-z_]+", srt):
+                    return self.error("Tri inconnu")
+                with lock:
+                    st = _load(sources.SETTINGS_FILE, {})
+                    st["sort_def"] = srt
+                    _save(sources.SETTINGS_FILE, st)
+                    os.chmod(sources.SETTINGS_FILE, 0o600)
+                return self.send_json({"ok": True, "sort_def": srt})
             if p == "/api/settings/side-pub":   # {path, show} : lien d'une page publique affiché ou masqué en bas du menu latéral
                 b = self.json_body()
                 path = str(b.get("path") or "")
@@ -10770,8 +11008,14 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         b["rb_fig"] = number   # ses pièces : celles de cette minifig Rebrickable
                 else:
                     number = b["number"] = norm_set(str(number)) or number   # (« 40003 » → « 40003-1 » : même fiche qu'en ligne, pas de doublon)
+                    import concurrent.futures as _cf   # (la fiche d'abord : 2,5 s au plus pour les prix, le reste en coulisse — 22/11)
+                    _ex = _cf.ThreadPoolExecutor(1)
+                    _fu = _ex.submit(get_set, number)   # met en cache les infos et prix
+                    _ex.shutdown(wait=False)
                     try:
-                        get_set(number)  # met en cache les infos et prix
+                        _fu.result(timeout=2.5)
+                    except _cf.TimeoutError:   # prix encore en cours : fiche provisoire tout de suite, le relevé continue en coulisse
+                        placeholder_set(number, str(b.get("name_hint") or "")[:150], image=str(b.get("image_hint") or ""), soon=str(b.get("release_hint") or "")[:80])
                     except Exception:   # aucun site de prix ne répond : ajouté quand même, sans cote (relue plus tard)
                         placeholder_set(number, str(b.get("name_hint") or "")[:150], image=str(b.get("image_hint") or ""), soon=str(b.get("release_hint") or "")[:80])
                         b["_parts_estimate"] = True
@@ -11182,6 +11426,11 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                     if not any(l["id"] == target for l in db["lists"]):
                         return self.error("Liste inconnue")
                     if not copy:   # déplacement : les fiches reliées suivent (set ↔ ce qui y est rangé)
+                        _lk = list_kinds(db)
+                        if _lk.get(target) == "collection":   # (souhait acquis : directement « À construire » — 22/11)
+                            for _w in db["items"]:
+                                if _w["id"] in ids and _w.get("kind", "set") == "set" and _lk.get(_w.get("list_id")) == "wishlist":
+                                    _w["unbuilt"] = True
                         n = move_linked(db, ids, target, quiet_fig)
                         for _h in [i for i in db["items"] if i["id"] in ids and i.get("kind", "set") == "set"]:   # set changé de liste : collection → les fiches de ses figurines ; liste de souhaits → aucune
                             set_figs_sheets(db, _h)
@@ -11305,6 +11554,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
             return self.error(f"Erreur : {e}", 502)
 
     def do_PUT(self):
+        prio_seen(urlparse(self.path).path)   # (priorité à l'écran — 22/11)
         if self.demo_route() or self.guard():
             return
         p = urlparse(self.path).path
@@ -11442,6 +11692,9 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                         if pending and new.get("no_parts_est") and str(new.get("moc_file") or "").startswith("Inventaire Rebrickable"):
                             for k in ("moc_parts", "moc_price", "moc_file"):   # « Estimer par les pièces » décoché : estimation retirée
                                 new.pop(k, None)
+                        if new.get("kind", "set") == "set" and new.get("list_id") != it.get("list_id") and list_kinds(db).get(it.get("list_id")) == "wishlist" \
+                                and list_kinds(db).get(new.get("list_id")) == "collection":   # (souhait acquis : directement « À construire » — 22/11)
+                            new["unbuilt"] = True
                         if new.get("kind") == "part" and bool(new.get("got")) != bool(it.get("got")):   # ✔ OK ↔ inventaire : la ligne suit
                             for ln in new.get("inv_links") or []:
                                 inv_row_status(db, ln["inv"], ln["row"], "ok" if new.get("got") else "cmd")
@@ -11474,6 +11727,7 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
         return self.error("Introuvable", 404)
 
     def do_DELETE(self):
+        prio_seen(urlparse(self.path).path)   # (priorité à l'écran — 22/11)
         if self.demo_route() or self.guard():
             return
         p = urlparse(self.path).path
@@ -12746,6 +13000,7 @@ if __name__ == "__main__":
         threading.Thread(target=bo_keeper, daemon=True).start()
         threading.Thread(target=brickset_keeper, daemon=True).start()
         threading.Thread(target=orders_keeper, daemon=True).start()   # mes commandes BrickOwl → « Commandée » (chaque jour — 21/11 soir)   # dates LEGO de mes sets (Brickset), chaque jour pour les nouveaux (21/11 soir)   # site de référence BrickOwl / les deux : prix BrickOwl de la collection (21/11)
+        lists_warm(8)   # (au démarrage aussi : la collection prête pour le premier écran — 22/11)
         threading.Thread(target=lego_themes_keeper, daemon=True).start()   # pages des thèmes lego.com : prix public et lien des sets vendus (21/11)
         threading.Thread(target=backup_keeper, daemon=True).start()   # copie quotidienne de la collection   # sets ajoutés sans cote : cote récupérée dès que possible
         threading.Thread(target=parts_pricing_keeper, daemon=True).start()   # prix des pièces : reprise + chaque semaine

@@ -103,7 +103,7 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
 **Un set**
 - **Figurines** : **un seul nombre par figurine**. Jusqu'au nombre prévu par le set, ses exemplaires sont des **originales** ; au-delà, ils
   passent dans **ajoutées** (ex. 8 pour 1 prévue : 1 originale + 7 ajoutées), avec les figurines rangées dans le set avec leur propre fiche.
-  Menu **⋯** d'une figurine : 🔢 quantité, 👁 fiche, 🔁 pièces, 📄 copier, ➡️ déplacer, **🗑 Supprimer (je ne l'ai pas)** — sur la tuile touchée
+  Menu **⋯** d'une figurine : 🔢 quantité, 👁 fiche, 🔁 pièces, ⧉ copier, ➡️ déplacer, **🗑 Supprimer (je ne l'ai pas)** — sur la tuile touchée
   (les ajoutées, ou celle d'origine).
 - **Pièces** (🔁 Échanger des pièces) : toutes ses pièces avec leur prix **neuf** et **d'occasion** BrickLink ; retirez celles qui manquent, **échangez-en**
   (autre couleur, autre pièce), ajoutez-en — la valeur suit. Une pièce retirée, ou la pièce d'origine d'une pièce remplacée, reste affichée **en rouge et barrée**, avec **↩ Remettre**. Remettre une pièce remplacée demande s'il faut **garder** la
@@ -162,7 +162,7 @@ Ce document détaille chaque fonction résumée dans le [README](../README.md#fo
 - **Parents et enfants** : un set, un set partiel ou un set MOC contient des figurines ; seules les figurines et les figurines MOC se rangent
   dans un set (jamais un set dans un autre) ; un exemplaire = un seul set, un lot se répartit entre plusieurs ; la valeur d'une figurine rangée est
   dans celle de son set (jamais comptée deux fois) ; set supprimé ou parti en liste de souhaits : ses figurines ajoutées restent, seules.
-- **⧉ Copier/Déplacer un exemplaire** : 📄 copier (une variante à modifier : elle s'ouvre aussitôt ; enregistrée sans changement, une
+- **⧉ Copier/Déplacer un exemplaire** : ⧉ copier (une variante à modifier : elle s'ouvre aussitôt ; enregistrée sans changement, une
   confirmation ; si l'original avait plusieurs exemplaires, « Oui : 38 là-bas, 2 ici » / « Non : 40 là-bas + 2 en plus » ; fermée sans être
   enregistrée, elle est annulée), ➡️ ranger dans un set ou déplacer vers un autre set, ↩ sortir du set.
 - « **Aussi dans ce set — pas dans ma collection** » : les autres sets du catalogue qui contiennent la figurine.

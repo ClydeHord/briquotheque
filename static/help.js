@@ -28,7 +28,7 @@
       ["#btnGiftLink", "Lien public", "Copier le lien de la page publique « À surveiller »."],
       ["#filter", "Filtre", "Ne montrer que ce qui contient ce texte."],
       ["#sort", "Tri", "Ordre d'affichage des souhaits."],
-      ["#items .card", "Un souhait", "Prix magasin, neuf, occasion (drapeau : zone du prix). Un appui ouvre la fiche ; « ✔ Acquis » le passe dans la collection."],
+      ["#items .card", "Un souhait", "Prix magasin, neuf, occasion (drapeau : zone du prix). Un appui ouvre la fiche ; « ✔ Acquis » le passe dans la collection, « À construire »."],
     ]],
     commander: ["Commandes", [
       ["#btnAdd", "+", "Ajouter une pièce (référence, nom, photo) ou une figurine à commander."],
@@ -72,7 +72,7 @@
       ["#cfgUnbuilt", "🚧 À construire", "Le set n'est pas encore monté."],
       ["#btnEvo", "📈 Évolution", "L'historique du prix."],
       ["#modalGift", "👀", "À surveiller (souhait)."],
-      ["#btnAcquired", "✔ Acquis", "Le souhait passe dans la collection."],
+      ["#btnAcquired", "✔ Acquis", "Le souhait passe dans la collection : la liste est demandée, puis directement « À construire »."],
       ["#btnDeleteItem", "Supprimer", "Retirer la fiche (confirmation demandée)."],
       ["#btnSave", "Enregistrer / Ajouter", "Enregistrer la fiche dans la liste choisie."],
     ]],

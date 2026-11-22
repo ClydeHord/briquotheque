@@ -192,7 +192,7 @@ function drawMain() {
   const num = isMoc ? [i.number && i.number !== "custom" ? i.number : "", i.catalog_set ? "" : i.partial_set ? "Set partiel" : "MOC"].filter(Boolean).join(" · ") : i.number;
   const q = encodeURIComponent, n = i.number || "";
   const links = isMoc && !i.catalog_set ? [] : [   // LEGO.com : sa page produit si elle est connue, sinon la recherche tant que le set est vendu ou à venir (= extLinks, app.js)
-    i.kind === "set" && (i.lego_url || (!retired && i.availability)) ? ["LEGO.com" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
+    i.kind === "set" && (i.lego_url || (!retired && i.availability)) ? ["LEGO" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
       i.lego_url || `https://www.lego.com/fr-fr/search?q=${encodeURIComponent(String(n).replace(/-1$/, ""))}`] : null,
     ["BrickLink", blSale(i.kind === "fig" ? "M" : "S", n, i.bl_zone)], n ? ["Rebrickable", rbUrl(n, i.kind === "fig")] : null].filter(Boolean);   /* les annonces, et Rebrickable (17/11) */
   /* figurines comme sur la fiche privée : « originales » = ce que fournit le set ; exemplaires en plus et figurines rangées dans le set = « ajoutées » */

@@ -225,6 +225,7 @@
   .trend-tog.on { border-color: var(--red, #d01012); background: color-mix(in srgb, var(--red, #d01012) 12%, var(--panel)); }
   @media (max-width: 600px) { .toolbar > .trend-tog { padding: 0 9px; } }
 .card .tagline .tg.tg-ph { visibility: hidden; }   /* (place gardée) */
+  .watch-note { white-space: pre-line; font-style: italic; }   /* (« À surveiller » : la note — 22/11) */
 </style>
 <script>/* appli installée : une page publique n'y reste jamais — en revenant dans l'appli, retour à l'appli privée (navigateur ordinaire : rien) */
 (() => { const sa = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true; if (!sa) return;
@@ -357,7 +358,7 @@ function pubLinksHtml(page, owner) {
 let data = { lists: [], items: [] }, current = ALL;
 /* site de référence des prix (Réglages du propriétaire) : liens BrickLink, BrickOwl ou les deux (21/11) */
 const gBoSearch = q => `https://www.brickowl.com/search/catalog?query=${encodeURIComponent(q || "")}`;
-const gSiteLinks = (bl, bo) => [data.ref_site === "brickowl" ? ["BrickOwl", bo] : bl];   // (BrickLink d'office ; plan de secours : BrickOwl — 21/11 soir)
+const gSiteLinks = (bl, bo) => [bl, ["BrickOwl", bo]].filter(x => x && x[1]);   // (BrickLink puis BrickOwl, partout — 22/11 soir)
 const gv = { sets: true, figs: true };   // à chaque visite : sets ET figurines affichés, du dernier modifié au plus ancien
 
 const kindOf = id => data.lists.find(l => l.id === id)?.kind;
@@ -835,7 +836,7 @@ function render() {
         ${showList ? `<div class="meta list-tag">${esc(listName(i.list_id))}</div>` : ""}
         <div class="meta">${[i.info?.theme, i.info?.year, piecesTxt(i.info?.pieces)].map((t, k) => k === 2 && t && (i.quantity || 1) > 1 ? piecesTxt(i.info.pieces * i.quantity) : t).filter(Boolean).map(esc).join(" · ")}</div>
         ${(i.quantity || 1) > 1 && i.info?.pieces ? `<div class="meta pcs-unit">${nf.format(i.info.pieces)} pièces l'unité</div>` : ""}
-        ${isWishId(i.list_id) && i.kind === "set" && isWatch(i) ? `<div class="meta">🔎 ${esc(wantLabel(i))}</div>` : ""}
+        ${isWishId(i.list_id) && i.kind === "set" && isWatch(i) ? `<div class="meta">🔎 ${esc(wantLabel(i))}</div>` : ""}${isWatch(i) && i.note ? `<div class="meta watch-note">📝 ${esc(i.note)}</div>` : ""}
         ${isWishId(i.list_id) && !isCustom(i) ? `<div class="meta prices3">${prices(i)}</div>
         ${upcoming(i) ? `<div class="meta release">📅 ${esc(releaseTxt(i))}</div>` : ""}
         ${soon(i) && rDate(i.info?.retirement) ? `<div class="meta">⏳ Retrait prévu : ${esc(rDate(i.info.retirement).txt)}</div>` : ""}` : ""}
@@ -996,7 +997,7 @@ function openDetail(i, altK = null) {
   window._gLid = i.list_id;   // (couleur du thème de sa liste, le temps de la fiche)
   const inf = i.info || {}, n = i.number, q = encodeURIComponent, wishItem = kindOf(i.list_id) === "wishlist";
   const links = [
-    i.kind === "set" && (i.lego_url || (!retired(i) && inf.availability)) ? ["LEGO.com" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
+    i.kind === "set" && (i.lego_url || (!retired(i) && inf.availability)) ? ["LEGO" + (i.lego_price ? " · " + money(i.lego_price) : ""),   // prix public : set encore en vente
       i.lego_url || `https://www.lego.com/fr-fr/search?q=${q(n.replace(/-1$/, ""))}`] : null,   // page produit connue, sinon la recherche (= extLinks, app.js)
     ...(isMoc(i) ? [] : gSiteLinks(["BrickLink", blSale(i.kind === "fig" ? "M" : "S", n, i.bl_zone)], gBoSearch(i.kind === "fig" ? n : String(n).replace(/-1$/, "")))),   // les annonces du site de référence (MOC : rien à acheter — 21/11)
     isMoc(i) || !n ? null : ["Rebrickable", rbUrl(n, i.kind === "fig")],
@@ -1031,7 +1032,7 @@ function openDetail(i, altK = null) {
     </div>
     ${wishItem ? `<div class="gd-status">${retired(i) ? `<span class="badge retired">Retiré</span>` : upcoming(i) ? `<span class="badge upcoming">Bientôt disponible</span>` : soon(i) ? `<span class="badge soon">Bientôt retiré</span>` : ""}
       ${upcoming(i) ? ` <span class="meta">${esc(releaseTxt(i))}</span>` : !retired(i) && rDate(inf.retirement) ? ` <span class="meta">Retrait prévu : ${esc(rDate(inf.retirement).txt)}</span>` : ""}
-      ${isWatch(i) ? ` <span class="meta">🔎 ${esc(wantLabel(i))}</span>` : ""}</div>
+      ${isWatch(i) ? ` <span class="meta">🔎 ${esc(wantLabel(i))}</span>` : ""}${isWatch(i) && i.note ? `<div class="meta watch-note">📝 ${esc(i.note)}</div>` : ""}</div>
       <div class="gd-prices">
         ${inf.retail ? `<div><span>Prix magasin</span><b>${money(inf.retail)}</b></div>` : ""}
         ${retired(i) && inf.new_value ? `<div><span>Neuf</span><b>${zf(inf.zones?.new)}${money(inf.new_value)}</b></div>` : ""}

@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 22/11/2026 18:03.
+Généré le 22/11/2026 22:52.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -96,7 +96,7 @@ Le menu
 
 - **📊 Statistiques**, **🎲 Une fiche au hasard** (pour redécouvrir un set), **⚙️ Réglages**, **Se déconnecter**.
 
-- Les **liens publics** (Collection, Nouveautés, À surveiller, Liste de souhaits, Mode Démo) : **un appui ouvre la page et copie son lien**, à envoyer à les proches ; « Mode Démo » copie seulement son lien (à ouvrir en navigation privée).
+- Les **liens publics** (Collection, Nouveautés, À surveiller, Liste de souhaits, Mode Démo) : **un appui ouvre la page et copie son lien**, à envoyer aux proches ; « Mode Démo » copie seulement son lien (à ouvrir en navigation privée).
 Dessous, **🐙 GitHub** ouvre la source officielle de Briquothèque, puis les **mentions légales**. Sur cette page, le bouton **✏️ Éditer** change le paragraphe « Éditeur » (quand le site est géré pour quelqu'un d'autre).
 
 - **⇅** (en haut du menu) : changer l'ordre des listes.
@@ -313,7 +313,7 @@ Elle garde alors sa carte et sa fiche : **chaque fiche est unique**, une action 
 
 **Un set ajouté dont une figurine était déjà là, seule ?** Briquothèque demande si c'est celle de ce set. Oui : elle devient la
 figurine d'origine du set (une seule fiche ; sa photo, ses apparences, ses pièces, ses accessoires et ses tâches la suivent). Pareil quand un souhait passe
-dans la collection (« ✔ Acquis »). La liste de souhaits, elle, ne modifie jamais la collection.
+dans la collection (« ✔ Acquis ») : la liste est demandée (★ = suggestion), puis le set va directement dans « 🚧 À construire ». La liste de souhaits, elle, ne modifie jamais la collection.
 
 Une figurine, plusieurs exemplaires
 
@@ -322,10 +322,10 @@ Une figurine, plusieurs exemplaires
 - Fiche d'un **set**, d'un set partiel ou d'un MOC : **⧉ Copier cette fiche** crée une copie identique dans la même liste, ouverte aussitôt
 (un set ne se range pas dans un autre set).
 
-- Fiche d'une **figurine** : **⧉ Copier/Déplacer un exemplaire** ouvre un menu — **📄 Copier un exemplaire**, **➡️ Ranger dans un set**
+- Fiche d'une **figurine** : **⧉ Copier/Déplacer un exemplaire** ouvre un menu — **⧉ Copier un exemplaire**, **➡️ Ranger dans un set**
 (ou **Déplacer vers un autre set**), **↩ Sortir du set**.
 
-- **📄 Copier un exemplaire** : une nouvelle fiche, copie de celle-ci, à modifier (tête changée, pièces échangées…). Elle s'ouvre tout de suite,
+- **⧉ Copier un exemplaire** : une nouvelle fiche, copie de celle-ci, à modifier (tête changée, pièces échangées…). Elle s'ouvre tout de suite,
 rangée là où est l'original ; enregistrée sans rien modifier, l'application demande confirmation ; fermée sans être enregistrée, elle est annulée.
 À l'enregistrement, si l'original avait plusieurs exemplaires, l'application demande si ceux de la copie en viennent (« Oui : 38 là-bas, 2 ici » ou
 « Non : 40 là-bas + 2 en plus »). La copie est cotée comme le modèle d'origine, puis estimée selon ses modifications.
@@ -465,7 +465,7 @@ d'origine partent avec lui.
 - Toucher une figurine pour ouvrir sa fiche. Une action sur une figurine n'agit que sur elle : l'originale sans les exemplaires en plus, et un seul exemplaire d'un lot.
 
 - Le menu **…** d'une figurine : **🔢 Modifier la quantité** (celle de la tuile touchée : les originales, ou les ajoutées), **👁 Voir la fiche**,
-**🔁 Échanger des pièces**, **📄 Copier** ou **➡️ Déplacer vers un autre set…**, **🗑 Supprimer (je ne l'ai pas)** — sur la tuile des ajoutées,
+**🔁 Échanger des pièces**, **⧉ Copier** ou **➡️ Déplacer vers un autre set…**, **🗑 Supprimer (je ne l'ai pas)** — sur la tuile des ajoutées,
 seules les ajoutées partent ; sur celle d'origine, seule l'originale (« + 🟡 Figurine » la remet).
 
 - **Étiquettes** : **Modifié** = un élément en remplace un autre (même s'il y a aussi des ajouts ; des pièces d'origine retirées et d'autres ajoutées à leur place comptent aussi comme un remplacement) ; **Amélioré** = tout est là et des choses sont ajoutées. La décote ne s'applique que si une figurine d'origine est modifiée.
@@ -641,6 +641,12 @@ Les pièces de l'inventaire
 
 - Erreur : **↩ À commander** la remet à commander. À la réception, elles se passent à la main en **✔ OK** (jamais automatique). Quand tout est OK, Briquothèque propose de créer sa fiche : d'un « Oui », elle est créée tout de suite dans **À construire**, avec la photo de l'inventaire, dans la liste qui a le plus de sets du même thème.
 
+Quand tout est OK : « Prêt à construire ? » — la liste (à choisir ; ★ marque la suggestion : celle qui a le plus de sets de son thème) et le type de fiche : 📦 Set complet, 🧩 Set partiel ou 🛠️ MOC ; la fiche est créée en coulisse dans « 🚧 À construire ». Le bouton **🚧 Prêt à construire : créer sa fiche** reste dans le résumé tant que tout est OK. **📷 Scanner des pièces** : trouver une pièce (appareil photo, image collée ou référence) ; la liste se filtre sur elle.
+
+Tirer la page vers le bas (depuis le haut) l'actualise.
+
+L'inventaire s'ouvre comme une **page** (le menu de gauche reste là ; un clic dans le menu le referme ; ✕ aussi).
+
 **🗑️ Supprimer cet inventaire** (en haut, à côté de ✏️, ou tout en bas) le retire, après confirmation. Un inventaire n'est rattaché à aucune fiche : il est rangé par numéro de set, même ouvert depuis un set de la collection. Ses pièces **commandées** sont déplacées dans « Commandes » (avec leur commande) ; celles à commander ne le sont pas.
 
 Remplacer une couleur
@@ -691,7 +697,7 @@ l'état : les annonces de l'élément (pièce dans sa couleur, ou figurine), à 
 
 - Toucher **🧾 Exporter en XML** : toutes les pièces encore à commander (ni commandées ni reçues) sont copiées dans le presse-papier, au format XML de BrickLink. Aucun site ne s'ouvre ; elles se collent où il faut.
 
-- Commande passée : une pièce trouvée dans les commandes (BrickLink ou BrickOwl) affiche **📦 Commandée le …** (seulement la date). Commandée ailleurs ? Toucher **📦 Commandée**. Ensuite, **🛒 À commander** demande : changer le statut de cette ligne (erreur : de nouveau à commander) ou préparer une nouvelle commande.
+- Commande passée : une pièce trouvée dans les commandes (BrickLink ou BrickOwl) affiche **📦 Commandée le …** (seulement la date). Commandée ailleurs ? Toucher **📦 Commandée**. Les lignes exportées en XML ont leur section **🧾 Exportées** ; le ✕ retire « Exportée ». Ensuite, **🛒 À commander** demande : changer le statut de cette ligne (erreur : de nouveau à commander) ou préparer une nouvelle commande.
 
 - La liste est en sections : **🛒 À commander**, **📦 Commandées**, **✔ Reçues** (chacune avec son nombre ; sur ordinateur, jusqu'à quatre par ligne). Tout en bas, en bleu : **➕ Commandées en plus** — ce qui reste des commandes une fois réparti entre les inventaires et la liste, attribué à aucune fiche (photo, quantité, date, prix payé). Sur chacune : **✔ OK** (reçue : elle disparaît ; une figurine propose de l'ajouter à la collection), **🧩 Attribuer à une fiche** (la pièce s'ajoute à la fiche choisie) ou **📋 Vers un inventaire** (la ligne de l'inventaire passe « Commandée », avec la date et le prix).
 
@@ -699,7 +705,7 @@ l'état : les annonces de l'élément (pièce dans sa couleur, ou figurine), à 
 
 - **🛒 À commander** (ligne commandée) : changer le statut de cette ligne (de nouveau à commander) ou préparer une nouvelle commande ; **🔁 Commander à nouveau** (ligne reçue, ou ce second choix) : une nouvelle ligne à commander, dans la même couleur ou une autre — plusieurs couleurs possibles d'un coup (une ligne chacune) ; aussi pour toutes les lignes cochées avec ☑ Sélection.
 
-- **☑ Sélection** (à côté des filtres) : une case sur chaque ligne, puis une barre d'actions pour les lignes cochées — ✔ OK, 📦 Commandée, ↩ À commander, 🗑 Supprimer ; pour les commandées en plus : ✔ OK, 🧩 Attribuer à une fiche, 📋 Vers un inventaire.
+- Le menu **☰** de « Commandes » propose les filtres (Toutes, À commander, Commandées, OK). **☑ Sélection** (dans ce même menu) : une case sur chaque ligne, puis une barre d'actions pour les lignes cochées — ✔ OK, 📦 Commandée, ↩ À commander, 🗑 Supprimer ; pour les commandées en plus : ✔ OK, 🧩 Attribuer à une fiche, 📋 Vers un inventaire.
 
 - **🧹 Nettoyer** retire ensuite les pièces reçues de la liste.
 
@@ -726,7 +732,7 @@ occasion ou n'importe), une **note**, puis enregistrer.
 Choisir la pièce
 
 La fiche d'une pièce reprend les mêmes champs. Depuis n'importe quelle pièce (fiche d'un set, inventaire, liste) :
-**🔎 Détail de la pièce**, **🛒 À commander**, **📋 Cocher dans un inventaire…**, **📄 Copier** ou **➡️ Déplacer vers une autre fiche…**,
+**🔎 Détail de la pièce**, **🛒 À commander**, **📋 Cocher dans un inventaire…**, **⧉ Copier** ou **➡️ Déplacer vers une autre fiche…**,
 et **💶 Mettre un prix** si aucun prix n'est connu.
 
 **🔎 Détail de la pièce** : sa photo, sa couleur, son prix **BrickLink** en occasion et en neuf (ventes des 6 derniers mois ; toucher le prix pour voir les annonces),

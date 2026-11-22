@@ -973,6 +973,8 @@ async function load() {
     kb.textContent = `🔑 ${miss.length > 1 ? "Clés API Rebrickable et BrickLink" : miss[0] === "bricklink" ? "Codes API BrickLink" : "Clé API Rebrickable"} à fournir pour obtenir les tarifs, les images, la recherche et les inventaires → Réglages`;
     kb.onclick = () => $("#btnSettings").click();
   }
+  if (typeof d.sort_def === "string" && d.sort_def !== state.sortDef) { state.sortDef = d.sort_def; try { localStorage.setItem("bq-sort-def", d.sort_def); } catch {} }   /* (tri par défaut : celui du serveur — 22/11) */
+  else if (d.sort_def == null && state.sortDef && !DEMO) api("/api/settings/sort-def", { method: "POST", body: { sort: state.sortDef } }).catch(() => {});   /* (réglé avant sur cet appareil : envoyé au serveur) */
   state.demoOn = !!d.demo_on; state.sidePubHide = d.side_pub_hide || []; sidePubDraw();   // démo publique désactivée : pas de lien ; liens masqués (Réglages)
   if (!DEMO) loadNovCount();
   if (d.bl_zones) state.blz = d.bl_zones;   // zones BrickLink réglées : drapeaux, noms, liens
@@ -1175,7 +1177,7 @@ const rbPartUrl = n => n ? `https://rebrickable.com/parts/${encodeURIComponent(n
 const rbFigSearch = name => `https://rebrickable.com/search/?q=${encodeURIComponent(name || "")}&search_type=minifig`;
 /* site de référence des prix (Réglages › Estimations) : BrickLink, BrickOwl ou les deux — liens, prix, exports (21/11) */
 const refSite = () => state.refSite === "brickowl" ? "brickowl" : "bricklink";   // (BrickLink d'office ; BrickOwl : plan de secours des Réglages — 21/11 soir)
-const refSites = () => ["BrickLink"];   // liens : TOUJOURS BrickLink, même avec le secours BrickOwl (prix seulement, en coulisse — 22/11)
+const refSites = () => ["BrickLink", "BrickOwl"];   // liens : BrickLink puis BrickOwl, partout (retour de BrickOwl à la demande du propriétaire — 22/11 soir)
 const boSearch = q => `https://www.brickowl.com/search/catalog?query=${encodeURIComponent(q || "")}`;
 const BO_UPLOAD = "https://www.brickowl.com/wishlist/import";   // (BrickOwl lit le même fichier XML que BrickLink)
 /* petit logo d'un site (marque d'origine d'un prix) ; sans logo connu : « BL » / « BO » */
@@ -1444,6 +1446,19 @@ function syncSortMenu() {
       rl.innerHTML = `<b>${esc(so.selectedOptions[0]?.textContent || "")}</b>${dir ? " " + dir : ""}`   /* (sans le mot « Tri » ; la période : bouton 📅 de la barre — 21/11) */
         + (tr ? ` · par rapport au <b>${esc(rf.day.split("-").reverse().join("/"))}</b> <span class="muted">(${esc(trendDaysLbl(+state.trend?.period || 1))})</span>` : ""); } }   /* (plus de bouton : les écarts sont toujours ceux de MON EXEMPLAIRE — 21/11 soir) */   // (ordinateur : le tri en cours est rappelé sur le bouton)
   { const tp = $("#trPeriod"); if (tp) tp.hidden = isWish(state.current) || isPartsList(state.current); }   /* (période : pas pour les souhaits ni les pièces) */
+  if (isPartsList(state.current)) {   /* « Commandes » : ☰ = les FILTRES (Toutes, À commander, Commandées, OK) et ☑ Sélection, plus les tris — 22/11 */
+    const F = state.blF || "", L = [["", "Toutes"], ["order", "À commander"], ["cmd", "Commandées"], ["ok", "OK"]];
+    pop.innerHTML = L.map(([v, t]) => `<label class="moc-chk"><input type="radio" name="blfopt" value="${v}" ${F === v ? "checked" : ""}> ${t}</label>`).join("")
+      + `<label class="moc-chk blf-selopt"><input type="checkbox" data-blselopt ${state.blSel ? "checked" : ""}> ☑ Sélection <small class="muted">(cocher des lignes)</small></label>`;
+    pop.onchange = e => {
+      if (e.target.name === "blfopt") state.blF = e.target.value;
+      else if (e.target.matches("[data-blselopt]")) { state.blSel = e.target.checked; state.blPicked = new Set(); }
+      else return;
+      const m = $("#sortMenu"); if (m) m.open = false;
+      renderPartsView(itemsOf(state.current)); syncSortMenu(); };
+    $("#sortMenu > summary")?.classList.toggle("on", !!F || !!state.blSel); $("#sortMenu")?.closest(".toolbar")?.classList.add("tb-cmd");
+    const rl = $("#trendRefLine"); if (rl) { rl.hidden = false; rl.innerHTML = `<b>${esc(L.find(x => x[0] === F)?.[1] || "Toutes")}</b>${state.blSel ? " · ☑ Sélection" : ""}`; }
+  } else { pop.onchange = null; $("#sortMenu > summary")?.classList.remove("on"); $("#sortMenu")?.closest(".toolbar")?.classList.remove("tb-cmd"); }
   const rb = $("#sortRev"); if (rb) { const ico = so.value === "random" ? `<svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h3.5c4.5 0 6.5 10 11 10H21M3 17h3.5c1.8 0 3.1-1.6 4.3-3.5M13.2 9.5C14.4 8 15.7 7 17.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>` : `<svg class="ico-funnel" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`; if (rb._ico !== ico) { rb._ico = ico; rb.innerHTML = ico; } }   /* (Aléatoire : remélanger ; sinon : inverser — 21/11) */
   if (rb) { rb.setAttribute("aria-pressed", rev); rb.title = so.value === "random" ? "Remélanger" : rev ? "Tri inversé : remettre l'ordre habituel" : "Renverser le tri (ordre inverse)"; rb.setAttribute("aria-label", so.value === "random" ? "Remélanger" : "Renverser le tri"); }   // (aucun aspect « actif » : demande du 17/11)
 }
@@ -1451,6 +1466,7 @@ document.addEventListener("change", e => {   // « Définir par défaut » : le 
   if (!e.target.matches?.("#sortPop [data-sortdef]")) return;
   state.sortDef = e.target.checked ? $("#sort").value : "";
   try { localStorage.setItem("bq-sort-def", state.sortDef); } catch {}
+  api("/api/settings/sort-def", { method: "POST", body: { sort: state.sortDef } }).catch(() => {});   /* (gardé sur le serveur : tous les appareils — 22/11) */
   if (state.sortDef) {   // toutes les listes de la collection prennent ce tri (« Toute la collection » comprise) : leurs tris retenus sont oubliés
     for (const id of Object.keys(state.sortBy)) if (!isWish(id) && id !== UNBUILT && !isPartsList(id)) { delete state.sortBy[id]; if (state.sortRev) delete state.sortRev[id]; }
     try { localStorage.setItem("bq-sort", JSON.stringify(state.sortBy)); localStorage.setItem("bq-sort-rev", JSON.stringify(state.sortRev || {})); } catch {}
@@ -1601,7 +1617,7 @@ function pieceMenu(anchor, p, { from = null, remove = null, extra = [], zoom = f
     ...(p.image ? [["🔍 Agrandir la photo", () => openZoom(img(p.image), p.name || p.part)]] : []),   /* (la photo de la pièce en grand — 20/11) */
     ["🛒 À commander", () => orderPart(p)],   // 3) les autres fiches et listes
     ["📋 Cocher dans un inventaire…", () => partToInventory(p)],
-    ["📄 Copier vers une autre fiche…", () => move(true)],
+    ["⧉ Copier vers une autre fiche…", () => move(true)],
     ...(remove && !ro ? [["➡️ Déplacer vers une autre fiche…", () => move(false)]] : []),
     ...(noPriceOf(p) || manualOf(p) || p.approx ? [[manualOf(p) ? "💶 Modifier le prix" : p.approx ? "💶 Mettre un prix (estimé)" : "💶 Mettre un prix", () => setManualPrice(p, manualOf(p) ? lotPrices.get(lotKey(p)) : null).then(u => u !== undefined && drawFigPieces())]] : []),
   ];
@@ -2464,7 +2480,7 @@ function render() {
 
   const list = state.lists.find(l => l.id === state.current);
   const crumbs = []; for (let p = list && state.lists.find(x => x.id === parentOf(list)); p && crumbs.length < 20; p = state.lists.find(x => x.id === parentOf(p))) crumbs.unshift(p);
-  $("#listTitle").innerHTML = (crumbs.length ? `<span class="crumbs">${crumbs.map(p => `<button type="button" class="link" data-go="${p.id}">${esc(p.name)}</button>`).join(" › ")} ›</span> ` : "") + (list ? listLogo(list, "list-logo big", "title") : "") + (list ? listNm(list, list.name, "title") : esc(state.current === UNBUILT ? "🚧 À construire" : "Toute la collection"));
+  $("#listTitle").innerHTML = (crumbs.length ? `<span class="crumbs">${crumbs.map(p => `<button type="button" class="link" data-go="${p.id}">${esc(p.name)}</button>`).join(" › ")} ›</span> ` : "") + (list ? listLogo(list, "list-logo big", "title") : "") + (list ? (list.kind === "wishlist" && !list.gift && !list.emoji && !list.logo ? "⭐ " : "") + listNm(list, list.name, "title") : esc(state.current === UNBUILT ? "🚧 À construire" : "Toute la collection"));
   $$("#listTitle [data-go]").forEach(b => { b.onclick = () => { state.current = b.dataset.go; state.subDirect = null; state.selected.clear(); render(); }; dropTarget(b, b.dataset.go); });
   {   // sous-listes : pastilles sous le titre (la liste ouverte si elle en a, sinon celles de sa liste parente)
     const box = $("#subChips"), root = list && (childLists(list.id).filter(l => !l.gift).length ? list : state.lists.find(x => x.id === parentOf(list)));
@@ -2510,7 +2526,7 @@ function render() {
   $("#btnMoveList").hidden = list?.kind === "wishlist" || list?.kind === "parts";   // pièces à commander : rien où la ranger
   $("#btnNovelties").hidden = true;   // nouveautés : une page du menu de gauche
   ["#btnRename", "#btnListLogo", "#btnMoveList", "#btnDeleteList"].forEach(s => $(s).hidden = true);   // (regroupés dans « ✏️ Modifier la liste »)
-  $("#btnEditList").hidden = !list;
+  $("#btnEditList").hidden = !list || (list.kind === "wishlist" && !list.gift);   // (liste de souhaits : pas de modification — 22/11)
   $("#btnOrderBL").hidden = !isPartsList(state.current) || DEMO || !itemsOf(state.current).length;   // « Commandes » → wanted list BrickLink
   renderCleanBtn();
   { const n = isPartsList(state.current) ? itemsOf(state.current).filter(i => !i.got && !(i.ordered || []).length && !i.cmd_m).reduce((a, i) => a + (i.quantity || 1), 0) : 0;   /* (à commander : ni commandé ni reçu — 22/11) */
@@ -2783,6 +2799,7 @@ function wireItems(box) {
     state.dragFig = el.dataset.dragId ? el.dataset.fig : null;   // figurine d'un set glissée : seule elle remonte dans le tri
     try { e.dataTransfer.setData("text/x-bq-items", JSON.stringify(ids)); e.dataTransfer.setData("text/plain", ids.join(",")); } catch {}
     e.dataTransfer.effectAllowed = "copyMove";
+    { const im = el.querySelector(".pic img"); if (im && im.complete && im.naturalWidth) try { e.dataTransfer.setDragImage(im, Math.min(40, im.width / 2), Math.min(40, im.height / 2)); } catch {} }   // (seule la photo suit le pointeur : plus léger — 22/11)
     document.body.classList.add("dragging");
   }));
   $$("[draggable=true]", box).forEach(el => el.addEventListener("dragend", () => {
@@ -2959,8 +2976,8 @@ function renderNav() {
   $$("#listNav .nav-item, #wishNav .nav-item, #partsNav .nav-item, #statsNav .nav-item[data-id]").forEach(b => {
     b.onclick = () => {
       state.current = b.dataset.id; state.subDirect = null; state.selected.clear(); $("#sidebar").classList.remove("open"); render();
-      if (b.dataset.id === ALL || kindOf(b.dataset.id) === "collection") {   // menu de gauche : toujours « Dernière modification » (le tri par valeur : boutons du haut)
-        const so = $("#sort"); if (so.value !== "modified") { so.value = "modified"; so.dispatchEvent(new Event("change")); } }
+      if (b.dataset.id === ALL || kindOf(b.dataset.id) === "collection") {   // menu de gauche : le tri PAR DÉFAUT (plus « Dernière modification » imposé — 22/11)
+        const so = $("#sort"), want = state.sortBy[b.dataset.id] || defaultSort(b.dataset.id); if (want && so.value !== want) { so.value = want; so.dispatchEvent(new Event("change")); } }
     };
     if (b.dataset.id === ALL || b.dataset.id === STATS || b.dataset.id === UNBUILT || b.dataset.id === NOV) return;
     dropTarget(b, b.dataset.id);
@@ -3167,8 +3184,8 @@ $("#btnListLogo").onclick = e => {
   };
   const pick = () => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/png,image/jpeg,image/webp"; i.onchange = () => send(i.files[0]); i.click(); };
   const putEmo = async emoji => { try { await api("/api/lists/" + l.id, { method: "PUT", body: { emoji } }); await load(); window._listEditRefresh?.(); toast(emoji ? "Emoji de la liste enregistré" : "Emoji retiré"); } catch (err) { toast(err.message); } };
-  const emoActs = [["😀 Choisir un emoji", async () => { const v = await pickEmoji(`Émoji de la liste « ${l.name} »`, l.emoji || ""); if (v) putEmo(v); }], ...(l.emoji ? [["✖ Retirer l'emoji", () => putEmo("")]] : [])];
-  const imgActs = [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(l.logo ? [["✖ Retirer le logo", () => put("")]] : [])];
+  const emoActs = [["😀 Choisir un emoji", async () => { const v = await pickEmoji(`Émoji de la liste « ${l.name} »`, l.emoji || ""); if (v) putEmo(v); }], ...(l.emoji ? [["✕ Retirer l'emoji", () => putEmo("")]] : [])];
+  const imgActs = [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(l.logo ? [["✕ Retirer le logo", () => put("")]] : [])];
   actionMenu(e.currentTarget, e.only === "emo" ? emoActs : e.only === "img" ? imgActs : [...emoActs, ...imgActs], e.only === "emo" ? `Émoji de la liste « ${l.name} »` : `Logo de la liste « ${l.name} »`);
 };
 /* ✏️ Modifier la liste : nom, logo (emoji / image), « Afficher le nom », rangement, suppression — une seule fenêtre */
@@ -4089,6 +4106,8 @@ document.addEventListener("click", e => {   /* « ✨ Nouveautés » (menu de ga
   setTimeout(() => { const r = document.querySelector('#novView input[name=novv][value="sets"]'); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change", { bubbles: true })); } scrollTo(0, 0); }, 60); }, true);
 document.addEventListener("click", e => { if (!e.target.closest?.("[data-novcal]")) return; state.novWant = "cal";
   setTimeout(() => { const r = document.querySelector('#novView input[name=novv][value="cal"]'); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change")); } state.novWant = null; }, 60); }, true);
+/* date d'une nouveauté : celle annoncée par lego.com, SAUF un réassort (« expédié d'ici le … ») qui n'est pas une sortie — 22/11 */
+const novWhen = x => /BACKORDER/i.test(x?.status || "") ? "" : (x?.when || "");
 function novNavSync() {   /* menu de gauche : « 📅 Calendrier des sorties » en surbrillance quand l'onglet Calendrier est ouvert, sinon « ✨ Nouveautés » — 20/11 */
   const on = state.current === NOV, cal = on && !!document.querySelector('#novView input[name=novv][value="cal"]')?.checked;
   document.querySelectorAll('.nav-item[data-id="' + NOV + '"]').forEach(b => b.classList.toggle("on", b.hasAttribute("data-novcal") ? cal : on && !cal));
@@ -4209,7 +4228,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       <button type="button" class="btn small-btn" data-hide="${esc(x.number)}">${x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher"}</button></div>`;
     if (view === "cal") {   /* 📅 Calendrier : frise — sorties récentes en haut, « Aujourd'hui », puis les prochaines (mois, puis jour) */
       const MI = MOIS_I, today = new Date(); today.setHours(0, 0, 0, 0);
-      const dayOf = x => { const m = String(x.when || "").match(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u) || String(x.day || "").match(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u);   /* (date retenue : aussi une fois sorti) */ const mi = m ? MI.indexOf(m[2].toLowerCase()) : -1; return mi < 0 ? null : new Date(+m[3], mi, +m[1]); };
+      const dayOf = x => { const m = String(novWhen(x)).match(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u) || String(x.day || "").match(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u);   /* (date retenue : aussi une fois sorti) */ const mi = m ? MI.indexOf(m[2].toLowerCase()) : -1; return mi < 0 ? null : new Date(+m[3], mi, +m[1]); };
       const monOf = x => { const m = String(x.release || "").match(/(?:(\p{L}+)\s+)?(\d{4})/u); return m ? { y: +m[2], m: m[1] ? MI.indexOf(m[1].toLowerCase()) : -1 } : null; };
       const seenF = new Set(), items = [...(wantSets ? list.map(x => ({ x })) : []),   // (sets et / ou figurines exclusives, à la date de leur set)
         ...(wantFigs ? list.flatMap(x => (x.figs || []).filter(f => f.exclusive && (noimg || f.image) && !seenF.has(f.fig) && seenF.add(f.fig)).map(f => ({ x, f }))) : [])];
@@ -4242,11 +4261,11 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       $$(".cal-tile:not(.cal-fig) .cal-pic img", B).forEach(im => im.onclick = e => { e.stopPropagation(); const x = byNum(im.closest("[data-cal]").dataset.cal); if (!x) return;   // l'image : en grand (photos lego.com défilables)
         const all = (x.images?.length ? x.images : [x.image]).filter(Boolean);
         if (all.length > 1) openZoom.gallery = { cur: 0, items: all.map((u, k) => ({ src: img(u), name: `${x.name} (${k + 1}/${all.length})` })) };
-        openZoom.purpose = `${x.number}${x.price != null ? " · " + money(x.price) : ""}${x.release ? ` · ${x.kind === "soon" ? "sortie" : "sorti"} : ${x.when && /\d{4}/.test(x.when) ? x.when.replace(/^.*?(\d{1,2}\s+\p{L}+\s+\d{4}).*$/u, "$1") : x.release}` : ""}`;
+        openZoom.purpose = `${x.number}${x.price != null ? " · " + money(x.price) : ""}${x.release ? ` · ${x.kind === "soon" ? "sortie" : "sorti"} : ${novWhen(x) && /\d{4}/.test(novWhen(x)) ? novWhen(x).replace(/^.*?(\d{1,2}\s+\p{L}+\s+\d{4}).*$/u, "$1") : x.release}` : ""}`;
         openZoom(img(all[0] || x.image), x.name); });
       const sheet = (x, f) => {   /* la fenêtre d'une vignette, comme les nouveautés : grande image, infos, actions */
         const m = document.createElement("div"); m.className = "modal top"; const pic = f ? f.image : x.image || (x.images || [])[0];
-        const date = x.when && /\d{4}/.test(x.when) ? x.when.replace(/^.*?(\d{1,2}\s+\p{L}+\s+\d{4}).*$/u, "$1") : x.day || x.release || "";
+        const date = novWhen(x) && /\d{4}/.test(novWhen(x)) ? novWhen(x).replace(/^.*?(\d{1,2}\s+\p{L}+\s+\d{4}).*$/u, "$1") : x.day || x.release || "";
         const meta = [x.number, x.theme, x.pieces ? nf.format(x.pieces) + " pièces" : "", x.price != null ? money(x.price) : ""].filter(Boolean).join(" · ");
         const B2 = (k, t, cls = "") => `<button type="button" class="btn ${cls}" data-a="${k}">${t}</button>`;
         m.innerHTML = `<div class="modal-box nov-sheet" style="width:min(480px,100%)"><div class="modal-head"><h2>${f ? "🟡 Figurine exclusive" : x.kind === "soon" ? "✨ À venir" : "✨ Nouveauté"}</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
@@ -4254,7 +4273,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
           <p class="nov-sheet-name"><b>${esc(f ? f.name : x.name)}</b><br><span class="muted small">${f ? `dans « ${esc(x.name)} » · ` : ""}${esc(meta)}</span>${date ? `<br><span class="nov-sheet-date">📅 ${x.kind === "soon" ? "Sortie" : "Sorti"} : ${esc(date)}</span>` : ""}</p>
           <div class="nov-sheet-acts">${f ? B2("fig", "⭐ La figurine dans la liste de souhaits", "primary") + B2("lego", "🔗 Le set sur lego.com") + B2("hide", x.hidden ? "👁 Réafficher le set" : "🚫 Ne plus afficher (le set)")
             : (x.wished ? B2("open", "⭐ Dans la liste de souhaits (ouvrir)") : B2("wish", "⭐ Ajouter à la liste de souhaits", "primary")) + (x.watched ? B2("open", "👀 Surveillé (ouvrir)") : B2("watch", "👀 À surveiller"))
-              + B2("lego", "🔗 Voir sur lego.com") + B2("hide", x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher")}</div></div>`;
+              + B2("lego", "🔗 LEGO") + B2("hide", x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher")}</div></div>`;
         document.body.append(m);
         const close = () => m.remove(); $("[data-x]", m).onclick = close; m.onclick = e => { if (e.target === m) close(); };
         $(".nov-sheet-pic img", m).onclick = () => { const all = f ? [f.image].filter(Boolean) : (x.images?.length ? x.images : [x.image]).filter(Boolean);   // l'image : en grand
@@ -4331,7 +4350,7 @@ function openNovelties(host = null) {   // host : la page (menu de gauche) ; sin
       const x = data.items.find(y => y.number === im.closest(".nov-card").querySelector("[data-hide]")?.dataset.hide);
       const all = x ? (x.images?.length ? x.images : [x.image]).filter(Boolean) : [];   // photos en grand (la miniature de la carte : pas en double)
       if (all.length > 1) openZoom.gallery = { cur: 0, items: all.map((u, k) => ({ src: img(u), name: `${x.name} (${k + 1}/${all.length})` })) };
-      if (x) openZoom.actions = [["🔗 Voir sur lego.com", () => window.open(legoUrl(x), "_blank", "noopener")], x.wished ? ["⭐ Dans la liste de souhaits", () => openWished(x.number)] : ["⭐ Ajouter à la liste de souhaits", () => add(x, im.closest(".nov-card").querySelector("[data-add]"))],
+      if (x) openZoom.actions = [["🔗 LEGO", () => window.open(legoUrl(x), "_blank", "noopener")], x.wished ? ["⭐ Dans la liste de souhaits", () => openWished(x.number)] : ["⭐ Ajouter à la liste de souhaits", () => add(x, im.closest(".nov-card").querySelector("[data-add]"))],
         [x.hidden ? "👁 Réafficher" : "🚫 Ne plus afficher", () => hide(x, !x.hidden)]];
       openZoom(all.length ? img(all[0]) : im.src, im.closest(".nov-card").querySelector(".nov-txt b").textContent);
     });
@@ -4542,7 +4561,7 @@ $("#btnNewInv").onclick = () => {
         $("[data-r]", d).innerHTML = list.length ? list.map((r, k) => `<button class="res" data-k="${k}"><img src="${img(resThumb(r.image))}" alt="" loading="lazy">
           <div><div class="t">${esc(r.number)} · ${esc(r.name)}${ownMark(r)}</div>${r.name_en ? `<div class="en">${esc(r.name_en)}</div>` : ""}<div class="s">${[r.theme, r.year, r.pieces ? nf.format(r.pieces) + " pièces" : ""].filter(Boolean).map(esc).join(" · ")}</div></div>${r.score != null ? `<span class="score">${r.score} %</span>` : ""}</button>`).join("")
           : `<div class="loading">Aucun set trouvé.</div>`;
-        $$("[data-k]", d).forEach(b => b.onclick = () => { const r = list[b.dataset.k]; d.remove(); openInventory("set-" + r.number, r.name); });
+        $$("[data-k]", d).forEach(b => b.onclick = () => { const r = list[b.dataset.k]; d.remove(); newInventory(r.number, r.name); });
         if (more) moreButton($("[data-r]", d), next);
   };
   $("[data-f]", d).onsubmit = async e => {
@@ -4556,9 +4575,9 @@ $("#btnNewInv").onclick = () => {
         $("[data-r]", d).innerHTML = list.length ? list.map((r, k) => `<button class="res" data-k="${k}"><img src="${img(resThumb(r.image))}" alt="" loading="lazy">
           <div><div class="t">${esc(r.number)} · ${esc(r.name)}${ownMark(r)}</div>${r.name_en ? `<div class="en">${esc(r.name_en)}</div>` : ""}<div class="s">${[r.theme, r.year, r.pieces ? nf.format(r.pieces) + " pièces" : ""].filter(Boolean).map(esc).join(" · ")}</div></div></button>`).join("")
           : `<div class="loading">Aucun set trouvé.</div>`;
-        $$("[data-k]", d).forEach(b => b.onclick = () => { const r = list[b.dataset.k]; d.remove(); openInventory("set-" + r.number, r.name); });
+        $$("[data-k]", d).forEach(b => b.onclick = () => { const r = list[b.dataset.k]; d.remove(); newInventory(r.number, r.name); });
         if (more) moreButton($("[data-r]", d), async () => { const n = await searchSetsPage(q, ++page); more = n.more; all = mergeRes(all, n.results); show(); });
-        insertMine($("[data-r]", d), q, { only: "sets", onPick: r => { d.remove(); openInventory("set-" + r.item.number, itemName(r.item)); } });   // les sets d'abord (inventaire indépendant de la fiche — 22/11)
+        insertMine($("[data-r]", d), q, { only: "sets", onPick: r => { d.remove(); newInventory(r.item.number, itemName(r.item)); } });   // les sets d'abord (inventaire indépendant de la fiche — 22/11)
       };
       show();
     } catch (err) { $("[data-r]", d).innerHTML = `<div class="loading">${esc(err.message)}</div>`; }
@@ -4575,10 +4594,17 @@ const ipStore = {
     for (const k of Object.keys(m)) if (now - m[k].t > 86400) delete m[k];
     try { localStorage.setItem("bq-ip", JSON.stringify(m)); } catch {} },
 };
+/* « + Nouvel inventaire » : enregistré dès sa création (dans le menu tout de suite), puis ouvert — une seule fonction pour tous les cas (22/11) */
+async function newInventory(number, name = "") {
+  try { await api("/api/inventory/set-" + encodeURIComponent(number), { method: "POST", body: { rows: {}, name: name || "" } }); } catch (err) { toast(err.message); }
+  await loadInventories(); renderNav?.();
+  return openInventory("set-" + number, name);
+}
 async function openInventory(itemId, setName, opts = {}) {
   { const it_ = !/^set-/.test(itemId) && state.items.find(i => i.id === itemId); if (it_?.number) itemId = "set-" + it_.number; }   /* (jamais rattaché à une fiche : rangé par n° de set — 22/11) */
+  if (window.__invPageClose) await window.__invPageClose();   /* (une seule page d'inventaire : l'autre est refermée, enregistrée — 22/11) */
   const d = document.createElement("div");
-  d.className = "modal";
+  d.className = "modal inv-page";   /* (une vraie page, plus une fenêtre — 22/11) */
   d.innerHTML = `<div class="modal-box wide inv-box">
     <div class="modal-head"><h2 data-title>Inventaire</h2>
       <button class="icon-btn" data-refresh title="Actualiser depuis le serveur" aria-label="Actualiser">↻</button>
@@ -4587,11 +4613,26 @@ async function openInventory(itemId, setName, opts = {}) {
     <div data-body><div class="loading"><span class="spinner"></span>Chargement de la liste des pièces (Rebrickable peut être lent)…</div></div></div>`;
   document.body.append(d);
   let flush = () => {};
-  const close = async () => { await flush(); keep(); d.remove(); load(); loadInventories(); };
+  const sideClick = e => {   /* (menu de gauche : une autre page → l'inventaire se referme ; un autre inventaire → il le remplace — 22/11) */
+    const b = e.target.closest("#sidebar button, #sidebar a, .topbar .brand, #topViews button, #topViews2 button"); if (!b || b.closest("#invNav [data-inv]")) return; close(); };   /* (pastilles du haut aussi — 22/11) */
+  const close = async () => { if (!d.isConnected) return; document.removeEventListener("click", sideClick, true); if (window.__invPageClose === close) window.__invPageClose = null;
+    $$("#invNav [data-inv]").forEach(x => x.classList.remove("on")); await flush(); keep(); d.remove(); load(); loadInventories(); };
+  window.__invPageClose = close; document.addEventListener("click", sideClick, true);
+  $$("#invNav [data-inv]").forEach(x => x.classList.toggle("on", x.dataset.inv === itemId));
   $("[data-x]", d).onclick = close;
   const invPath = "/api/inventory/" + itemId;
   let keep = () => {};
   $("[data-refresh]", d).onclick = async () => { await flush(); d.remove(); localCache.del(invPath); openInventory(itemId, setName); };
+  $("[data-refresh]", d).hidden = true;   /* (plus de ↻ : tirer vers le bas actualise — 22/11) */
+  {   /* tirer pour actualiser : au doigt, depuis le haut de la page d'inventaire */
+    const box = $(".modal-box", d), bar = document.createElement("div"); bar.className = "inv-ptr"; box.prepend(bar);
+    let y0 = null, dy = 0;
+    d.addEventListener("touchstart", e => { y0 = d.scrollTop <= 0 && !e.target.closest("input, select, textarea, .modal.top") ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+    d.addEventListener("touchmove", e => { if (y0 == null) return; dy = e.touches[0].clientY - y0; if (dy <= 0 || d.scrollTop > 0) { bar.style.height = "0"; return; }
+      const h = Math.min(70, dy / 2); bar.style.height = h + "px"; bar.textContent = dy > 120 ? "↻ Relâcher pour actualiser" : "↓ Tirer pour actualiser"; }, { passive: true });
+    d.addEventListener("touchend", () => { const go = y0 != null && dy > 120 && d.scrollTop <= 0; y0 = null; bar.style.height = "0";
+      if (go) { bar.style.height = "34px"; bar.textContent = "↻ Actualisation…"; $("[data-refresh]", d).click(); } }, { passive: true });
+  }
   let data;
   const hadCopy = localCache.get(invPath) != null;
   try { data = await cachedApi(invPath); }
@@ -4743,38 +4784,48 @@ async function openInventory(itemId, setName, opts = {}) {
         <option value="qty">Tri : quantité</option><option value="ref">Tri : référence</option></select>
       <button type="button" class="btn" data-swapbtn>🎨 Remplacer une couleur</button>
       <button type="button" class="btn" data-colreset>↩ Réinitialiser les couleurs</button>
-      <label class="btn primary" title="Pièces séparées, à plat, espacées, sur fond uni clair — en plusieurs fois si besoin">📷 Scanner des pièces<input type="file" accept="image/*" multiple data-invscan hidden></label>
+      <button type="button" class="btn primary" data-invfind title="Trouver une pièce : appareil photo, image collée ou référence">🔎 Rechercher</button>
     </div>
-    <div class="inv-scanbar" data-scanbar hidden></div>
     <div class="swap-list" data-swaps></div>
     <div class="inv-list" data-list></div>
     <div class="inv-end"><button type="button" class="btn danger-ghost" data-delinv>🗑️ Supprimer cet inventaire</button></div>
     <p class="hint">Chaque choix est enregistré immédiatement. ${copies > 1 ? `Quantités pour les ${copies} exemplaires du set.` : ""} Les figurines ne sont pas dans l'inventaire.</p>`;
 
   let wasDone = opts.askBuild ? false : (() => { const c = counts(); return !!c.total && c.okPcs >= c.total; })();   // askBuild : complet → on propose sa fiche
-  const checkBuild = async () => {   // dernière pièce cochée : prêt à construire ? (non : rien)
+  const checkBuild = async (force = false) => {   // dernière pièce cochée : prêt à construire ? (non : rien) — force : bouton « Prêt à construire » (22/11)
     const c = counts(), done = !!c.total && c.okPcs >= c.total;
     if (!done) { wasDone = false; return; }
-    if (wasDone) return;
+    if (wasDone && !force) return;
     wasDone = true;
-    if (await choiceBox("Inventaire complet ! Est-il prêt à construire ?", [["no", "Non"], ["yes", "Oui : créer sa fiche"]]) !== "yes") return;
+    try { localStorage.setItem("bq-inv-asked:" + itemId, "1"); } catch {}   /* (question posée : à l'ouverture, plus redemandée sur cet appareil) */
+    /* une seule question : type de fiche ET liste (askList, la même partout — 22/11) */
+    let th = ""; if (data.set && !data.xml) try { th = (await Promise.race([api(`/api/set/${encodeURIComponent(data.set)}`), new Promise(ok => setTimeout(() => ok({}), 3000))])).theme || ""; } catch {}   /* (3 s au plus) */
+    const ask = await askList({ title: "Inventaire complet ! Prêt à construire ?",
+      kinds: data.xml ? [["moc", "🛠️ MOC"]] : [["set", "📦 Set complet"], ["partial", "🧩 Set partiel"], ["moc", "🛠️ MOC"]] });
+    if (!ask) return;
+    const { kind, lid } = ask, lname = state.lists.find(l => l.id === lid)?.name || "";
     const lots = rows.filter(r => st[r.key]?.s !== "x").map(r => { const e = effColor(r), s0 = st[r.key] || {};   // toutes les pièces, sauf les exclues
       return { part: s0.p || r.bricklink || r.part_num, part_num: s0.p || r.part_num, name: s0.pn || r.name || "", color_id: e.id, color_fr: e.fr, qty: r.need, image: s0.ci || r.image || "" }; });
     await close();
-    openCustom({ partial: !data.xml, number: data.xml ? "" : data.set, name: label || data.name, image: data.photo || data.image || "" });
+    toast(`🚧 Création de la fiche « ${label || data.name} »…`);
+    if (kind === "set") {   /* set complet : la vraie fiche du set, en coulisse */
+      try { await api("/api/items", { method: "POST", body: { kind: "set", number: data.set, list_id: lid, quantity: 1, unbuilt: true, condition: "occasion", no_price_ok: true,
+          name_hint: data.name || "", image_hint: data.image || "", ...(data.photo ? { photo_url: data.photo } : {}) } });
+        await load(); toast(`🚧 « ${label || data.name} » (set complet) ajouté à « À construire » (liste ${lname})`); }
+      catch (err) { toast(err.message); }
+      return;
+    }
+    openCustom({ partial: kind === "partial", number: data.xml ? "" : data.set, name: label || data.name, image: data.photo || data.image || "" });
+    modal.hidden = true;   /* (en coulisse : le formulaire ne s'affiche pas) */
     state.draft.mocFile = { lots, name: "Inventaire" }; state.draft.fromInventory = itemId;
     $("#cfgUnbuilt").checked = true; drawMocInfo();
-    {   /* fiche créée tout de suite (22/11) : « À construire », photo de l'inventaire, la liste où j'ai le plus de sets de son thème */
-      let th = ""; if (data.set) try { th = (await Promise.race([api(`/api/set/${encodeURIComponent(data.set)}`), new Promise(ok => setTimeout(() => ok({}), 3000))])).theme || ""; } catch {}   /* (3 s au plus) */
-      const col = state.items.filter(i => kindOf(i.list_id) === "collection" && (i.kind || "set") === "set"), cnt = {};
-      for (const i of col.filter(i => th && i.info?.theme === th).length ? col.filter(i => i.info?.theme === th) : col) cnt[i.list_id] = (cnt[i.list_id] || 0) + 1;
-      const lid = Object.entries(cnt).sort((x, y) => y[1] - x[1])[0]?.[0] || state.lists.find(l => l.kind === "collection")?.id;
-      if (lid) { $("#cfgList").value = lid; $("#cfgList").dispatchEvent(new Event("change", { bubbles: true })); }
-      $("#cfgUnbuilt").checked = true;
-      await new Promise(r => setTimeout(r, 400));
-      $("#stepConfig").requestSubmit($("#btnSave"));
-      toast(`🚧 « ${label || data.name} » ajouté à « À construire »${lid ? ` (liste ${state.lists.find(l => l.id === lid)?.name || ""})` : ""}, avec la photo de l'inventaire`);
-    }
+    if (lid) { $("#cfgList").value = lid; $("#cfgList").dispatchEvent(new Event("change", { bubbles: true })); }
+    $("#cfgUnbuilt").checked = true;
+    modal.hidden = true;
+    const n0 = state.items.length;
+    try { await $("#stepConfig").onsubmit({ preventDefault() {}, submitter: $("#btnSave") }); } catch (err) { return toast(err.message); }
+    modal.hidden = true;
+    if (state.items.length > n0) toast(`🚧 « ${label || data.name} » (${kind === "partial" ? "set partiel" : "MOC"}) ajouté à « À construire » (liste ${lname}), avec la photo de l'inventaire`);
   };
   const save = (patch) => post({ rows: patch, name: data.name || setName || "" }).then(r => {
     if (r?.forced && Object.keys(r.forced).length) {   // OK retiré d'une pièce commandée : elle redevient « Commandée »
@@ -4785,6 +4836,8 @@ async function openInventory(itemId, setName, opts = {}) {
     return checkBuild();
   }).catch(e => toast("Non enregistré : " + e.message));
   if (opts.askBuild) setTimeout(checkBuild, 300);
+  else { let asked = false; try { asked = !!localStorage.getItem("bq-inv-asked:" + itemId); } catch {}   /* déjà complet à l'ouverture : la question, une fois (22/11) */
+    const c0 = counts(); if (!asked && c0.total && c0.okPcs >= c0.total) setTimeout(() => checkBuild(true), 600); }
   let qTimers = {};
   flush = () => {   // enregistre tout de suite les quantités encore en attente
     const keys = Object.keys(qTimers); if (!keys.length) return Promise.resolve();
@@ -4864,6 +4917,9 @@ async function openInventory(itemId, setName, opts = {}) {
       const ici = c.todo > 0 ? 2 : c.order > 0 ? 3 : c.cmd > 0 ? 5 : c.total ? 6 : 1;
       d.dataset.memo = `/aide-memoire?ici=${ici}&nom=${encodeURIComponent(data.name || "")}#/inventaire`;
       $("[data-sum]", d).insertAdjacentHTML("beforeend", `<a class="sum-l memo-link" href="${esc(d.dataset.memo)}" target="_blank" rel="noopener">📌 Aide-mémoire (étape ${ici})</a>`); }
+    if (c.total && c.okPcs >= c.total) {   /* complet : toujours une issue — créer sa fiche (22/11) */
+      $("[data-sum]", d).insertAdjacentHTML("beforeend", `<button type="button" class="btn primary inv-build" data-build>🚧 Prêt à construire : créer sa fiche</button>`);
+      $("[data-build]", d).onclick = () => checkBuild(true); }
     const rb = $("[data-ready]", d);   // tout est trié (OK / à commander) : on peut passer commande
     rb.hidden = !(c.order > 0);   // (les pièces à commander restent dans l'inventaire : export XML — 21/11 soir)
     rb.textContent = `🧾 Exporter en XML (${nf.format(c.orderPcs)} pièce${c.orderPcs > 1 ? "s" : ""})`;
@@ -4873,25 +4929,21 @@ async function openInventory(itemId, setName, opts = {}) {
     if (rep === undefined) return ` <span class="nocolor">⚠ n'existe pas en ${esc(col.fr)}</span> <span class="muted">· recherche d'une pièce de même forme…</span>`;
     if (!rep) return ` <span class="nocolor">⚠ n'existe pas en ${esc(col.fr)}, ni de pièce de même forme dans cette couleur</span>`;
     return ` <span class="nocolor">⚠ n'existe pas en ${esc(col.fr)}</span><span class="rep-prop">même forme (${esc(rep.relation)}) : <b>${esc(rep.part_num)}</b> ${esc(rep.name)}
-      <button type="button" class="btn rep-btn" data-userep>↔ Remplacer</button></span>`;
+      <button type="button" class="btn rep-btn" data-userep>🔁 Remplacer</button></span>`;
   };
-  /* ---- scan de pièces : chaque pièce repérée sur une photo compte pour sa ligne ; à la fin, ce qui manque passe « à commander » */
-  const SCAN_KEY = "bq-inv-scan:" + itemId;
-  let seen = {}; try { seen = JSON.parse(localStorage.getItem(SCAN_KEY) || "{}"); } catch {}
-  const saveSeen = () => { try { Object.keys(seen).length ? localStorage.setItem(SCAN_KEY, JSON.stringify(seen)) : localStorage.removeItem(SCAN_KEY); } catch {} };
   const rowHtml = r => {
     const s = st[r.key]?.s || "", col = effColor(r);
     const alt = st[r.key]?.p;   // pièce de même forme choisie à la place
     const avail = needCheck(r) ? rowAvail(r) : null;   // la couleur demandée existe-t-elle pour cette pièce ? (undefined = vérification en cours)
     const pic = alt ? (st[r.key]?.ci || r.image) : col.changed ? (st[r.key]?.ci || avail?.image || r.image) : r.image;
-    return `<div class="inv-row ${s} ${seen[r.key] ? (seen[r.key] >= r.need ? "seen-full" : "seen") : ""}" data-k="${esc(r.key)}">
+    return `<div class="inv-row ${s}" data-k="${esc(r.key)}">
       <button type="button" class="inv-pic" data-zoom="${esc(pic || "")}" aria-label="Agrandir"><img src="${img(pic)}" ${r.part_image && r.part_image !== pic ? `data-fb="${esc(img(r.part_image))}"` : ""} alt="" loading="lazy"></button>
       <div class="inv-info"><div class="inv-name fig-link" title="Détail de la pièce et sets où elle apparaît">${esc(alt ? st[r.key].pn || alt : r.name || r.part_num)}</div>
         ${alt ? `<div class="inv-meta recolor">remplace ${esc(r.part_num)} (${esc(r.name || "")})</div>` : ""}${r.added ? `<div class="inv-meta extra-txt">➕ ajoutée (hors set)</div>` : ""}
         <div class="inv-meta">${swatch(col.rgb, col.trans)} ${esc(col.fr || "")}${col.changed ? ` <span class="recolor">(au lieu de ${esc(r.color_fr || r.color_name)}${col.byRule ? ", règle" : ""})</span>` : ""}${needCheck(r)
           ? (avail === undefined ? ` <span class="muted">· vérification…</span>` : avail?.exists === false ? (alt ? ` <span class="nocolor">⚠ ${esc(alt)} n'existe pas en ${esc(col.fr)} : changer la couleur (🎨) ou la pièce (🔁)</span>` : replText(r, col)) : "") : ""} · <b>${esc(alt || r.part_num)}</b>${r.element_id && !col.changed && !alt ? ` · élément ${esc(r.element_id)}` : ""}</div>
       ${["order", "cmd"].includes(s) ? `<div class="inv-meta inv-ip" data-ip="${esc(r.key)}">${ipTxt(r)}</div>` : ""}</div>
-      <div class="inv-need">×${r.need}${seen[r.key] ? `<span class="inv-seen ${seen[r.key] >= r.need ? "full" : ""}" title="Pièces repérées par le scan">📷 ${seen[r.key]}/${r.need}</span>` : ""}</div>
+      <div class="inv-need">×${r.need}</div>
       <div class="inv-act">
         ${s === "cmd" ? `<span class="inv-cmd" title="À la réception : la passer en OK (ou la remettre à commander si c'est une erreur)">${cmdText(st[r.key]?.o?.length ? st[r.key].o.map(o => o.date) : [st[r.key]?.m])}</span>` : ""}
         <button type="button" class="inv-ok ${s === "ok" ? "on" : ""}" data-s="ok">✔ OK</button>
@@ -5027,74 +5079,12 @@ async function openInventory(itemId, setName, opts = {}) {
   $("[data-isort]", d).value = isort;
   $("[data-isort]", d).onchange = e => { isort = e.target.value; try { localStorage.setItem("bq-inv-sort", isort); } catch {} drawList(); };
   $$("[data-f]", d).forEach(b => b.onclick = () => { filter = b.dataset.f; $$("[data-f]", d).forEach(x => x.classList.toggle("on", x === b)); drawList(); });
-  const drawScanbar = () => {
-    const keys = Object.keys(seen).filter(k => rows.some(r => r.key === k)), bar = $("[data-scanbar]", d);
-    bar.hidden = !keys.length; if (!keys.length) return;
-    const full = keys.filter(k => seen[k] >= rows.find(r => r.key === k).need).length, pcs = keys.reduce((a, k) => a + seen[k], 0);
-    bar.innerHTML = `<span>📷 Scan : <b>${nf.format(pcs)}</b> pièce${pcs > 1 ? "s" : ""} repérée${pcs > 1 ? "s" : ""} sur <b>${keys.length}</b> ligne${keys.length > 1 ? "s" : ""} — ${full} complète${full > 1 ? "s" : ""} (validées OK), ${keys.length - full} en partie (📷 n/total)</span>
-      <span class="inv-scanbar-btns"><button type="button" class="btn small-btn" data-scanclear title="Remet les compteurs à zéro (les pièces déjà en OK le restent)">Effacer les compteurs</button></span>`;
-    $("[data-scanclear]", bar).onclick = async () => { if (!await confirmBox("Remettre à zéro les compteurs du scan ? Les pièces déjà validées (OK) le restent.")) return; seen = {}; saveSeen(); drawScanbar(); drawList(); };
-  };
-  /* photos de pièces → pièces repérées → vérification → ajoutées au comptage */
-  $("[data-invscan]", d).onchange = async e => {
-    const files = [...e.target.files].slice(0, 8); e.target.value = ""; if (!files.length) return;
-    const images = []; for (const fl of files) images.push(await fileToDataUrl(await shrink(fl, 2000)));
-    const m = document.createElement("div");
-    m.className = "modal over";
-    m.innerHTML = `<div class="modal-box wide"><div class="modal-head"><h2>Pièces repérées</h2><button class="icon-btn" data-x aria-label="Fermer">✕</button></div><div data-b>${loading("Scan des pièces…")}</div></div>`;
-    document.body.append(m);
-    $("[data-x]", m).onclick = () => m.remove();
-    let det;
-    try { det = await api("/api/parts/scan-objects", { method: "POST", body: { images } }); }
-    catch (err) { $("[data-b]", m).innerHTML = `<div class="loading">${esc(err.message)}</div>`; return; }
-    // chaque pièce repérée → la ligne d'inventaire correspondante (même pièce, de préférence même couleur)
-    const idsOf = r => [r.part_num, r.bricklink, st[r.key]?.p].filter(Boolean).map(x => String(x).toLowerCase());
-    const match = o => {
-      let best = null;
-      o.cands.forEach((c, ci) => rows.forEach(r => {
-        if (st[r.key]?.s === "x" || !idsOf(r).includes(String(c.part).toLowerCase())) return;
-        const sameColor = o.colors.some(x => x.color_id === effColor(r).id);
-        const sc = (3 - ci) * 10 + (sameColor ? 5 : 0) + c.score / 100;
-        if (!best || sc > best.sc) best = { key: r.key, sc, sameColor };
-      }));
-      return best;
-    };
-    const items = det.map(o => { const b = match(o); return { ...o, key: b?.key || "", colorOk: !!b?.sameColor, on: !!b, qty: 1 }; });
-    const rowOf = k => rows.find(r => r.key === k);
-    const draw = () => {
-      const n = items.filter(x => x.on && x.key).reduce((a, x) => a + x.qty, 0);
-      $("[data-b]", m).innerHTML = `<p class="hint" style="margin-top:0">${items.length} pièce${items.length > 1 ? "s" : ""} repérée${items.length > 1 ? "s" : ""}. Celles reconnues dans l'inventaire sont pré-cochées : vérifier (la photo de la pièce est à gauche), corriger la ligne si besoin, puis les ajouter au comptage. Une pile de pièces identiques : ajuster la quantité.</p>
-        <div class="invscan-list">${items.map((x, j) => { const r = rowOf(x.key), c = x.cands[0];
-          return `<div class="invscan-row ${x.on && x.key ? "on" : ""} ${!x.key ? "none" : ""}">
-            <input type="checkbox" data-on="${j}" ${x.on && x.key ? "checked" : ""} ${x.key ? "" : "disabled"} aria-label="Compter cette pièce">
-            <button type="button" class="rv-zoom rv-shot" data-zimg="${esc(x.thumb)}" aria-label="Agrandir"><img src="${x.thumb}" alt=""></button>
-            <div class="invscan-match">${r ? `<img src="${img(st[r.key]?.ci || r.image)}" alt=""><span class="rv-txt"><b>${esc(st[r.key]?.pn || r.name)}</b><small>${esc(r.part_num)} · ${swatch(effColor(r).rgb, effColor(r).trans)} ${esc(effColor(r).fr)} · ×${r.need}${seen[r.key] ? ` · déjà ${seen[r.key]} repérée${seen[r.key] > 1 ? "s" : ""}` : ""}${x.colorOk ? "" : ` · <span class="rv-check">couleur à vérifier${x.colors[0] ? " (vue : " + esc(x.colors[0].color_fr) + ")" : ""}</span>`}</small></span>`
-              : `<span class="rv-txt"><b class="rv-miss">Pas dans l'inventaire</b><small>${c ? `ressemble à ${esc(c.part)} ${esc(c.name.slice(0, 50))} (${c.score} %)` : "non reconnue"}</small></span>`}
-              <select data-row="${j}" aria-label="Ligne de l'inventaire"><option value="">— ${r ? "autre ligne…" : "choisir la ligne…"} —</option>${rows.filter(rr => st[rr.key]?.s !== "x")
-                .map(rr => `<option value="${esc(rr.key)}" ${rr.key === x.key ? "selected" : ""}>${esc(rr.part_num)} · ${esc(effColor(rr).fr)} · ${esc((rr.name || "").slice(0, 40))}</option>`).join("")}</select></div>
-            <label class="rv-qty">× <input type="number" min="1" max="999" value="${x.qty}" data-qty="${j}"></label></div>`; }).join("")}</div>
-        <div class="est-actions" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-cancel>Annuler</button>
-          <button type="button" class="btn primary" data-add ${n ? "" : "disabled"}>Ajouter ${n} pièce${n > 1 ? "s" : ""} au comptage</button></div>`;
-      $$("[data-zimg]", m).forEach(b => b.onclick = () => openZoom(b.dataset.zimg, "Sur ta photo"));
-      $$("[data-on]", m).forEach(c => c.onchange = () => { items[+c.dataset.on].on = c.checked; draw(); });
-      $$("[data-row]", m).forEach(sel => sel.onchange = () => { const x = items[+sel.dataset.row]; x.key = sel.value; x.on = !!sel.value;
-        x.colorOk = !!sel.value && x.colors.some(c => c.color_id === effColor(rowOf(sel.value)).id); draw(); });
-      $$("[data-qty]", m).forEach(i => i.onchange = () => { items[+i.dataset.qty].qty = Math.max(1, parseInt(i.value) || 1); draw(); });
-      $("[data-cancel]", m).onclick = () => m.remove();
-      $("[data-add]", m).onclick = () => {
-        for (const x of items) if (x.on && x.key) seen[x.key] = (seen[x.key] || 0) + x.qty;
-        const patch = {};   // pièces trouvées en entier : validées (OK) ; le reste ne change pas, à vous de choisir
-        for (const r of rows) { const cur = st[r.key] || {};
-          if ((seen[r.key] || 0) >= r.need && cur.s !== "ok" && cur.s !== "x") { const { q, ...rest } = cur; st[r.key] = patch[r.key] = { ...rest, s: "ok" }; } }
-        if (Object.keys(patch).length) save(patch);
-        saveSeen(); m.remove(); drawScanbar(); drawList(); drawSum();
-        const okN = Object.keys(patch).length;
-        toast(`${n} pièce${n > 1 ? "s" : ""} comptée${n > 1 ? "s" : ""}${okN ? ` · ${okN} ligne${okN > 1 ? "s" : ""} validée${okN > 1 ? "s" : ""} (OK)` : ""}`);
-      };
-    };
-    draw();
-  };
-  drawScanbar();
+  $("[data-invfind]", d).onclick = () => openPart({ pickTitle: "Quelle pièce ? (appareil photo, coller une image ou référence)", pick: async n => {   /* (scanner = la recherche de pièce — 22/11) */
+    const pn = n.part_num || n.part || "", q = $("[data-q]", d);
+    const hit = rows.filter(r => r.part_num === pn || r.bricklink === pn || r.bricklink === n.part || st[r.key]?.p === pn);
+    if (q) { q.value = pn; q.dispatchEvent(new Event("input", { bubbles: true })); }
+    d.scrollTo?.({ top: 0, behavior: "smooth" });
+    toast(hit.length ? `🔎 « ${n.name || pn} » : ${hit.length} ligne${hit.length > 1 ? "s" : ""} dans cet inventaire` : `« ${n.name || pn} » n'est pas dans cet inventaire`); } });
 
   /* couleur et/ou pièce choisie à la place de celle du set (c, ci : couleur et sa photo ; alt : autre pièce) */
   const setPiece = (r0, c, ci, alt) => {
@@ -5423,7 +5413,7 @@ function renderPartsView(items) {
     $$("[data-blf] [data-f]", $("#stats")).forEach(b => b.onclick = () => { state.blF = b.dataset.f; renderPartsView(itemsOf(state.current)); });
     $("[data-blsel]", $("#stats")).onclick = () => { state.blSel = !state.blSel; state.blPicked = new Set(); renderPartsView(itemsOf(state.current)); };   /* (cases à cocher — 22/11) */
     { const tb = $("#filter")?.closest(".toolbar"), ch = $("[data-blf]", $("#stats"));   /* (la rangée des filtres : dans la barre collée en haut, toujours visible — 22/11) */
-      if (tb && ch) { tb.querySelector(".blf-bar")?.remove(); ch.classList.add("blf-bar"); tb.append(ch); } }
+      if (tb && ch) { tb.querySelector(".blf-bar")?.remove(); ch.remove(); } syncSortMenu(); }   /* (plus de pastilles : tout est dans ☰ — 22/11) */
   }
   const f = $("#filter").value.trim().toLowerCase();
   let shown = items.filter(i => !f || [i.part_num, i.part_name, i.color_name, i.element_id, i.set_number, setLabel(i.set_number), i.notes]
@@ -5470,9 +5460,9 @@ function renderPartsView(items) {
         ${i.set_number ? `<div class="inv-meta">🧱 Pour <button type="button" class="link bl-for" data-forset="${esc(i.set_number)}" title="Ouvrir la fiche du set">${esc(setLabel(i.set_number))}</button></div>` : ""}
         ${i.notes ? `<div class="inv-meta">📝 ${esc(i.notes)}</div>` : ""}
         ${(i.inv_links || []).length ? `<div class="inv-meta">📋 Pour l'inventaire ${[...new Set(i.inv_links.map(l => (state.inventories || []).find(v => v.key === l.inv)?.name || ""))].filter(Boolean).map(esc).join(", ")}</div>` : ""}
-        ${(() => { const st = exp(i) ? `🧾 Exportée en XML${i.bl_wanted ? ` le ${esc(fmtDate(i.bl_wanted).replace(/ à .*/, ""))}` : ""}${(i.quantity || 1) > i.bl_qty ? ` · <b>+${nf.format((i.quantity || 1) - i.bl_qty)} à exporter</b>` : ""}`
+        ${(() => { const st = exp(i) && !cmdOf(i) && !i.got ? `<span class="bl-exp-t">🧾 Exportée en XML${i.bl_wanted ? ` le ${esc(fmtDate(i.bl_wanted).replace(/ à .*/, ""))}` : ""}${(i.quantity || 1) > i.bl_qty ? ` · <b>+${nf.format((i.quantity || 1) - i.bl_qty)} à exporter</b>` : ""}</span><button type="button" class="bl-unexp" data-unexp title="Retirer « Exportée » : de nouveau simplement à commander" aria-label="Retirer « Exportée »">✕</button>`
             : again(i) ? "🔁 À commander de nouveau" : (i.inv_links || []).length ? "🛒 À commander" : "";   // « Commandes » : seulement pour une pièce venue d'un inventaire
-          return st ? `<div class="inv-meta bl-state">${st}</div>` : ""; })()}
+          return st ? `<div class="inv-meta bl-state${st.startsWith('<span class="bl-exp-t">') ? " bl-exp" : ""}">${st}</div>` : ""; })()}
       </div>
       <div class="inv-need">×${nf.format(i.quantity || 1)}</div>
       <div class="inv-act">
@@ -5486,7 +5476,8 @@ function renderPartsView(items) {
       </div>
     </div>`;
   /* trois sections séparées : à commander · commandées · reçues (22/11) */
-  const GRP = [["🛒 À commander", shown.filter(i => !i.got && !cmdOf(i)), "g-order"], ["📦 Commandées", shown.filter(cmdOf), "g-cmd"], ["✔ Reçues", shown.filter(i => i.got), "g-ok"]]
+  const GRP = [["🛒 À commander", shown.filter(i => !i.got && !cmdOf(i) && !exp(i)), "g-order"], ["🧾 Exportées", shown.filter(i => !i.got && !cmdOf(i) && exp(i)), "g-exp"],   /* (exportées à part — 22/11) */
+    ["📦 Commandées", shown.filter(cmdOf), "g-cmd"], ["✔ Reçues", shown.filter(i => i.got), "g-ok"]]
     .filter(g => g[1].length).map(([t, l, c]) => `<h3 class="grp-head ${c}">${t} <span class="muted">(${nf.format(l.reduce((a, i) => a + (i.quantity || 1), 0))})</span></h3><div class="bl-rows">${l.map(rowTpl).join("")}</div>`).join("");
   box.innerHTML = `${GRP}${(() => { const F = state.blF || "", X = state.ordersExtra || [];   /* commandées EN PLUS (non attribuées) : tout en bas, en bleu à part (22/11) */
       if (!X.length || !["", "cmd"].includes(F)) return "";
@@ -5509,7 +5500,7 @@ function renderPartsView(items) {
       bar.innerHTML = `<span class="sb-n"><b>${a + e}</b> cochée${a + e > 1 ? "s" : ""}</span>
         <button type="button" class="btn small-btn" data-sa>Tout</button><button type="button" class="btn small-btn" data-sn>Rien</button>
         ${a + e ? `<button type="button" class="btn small-btn" data-s-ok>✔ OK</button>` : ""}
-        ${a ? `<button type="button" class="btn small-btn" data-s-again>🔁 Commander à nouveau</button><button type="button" class="btn small-btn" data-s-cmd>📦 Commandée</button><button type="button" class="btn small-btn" data-s-back>↩ À commander</button><button type="button" class="btn small-btn danger-ghost" data-s-del>🗑 Supprimer</button>` : ""}
+        ${a ? `<button type="button" class="btn small-btn" data-s-again>🔁 Commander à nouveau</button><button type="button" class="btn small-btn" data-s-cmd>📦 Commandée</button><button type="button" class="btn small-btn" data-s-back>↩ À commander</button><button type="button" class="btn small-btn danger-ghost" data-s-del>🗑️ Supprimer</button>` : ""}
         ${e ? `<button type="button" class="btn small-btn" data-s-fiche>🧩 Attribuer à une fiche</button><button type="button" class="btn small-btn" data-s-inv>📋 Vers un inventaire</button>` : ""}
         <button type="button" class="btn small-btn" data-s-x>Fermer</button>`;
       const run = async (label, fn) => { bar.querySelectorAll("button").forEach(b => { b.disabled = true; }); try { const n = await fn(); toast(`${label} : ${n}`); } catch (err) { toast(err.message); }
@@ -5532,7 +5523,7 @@ function renderPartsView(items) {
       $("[data-s-back]", bar)?.addEventListener("click", () => run("↩ À commander", async () => { let n = 0;
         for (const it of its()) if ((it.ordered || []).length || it.cmd_m || it.got) { await api("/api/items/" + it.id, { method: "PUT", body: { cmd_m: null, ordered: [], got: false, o_off: [...new Set([...(it.o_off || []), ...(it.ordered || []).map(o => o.order).filter(Boolean)])] } }); n++; } return n; }));
       $("[data-s-del]", bar)?.addEventListener("click", async () => { const l = its(); if (!await confirmBox(`Supprimer ${l.length} ligne${l.length > 1 ? "s" : ""} de « Commandes » ?`, { ok: "Supprimer", danger: true })) return;
-        run("🗑 Supprimées", async () => { for (const it of l) await api("/api/items/" + it.id, { method: "DELETE" }); return l.length; }); });
+        run("🗑️ Supprimées", async () => { for (const it of l) await api("/api/items/" + it.id, { method: "DELETE" }); return l.length; }); });
       $("[data-s-fiche]", bar)?.addEventListener("click", async () => { const l = xs().filter(e => !e.fig && e.color_id != null); if (!l.length) return toast("Rien à attribuer (figurines ou couleur inconnue)");
         const t = await pickTargetItem(`Attribuer ${l.length} pièce${l.length > 1 ? "s" : ""} à…`, { setFigs: true }); if (!t) return;
         run("🧩 Attribuées", async () => { for (const e of l) { await addPartTo(t, { part: e.bl || e.part_num, part_num: e.part_num, color_id: e.color_id, color_fr: e.color_fr, qty: e.qty, name: e.name, image: e.image });
@@ -5619,6 +5610,10 @@ function renderPartsView(items) {
       { label: "↩ Changer le statut de cette ligne", sub: "plus commandée : de nouveau à commander", value: "uncmd" },
       { label: "🔁 Préparer une nouvelle commande", sub: "une nouvelle ligne à commander, même couleur ou une autre (plusieurs possibles)", value: "again" }], { search: false });
     if (v) b.closest(".inv-act").querySelector(`[data-${v}]`)?.click();
+  });
+  $$("[data-unexp]", box).forEach(b => b.onclick = async e => {   /* ✕ « Exportée en XML » retiré (22/11) */
+    e.stopPropagation(); const it = itOf(b); if (!it) return;
+    try { await api("/api/items/" + it.id, { method: "PUT", body: { bl_qty: 0, bl_wanted: null } }); await load(); toast(`« ${it.part_name || itemName(it)} » : plus « exportée »`); } catch (err) { toast(err.message); }
   });
   $$("[data-uncmd]", box).forEach(b => b.onclick = async () => {   // ↩ À commander : erreur — la commande lue ne la reprend plus
     const it = itOf(b); if (!it) return;
@@ -6809,8 +6804,8 @@ $("#btnItemLogo").onclick = e => {
   };
   const pick = () => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/png,image/jpeg,image/webp"; i.onchange = () => send(i.files[0]); i.click(); };
   const inh = setLogoOf(), mark = v => { dr.noLogo = v; drawItemLogo(); toast("Enregistrer la fiche (💾)"); };   /* (figurine d'un set : son logo hérité, retirable) */
-  actionMenu(e.currentTarget, [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(dr.itemLogo ? [["✖ Retirer le logo individuel", () => set("")]] : []),
-    ...(inh && !dr.itemLogo && !dr.noLogo ? [["✖ Retirer le logo du set (pour cette figurine)", () => mark(true)]] : []), ...(inh && dr.noLogo ? [["↩ Reprendre le logo du set", () => mark(false)]] : [])], "Logo individuel");
+  actionMenu(e.currentTarget, [["📁 Importer une image", pick], ["📋 Coller", async () => send(await pasteImage())], ...(dr.itemLogo ? [["✕ Retirer le logo individuel", () => set("")]] : []),
+    ...(inh && !dr.itemLogo && !dr.noLogo ? [["✕ Retirer le logo du set (pour cette figurine)", () => mark(true)]] : []), ...(inh && dr.noLogo ? [["↩ Reprendre le logo du set", () => mark(false)]] : [])], "Logo individuel");
 };
 /* fiche enregistrée : en LECTURE à l'ouverture (boutons de modification masqués, CSS #modal.ro) ; ✏️ → modification */
 const sheetRo = () => !!(state.draft && (state.draft.item || state.draft.adjust?.fid) && (!state.draft.view || state.draft.adjust?.fid) && !state.draft.editing && !state.draft.item?.dup_pending) && !boBehav("editFirst");   // (back office → Comportements : fiches ouvertes directement en modification)
@@ -8204,7 +8199,7 @@ function fillConfig() {
   $("#cfgList").value = item?.list_id || (fig && state.addToList) || "";   // ajout : aucune liste par défaut (sauf figurine ajoutée depuis « Commandes »)
   $("#listErr").hidden = true;
 
-  $("#btnAcquired").hidden = !(item && isWish(item.list_id));
+  $("#btnAcquired").hidden = !(item && isWish(item.list_id)) || !!state.lists.find(l => l.id === item.list_id)?.gift;   // (« 👀 À surveiller » : pas d'Acquis — 22/11)
   $("#btnForGift").hidden = true;   // remplacé par 👀 à gauche de « Voir sur »
   $("#cfgQty").value = (item?.quantity || state.replacing?.quantity || 1) + inSetN();   // (fiche unique : avec celles rangées dans les sets)
   if (inSetN()) { $("#cfgQty").min = inSetN(); $("#cfgQty").dataset.minmsg = "Plus aucune figurine seule : pour en retirer une, l'enlever d'un set (− dans « Dans les sets »)."; } else delete $("#cfgQty").dataset.minmsg;   // (0 seule possible)
@@ -8445,11 +8440,20 @@ function wishOpts() {
 }
 $$("input[name=wcond]").forEach(r => r.addEventListener("change", e => {
   if (!$$("input[name=wcond]").some(x => x.checked)) e.target.checked = true;   // au moins un des deux
-  wishOpts();
+  wishOpts(); wishSaveNow();
   const dr = state.draft;   // lien BrickLink : à l'état cherché
   if (dr?.info && dr.kind !== "custom") $("#cfgLinks").innerHTML = extLinks(dr.info, dr.kind === "fig", wishLinkCond());
 }));
 const todoNow = () => ({ todos: state.draft.todos || [] });
+/* fiche d'un souhait EN LECTURE : l'état souhaité (Neuf / Occasion) et « Figurines » s'enregistrent tout de suite, sans ✏️ (22/11) */
+async function wishSaveNow() {
+  const it = state.draft?.item; if (!it || !isWish(it.list_id) || !modal.classList.contains("ro")) return;
+  const body = { condition: wishCond() === "neuf" ? "neuf" : "occasion", also_used: wishBoth(), with_minifigs: !(state.draft.info?.minifig_count) || $("#wFigs").checked,
+    ...(wishUsed() ? { has_box: false, no_plan: false } : {}) };
+  try { await api("/api/items/" + it.id, { method: "PUT", body }); await load(); const f = state.items.find(i => i.id === it.id); if (f && state.draft?.item?.id === it.id) state.draft.item = f; updateEstimate(); toast("État souhaité enregistré"); }
+  catch (err) { toast(err.message); }
+}
+$("#wFigs")?.addEventListener("change", wishSaveNow);
 
 /* liste des figurines : une case par figurine ET par exemplaire du set (ex. set x2 : Fives (1/2), (2/2)) */
 const missingFrom = (have, mfs, n) => mfs.flatMap(f => Array(Math.max(0, (f.qty || 1) * n - (have[f.id] || 0))).fill(f.id));
@@ -8664,7 +8668,7 @@ function drawAccessories() {
     const setQty = async () => { const v = await ask(`Combien de « ${a.name} » ?`, "1", String(accQ(a)), { num: true, min: 1, max: 999 }); if (v == null) return;
       const n = Math.max(1, Math.min(999, parseInt(v, 10) || 1)); if (n > 1) a.qty = n; else delete a.qty; drawAccessories(); updateEstimate(); toast(`Quantité : ${n} — penser à enregistrer la fiche`); };
     const acts = [["🔢 Modifier la quantité", setQty], ["✏️ Renommer", () => rename(a)], ["🧾 " + ((a.parts || []).length ? "Remplacer la liste de pièces" : "Liste de pièces (XML, facultatif)"), () => accParts(a)],
-      ...((a.parts || []).length ? [["✖ Retirer la liste de pièces", () => { delete a.parts; delete a.file; delete a.price; drawAccessories(); updateEstimate(); toast("Liste retirée : penser à enregistrer la fiche"); }]] : []),
+      ...((a.parts || []).length ? [["✕ Retirer la liste de pièces", () => { delete a.parts; delete a.file; delete a.price; drawAccessories(); updateEstimate(); toast("Liste retirée : penser à enregistrer la fiche"); }]] : []),
       ["🗑️ Retirer", () => remove(k)]];
     {   /* photo de l'accessoire : la changer (ou en donner une) — appareil photo, fichier, image copiée */
       const pick = cap => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; if (cap) i.capture = "environment";
@@ -8949,7 +8953,7 @@ function drawFigExtra0() {
       } catch (e) { toast(e.message); }
     };
     actionMenu(b, [["🔢 Modifier la quantité", () => feQty(a)], ...(isFig(a) && (a.quantity || 1) > 1 ? [["✏️ Dupliquer puis modifier", () => indivOut(it, a.id, "add", itemName(a))]] : []),
-      ...(isFig(a) ? [["📄 Copier vers un autre set…", () => go(true)]] : []), ["➡️ Déplacer vers un autre set…", () => go(false)],
+      ...(isFig(a) ? [["⧉ Copier vers un autre set…", () => go(true)]] : []), ["➡️ Déplacer vers un autre set…", () => go(false)],
       ["↩ Sortir du set (redevient une figurine seule)", async () => {
         if ((a.quantity || 1) < 2) return setAttached(a.id, "", it);
         try { await api(`/api/items/${a.id}/dup`, { method: "POST", body: { attach: "", qty: 1, confirm: true } }); await load();   // lot : un exemplaire sort
@@ -9169,12 +9173,12 @@ const figListClick = e => {
     if (extra) return actionMenu(fmn, [qtyAct,   // tuile des ajoutées : seulement elles (fiche à elles, créée au besoin)
       ["👁 Voir la fiche", () => extrasOut(src, fid, id => id ? openEdit(id) : openFigSheet(fid, src.id))],
       ["🔁 Échanger des pièces", () => extrasOut(src, fid, id => id ? openFigParts(id, "") : openFigParts(src.id, fid))], ...solo,
-      ["📄 Copier vers un autre set…", () => figTo(src, fid, nm, false)], ["➡️ Déplacer vers un autre set…", () => figTo(src, fid, nm, true)]]);
+      ["⧉ Copier vers un autre set…", () => figTo(src, fid, nm, false)], ["➡️ Déplacer vers un autre set…", () => figTo(src, fid, nm, true)]]);
     const onlyOrig = go => () => extrasOut(src, fid, () => go());   // (originales seules : les exemplaires en plus ont d'abord leur fiche)
     if (solo.length) solo[0][1] = onlyOrig(() => { const c = figChildOf(state.items.find(i => i.id === src.id) || src, fid); if (c) indivOut(src, c.id, "add", nm || fid); });
     return actionMenu(fmn, [qtyAct, ["👁 Voir la fiche", onlyOrig(() => openFigSheet(fid, src.id))], ...solo,   // (le set : renommer, tâches… y sont gardés)
       [modded ? "🔁 Pièces échangées (modifier)" : "🔁 Échanger des pièces", onlyOrig(() => openFigParts(src.id, fid))],   // modifier la figurine : ici, plus sur la carte
-      ["📄 Copier vers un autre set…", () => figTo(src, fid, nm, false)],
+      ["⧉ Copier vers un autre set…", () => figTo(src, fid, nm, false)],
       ["➡️ Déplacer vers un autre set…", () => figTo(src, fid, nm, true)],
       ["🗑️ Supprimer (pas dans la collection)", async () => {   // son nombre dans le set passe à 0 (« + 🟡 Figurine » la remet)
         const mfs = src.info?.minifigs || [], have = src.with_minifigs === false ? Object.fromEntries(mfs.map(f => [f.id, 0])) : figHave(src, mfs, src.quantity || 1);
@@ -9387,19 +9391,25 @@ const plainItem = i => (i.portion ?? 100) >= 100 && !(i.missing_minifigs || []).
 
 /* liste de destination : options + bouton « + » pour créer une liste sans quitter la fiche.
    Les listes « Commandes » ne sont proposées QUE pour une figurine (fiche en cours : state.draft.kind "fig") */
+/* menu des listes : UN SEUL CODE pour tous les choix de liste (fiche, inventaire complet, souhait acquis…) — 22/11 */
+function listOptionsHtml({ wish = true, parts = false, mark = "" } = {}) {   // mark : la liste suggérée (★)
+  const pts = parts ? listTree("parts") : [], star = l => l.id === mark ? " ★" : "";
+  return `<option value="" disabled hidden>Choisir une liste…</option><optgroup label="Collection">${listTree("collection").map(({ l, depth }) => `<option value="${l.id}">${esc(indentName(l, depth))}${star(l)}</option>`).join("")}</optgroup>`
+    + (wish ? `<optgroup label="Listes de souhaits">${listTree("wishlist").map(({ l, depth }) => `<option value="${l.id}">${depth ? "" : "⭐ "}${esc(indentName(l, depth))}</option>`).join("")}</optgroup>` : "")
+    + (pts.length ? `<optgroup label="À commander">${pts.map(({ l, depth }) => `<option value="${l.id}">${depth ? "" : "🛒 "}${esc(indentName(l, depth))}</option>`).join("")}</optgroup>` : "");
+}
+/* liste de destination de la fiche : options + bouton « + » pour créer une liste sans quitter la fiche.
+   Les listes « Commandes » ne sont proposées QUE pour une figurine (fiche en cours : state.draft.kind "fig") */
 function fillListSelect(selected) {
-  const parts = state.draft?.kind === "fig" ? listTree("parts") : [];
-  $("#cfgList").innerHTML = `<option value="" disabled hidden>Choisir une liste…</option><optgroup label="Collection">${listTree("collection").map(({ l, depth }) => `<option value="${l.id}">${esc(indentName(l, depth))}</option>`).join("")}</optgroup>
-    <optgroup label="Listes de souhaits">${listTree("wishlist").map(({ l, depth }) => `<option value="${l.id}">${depth ? "" : "⭐ "}${esc(indentName(l, depth))}</option>`).join("")}</optgroup>
-    ${parts.length ? `<optgroup label="À commander">${parts.map(({ l, depth }) => `<option value="${l.id}">${depth ? "" : "🛒 "}${esc(indentName(l, depth))}</option>`).join("")}</optgroup>` : ""}`;   // (figurines seulement)
+  $("#cfgList").innerHTML = listOptionsHtml({ parts: state.draft?.kind === "fig" });   // (figurines seulement : « À commander »)
   if (selected) { $("#cfgList").value = selected; $("#listErr").hidden = true; $("#cfgList").classList.remove("invalid"); }
 }
 $("#cfgList").addEventListener("change", () => { $("#listErr").hidden = true; $("#cfgList").classList.remove("invalid"); });
-/* choix de la liste : bouton et menu à soi, logos en petit avant le nom (la liste déroulante cachée garde la valeur) — 21/11 */
-(() => {
-  const sel = $("#cfgList"); if (!sel || sel._pick) return; sel._pick = true;
+/* choix de la liste : bouton et menu à soi, logos en petit avant le nom (la liste déroulante cachée garde la valeur) — 21/11 ; pour tout menu de listes (22/11) */
+function listPicker(sel) {
+  if (!sel || sel._pick) return; sel._pick = true;
   const btn = document.createElement("button"); btn.type = "button"; btn.className = "list-pick-btn"; sel.after(btn); sel.classList.add("list-pick-native"); sel.tabIndex = -1;
-  const lab = o => { const l = state.lists.find(x => x.id === o.value), m = o.textContent.match(/^([\s\u00a0]*(?:↳ )?)(.*)$/s);
+  const lab = o => { const l = state.lists.find(x => x.id === o.value), m = o.textContent.match(/^([\s ]*(?:↳ )?)(.*)$/s);
     return `<span class="lp-ind">${esc(m[1])}</span>${!l ? "" : l.logo ? `<img class="list-logo lp-logo" src="${esc(l.logo)}" alt="" onerror="this.remove()">` : l.emoji ? `<span class="list-emo">${esc(l.emoji)}</span>` : ""}<span class="lp-nm">${esc(m[2].trim())}</span>`; };
   const show = () => { const o = sel.selectedOptions[0]; btn.innerHTML = o && o.value ? lab(o) : `<span class="lp-nm muted">Choisir une liste…</span>`;
     btn.classList.toggle("invalid", sel.classList.contains("invalid")); btn.disabled = sel.disabled; };
@@ -9408,7 +9418,7 @@ $("#cfgList").addEventListener("change", () => { $("#listErr").hidden = true; $(
   sel.addEventListener("change", show);
   new MutationObserver(show).observe(sel, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "disabled"] });
   btn.onclick = () => {
-    const d = document.createElement("div"); d.className = "modal over";
+    const d = document.createElement("div"); d.className = "modal over lp-modal";   /* (lp-modal : toujours au premier plan, même ouverte depuis une question — 22/11) */
     const groups = [...sel.children].map(g => g.tagName === "OPTGROUP" ? { t: g.label, o: [...g.children] } : { t: "", o: [g] }).filter(g => g.o.some(o => o.value && !o.hidden));
     d.innerHTML = `<div class="modal-box lp-box" style="width:min(420px,100%)"><div class="modal-head"><h2>Liste</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
       ${groups.map(g => `${g.t ? `<div class="fe-title">${esc(g.t)}</div>` : ""}<div class="lp-list">${g.o.filter(o => o.value && !o.hidden).map(o => `<button type="button" class="lp-opt${o.value === sel.value ? " on" : ""}" data-v="${esc(o.value)}">${lab(o)}</button>`).join("")}</div>`).join("")}</div>`;
@@ -9419,7 +9429,35 @@ $("#cfgList").addEventListener("change", () => { $("#listErr").hidden = true; $(
     $(".lp-opt.on", d)?.scrollIntoView({ block: "center" });
   };
   show();
-})();
+}
+listPicker($("#cfgList"));
+/* « Dans quelle liste ? » (et, si kinds, « Quel type de fiche ? ») — UNE question pour tout : inventaire complet, souhait acquis…
+   aucune liste choisie d'office (obligatoire) ; rend { kind, lid } ou null (annulé) — 22/11 */
+function askList({ title, kinds = null, okLabel = "✔ Valider" } = {}) {
+  const sugg = "";   // (plus de suggestion ★ : retirée à la demande du propriétaire — 22/11)
+  return new Promise(res => {
+    const m = document.createElement("div"); m.className = "modal top";
+    const btns = kinds || [["ok", okLabel]];
+    m.innerHTML = `<div class="modal-box confirm-box build-ask" role="alertdialog" aria-modal="true" style="width:min(480px,100%)">
+      <p style="margin:4px 0 12px;font-weight:700">${esc(title)}</p>
+      <div class="lbl-like">Dans quelle liste ?</div>
+      <div class="ask-list"><select data-balist required>${listOptionsHtml({ wish: false, mark: sugg })}</select></div>
+      <div style="height:12px"></div>
+      ${kinds ? `<p class="lbl-like" style="margin:0 0 8px">Quel type de fiche ?</p>` : ""}
+      <div class="choice-btns">${btns.map(([v, t]) => `<button type="button" class="btn" data-bk="${esc(v)}">${esc(t)}</button>`).join("")}<button type="button" class="btn ghost" data-bk="no">${kinds ? "Pas encore" : "Annuler"}</button></div></div>`;
+    document.body.append(m);
+    const sel = $("[data-balist]", m); sel.value = ""; listPicker(sel);
+    const done = v => { m.remove(); document.removeEventListener("keydown", key, true); res(v); };
+    const key = e => { if (e.key === "Escape" && !document.querySelector(".lp-modal")) { e.stopPropagation(); done(null); } };
+    document.addEventListener("keydown", key, true);
+    $$("[data-bk]", m).forEach(b => b.onclick = () => {
+      if (b.dataset.bk === "no") return done(null);
+      if (!sel.value) { sel.classList.add("invalid"); return toast("Choisir d'abord la liste"); }   // (obligatoire : rien d'office)
+      done({ kind: b.dataset.bk, lid: sel.value }); });
+    sel.addEventListener("change", () => sel.classList.remove("invalid"));
+    m.onclick = e => { if (e.target === m) done(null); };
+  });
+}
 $("#btnCfgNewList").onclick = async () => {
   const name = await ask("Nom de la nouvelle liste", "Ex : Star Wars, À vendre…");
   if (!name) return;
@@ -9576,7 +9614,7 @@ $("#btnDupFig").onclick = async e => {
   const k = dupKind(); if (!k) return;
   const dr = state.draft, it = dr.item;
   if (k === "set") return copyWhole(it);
-  const acts = [["📄 Copier un exemplaire", () => dupSource() ? dupFig() : copyWhole(it)]];
+  const acts = [["⧉ Copier un exemplaire", () => dupSource() ? dupFig() : copyWhole(it)]];
   if (dr.adjust?.fid && dr.adjust.it) {   // figurine d'un des sets : vers un autre set
     const host = dr.adjust.it, fid = dr.adjust.fid, nm = setFigName() || dr.info?.name || fid;
     const cnt = () => { const h = state.items.find(i => i.id === host.id); return h ? figHave(h, h.info?.minifigs || [], h.quantity || 1)[fid] || 0 : 0; };
@@ -10028,7 +10066,7 @@ function extLinks(info, fig, cond = "") {   // cond : état cherché (souhait) �
     n ? ["Rebrickable", rbUrl(n, true)] : null,
   ] : [
     /* LEGO.com : sa page produit si elle est connue (relevée avec les nouveautés), sinon la recherche lego.com tant que le set est vendu ou à venir */
-    state.legoUrls?.[n] ? ["LEGO.com", state.legoUrls[n]] : !isRetired(info) && info.availability ? ["LEGO.com", `https://www.lego.com/fr-fr/search?q=${q(n.replace(/-1$/, ""))}`] : null,
+    state.legoUrls?.[n] ? ["LEGO", state.legoUrls[n]] : !isRetired(info) && info.availability ? ["LEGO", `https://www.lego.com/fr-fr/search?q=${q(n.replace(/-1$/, ""))}`] : null,
     ...siteLinksOf(["BrickLink", blSale("S", n, { zone, cond })], info.market?.sites?.BrickOwl?.url || boSearch(n.replace(/-1$/, ""))),
     n ? ["Rebrickable", rbUrl(n, false)] : null,
   ];
@@ -10294,7 +10332,7 @@ function drawMocInfo() {
   $("#cuXmlBtn").hidden = $("#cuPartFind").hidden = savedSet;
   if (savedSet) $("#cuXmlBox").hidden = true;
   $("#cuPartsShow").textContent = "🔶 Pièces";   // (outils : commander, rechercher, importer — les pièces sont en vignettes dans la fiche)
-  if (savedSet && mi?.lots && !state.draft.item.partial_set) drawMocSetLots(); else if ($("#mocSetLots")) $("#mocSetLots").innerHTML = "";   // (set partiel : ses pièces seulement dans « 🔶 Pièces »)
+  if ($("#mocSetLots")) $("#mocSetLots").innerHTML = "";   // (MOC et set partiel : leurs pièces seulement dans « 🔶 Pièces », jamais dans la fiche — 22/11)
   if (savedSet && $("input[name=cutype]:checked")?.value !== "fig") { $("#cuPartsShow").classList.add("small-btn"); $("#btnShowParts").after($("#cuPartsShow")); }   // comme un set : sous le nom
   else if ($("#cuPartsShow").closest(".cfg-actions")) { $("#cuPartsShow").classList.remove("small-btn"); $("#cuXmlBtn").before($("#cuPartsShow")); }
 }
@@ -10321,7 +10359,8 @@ async function openMocParts(it) {
         <img src="${img(x.image)}" alt="" loading="lazy" class="tap" data-pinfo="${k}" title="Détails de la pièce">
         <span class="ml-txt tap" data-pinfo="${k}" title="Détails de la pièce et sets où elle apparaît"><span><b>${esc(x.name || x.part)}</b>${qtyTag(x.qty)}</span>
           <small>${esc(x.part)} · ${swatch(x.rgb, x.trans)} ${esc(x.color_fr || "")}${x.asm ? ` · <span title="Chiffrée avec l'assemblage monté (prix BrickLink du monté, réparti entre ses pièces)">🧩 part de ${esc(x.asm.name)} (${esc(x.asm.no)})</span>` : ""}</small></span>
-        <span class="ml-val">${x.unit != null ? qtyPrice(x.unit, x.qty) : `<span class="muted small">prix inconnu</span>`}</span></div>`).join("")
+        <span class="ml-val">${x.unit != null ? qtyPrice(x.unit, x.qty) : `<span class="muted small">prix inconnu</span>`}</span>
+        <button type="button" class="ml-pen" data-pinfo="${k}" title="Modifier, retirer…" aria-label="Modifier cette pièce">✏️</button></div>`).join("")
       || `<div class="loading">Aucune pièce ne correspond.</div>`;
     $$("[data-pinfo]", body).forEach(b => b.onclick = () => {
       const x = lots[+b.dataset.pinfo];
@@ -10765,7 +10804,7 @@ function mountReview(box, f, colors, { onDone, rescanNow } = {}) {
         ${part ? `<div class="rv-fields"><label>Couleur <select data-col="${k}">${(st.choice === "custom" ? [[st.custom.color_id, st.custom.color_fr]] : []).concat(sl.colors.map(x => [x.color_id, `${x.color_fr} (proposée, ${x.score} %)`]), COLORS)
             .filter((x, j, arr) => arr.findIndex(y => y[0] === x[0]) === j).map(([id, t]) => `<option value="${id}" ${id === st.color ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
           <label>Quantité <input type="number" min="1" max="99" value="${st.qty}" data-qty="${k}"></label></div>` : ""}
-        <div class="rv-editor-foot"><button type="button" class="btn small-btn" data-close>Fermer</button>${part ? `<button type="button" class="btn small-btn primary" data-okclose="${k}">✓ Valider cette pièce</button>` : `<button type="button" class="btn small-btn primary" data-okclose="${k}">✓ Valider</button>`}</div></div>`;
+        <div class="rv-editor-foot"><button type="button" class="btn small-btn" data-close>Fermer</button>${part ? `<button type="button" class="btn small-btn primary" data-okclose="${k}">✔ Valider cette pièce</button>` : `<button type="button" class="btn small-btn primary" data-okclose="${k}">✔ Valider</button>`}</div></div>`;
     return `<div class="rv-row ${tone}"><div class="rv-main">${main}<span class="rv-acts2">${acts}</span></div>${editor}</div>`;
   };
 
@@ -10793,7 +10832,7 @@ function mountReview(box, f, colors, { onDone, rescanNow } = {}) {
         ${f.others.map((o, j) => `<div class="rv-other">${zoomBtn(o.image, o.name, false)}<span class="rv-txt"><b>${esc(o.name)}</b><small>${esc(o.part)} · ${o.score} %${o.colors[0] ? " · " + esc(o.colors[0].color_fr) : ""}</small></span>
           <button type="button" class="btn small-btn" data-addo="${j}" ${added.has(o.part) ? "disabled" : ""}>${added.has(o.part) ? "Ajoutée" : "➕ Ajouter"}</button></div>`).join("")}</details>` : ""}
       <div class="rv-foot">
-        <button type="button" class="btn" data-all ${nTodo ? "" : "disabled"}>✓ Tout valider${nTodo ? ` (${nTodo})` : ""}</button>
+        <button type="button" class="btn" data-all ${nTodo ? "" : "disabled"}>✔ Tout valider${nTodo ? ` (${nTodo})` : ""}</button>
         <button type="button" class="btn primary" data-validate>${f.type === "fig" ? "Valider la figurine" : "Valider les pièces"}</button></div>`}</section>`;
     wire();
     if (scanning) poll = setTimeout(refresh, 4000);   // scan en tâche de fond : on attend le résultat
@@ -11268,14 +11307,21 @@ $("#cuFile").onchange = async e => {
   e.target.value = "";
   mocQuickScan();   // figurine MOC nouvelle : scan tout de suite
 };
-$("#btnAcquired").onclick = () => {
-  const it = readConfig();
-  $("#cfgList").value = firstCollection();
+$("#btnAcquired").onclick = async () => {   /* ✔ Acquis : la liste DEMANDÉE (aucune d'office), puis dans la collection, « À construire », enregistré — 22/11 */
+  const it = readConfig(), nm0 = itemName(state.draft.item);
+  const ask = await askList({ title: `« ${nm0} » acquis !` });
+  if (!ask) return;   // (annulé : rien ne change, le souhait reste un souhait)
+  $("#cfgList").value = ask.lid; $("#cfgList").dispatchEvent(new Event("change", { bubbles: true }));
   $$("input[name=figs]").forEach(r => r.checked = r.value === (it.with_minifigs ? "avec" : "sans"));
   $("#btnAcquired").hidden = true;
   $("#listLegend").textContent = "Déplacer dans la collection";
+  if ($("#cfgUnbuilt")) $("#cfgUnbuilt").checked = true;
   updateEstimate();
-  toast("Vérifier l'état puis enregistrer");
+  const ln = state.lists.find(l => l.id === ask.lid)?.name || "";
+  state.acqDirect = true;   /* (aucune question après : ni « figurines déjà dans la collection », ni tâches) */
+  try { await $("#stepConfig").onsubmit({ preventDefault() {}, submitter: $("#btnSave") }); } finally { state.acqDirect = false; }
+  modal.hidden = true;
+  toast(`🚧 « ${nm0} » : dans la collection (${ln}), « À construire »`);
 };
 $("#stepConfig").addEventListener("change", updateEstimate);
 
@@ -11373,13 +11419,13 @@ $("#stepConfig").onsubmit = async e => {
         r = await api("/api/items/" + old.id, { method: "PUT", body: { ...body, _force: true } });
       }
       state.draft.base_u = r.updated_at;
-      if ((old.kind || "set") === "set" && isWish(old.list_id) && kindOf(body.list_id) === "collection") state.offerFigsFor = old.id;   // souhait acquis : mes figurines seules sont-elles celles de ce set ?
+      if ((old.kind || "set") === "set" && isWish(old.list_id) && kindOf(body.list_id) === "collection" && !state.acqDirect) state.offerFigsFor = old.id;   /* (« ✔ Acquis » : sans question — 22/11) */   // souhait acquis : mes figurines seules sont-elles celles de ce set ?
       toast(r.rejoined ? (state.draft?.item?.indiv_copy ? "Rien de modifié : la copie est retirée" : "Rien de différent : cette figurine a rejoint les autres exemplaires") : "Modifications enregistrées");
       if (r.rejoined) { modal.hidden = true; await load(); b.disabled = false; return; }
       await sendMoc(old.id);
       {   // enregistrée : s'il lui reste des tâches, on demande (celles qui correspondent au changement cochées d'avance)
         const diff = (...ks) => ks.some(k => JSON.stringify(old[k] ?? null) !== JSON.stringify(r[k] ?? null));
-        todoAsk = [old.id, [diff("photo", "photo_url", "image") && "Photo",
+        if (!state.acqDirect) todoAsk = [old.id, [diff("photo", "photo_url", "image") && "Photo",
           (diff("parts", "portion", "fig_counts", "missing_minifigs", "with_minifigs") || mocFile) && "Pièces", diff("accessories") && "Accessoires"].filter(Boolean),
           state.draft.todosAtOpen || []];   // (une tâche ajoutée pendant cette visite n'est pas proposée : elle vient d'être créée)
       }
