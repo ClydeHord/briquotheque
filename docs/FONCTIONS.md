@@ -201,7 +201,7 @@ La méthode complète est dans le [README](../README.md#estimation-de-la-valeur)
   zone** ; sans vente nulle part, les annonces en cours (signalées). **BrickOwl** en secours.
 - **Zones réglables** (Réglages › 💶 Prix) : une liste ordonnée de pays, de régions BrickLink (Europe, Union européenne, Amérique du
   Nord…) et le monde — par défaut France, Europe, monde. Ex. pour qui ne se fait livrer qu'en Belgique : Belgique, France, Europe,
-  monde. On passe à la zone suivante s'il y a moins de N ventes (ou annonces) — N réglable, 3 par défaut. Moins de N ventes dans
+  monde. On ajoute la zone suivante s'il y a moins de N ventes (ou annonces) — N réglable (1, 2, 3, 5, 10, 15 ou 20), 3 par défaut. Moins de N ventes dans
   toutes les zones : le prix n'est pas retenu, l'ancien prix est gardé (« prix gardé : seulement 1 vente »). La zone 1, si c'est un pays,
   est « chez vous » : sans drapeau, et pays de livraison des liens BrickLink.
 - Un drapeau devant un prix dit d'où il vient (🇧🇪, 🇪🇺 Europe, 🇺🇳 monde…) ; sans drapeau : la zone 1, chez vous. Sur les cartes de la vue

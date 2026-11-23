@@ -261,11 +261,11 @@ async function drawParts() {
   try { const r = await fetch(base + "/parts"); if (!r.ok) throw new Error(); rows = await r.json(); }
   catch { $("[data-l]").innerHTML = `<p class="sh-note">Liste des pièces indisponible pour le moment.</p>`; return; }
   const L = $("[data-l]");
-  L.innerHTML = `<p class="sh-note" style="margin:0 0 8px">${nf.format(rows.length)} références · ${nf.format(rows.reduce((a, r) => a + (r.quantity || 1), 0))} pièces (hors figurines)</p>
+  L.innerHTML = `<p class="sh-note" style="margin:0 0 8px">${nf.format(rows.length)} références · ${nf.format(rows.reduce((a, r) => a + (r.quantity || 1), 0))} pièces (figurines comprises)</p>
     <div class="sh-tools"><input type="search" data-q placeholder="Filtrer : nom, référence, couleur…"></div><div class="sh-lots" data-g></div>`;
   const draw = () => { const q = $("[data-q]", L).value.trim().toLowerCase();
     const sel = rows.filter(r => !q || `${r.name} ${r.part_num} ${r.bricklink} ${r.color_fr} ${r.color_name}`.toLowerCase().includes(q));
-    $("[data-g]", L).innerHTML = sel.slice(0, 600).map(r => lotRow(r)).join("") || `<p class="sh-note">Aucune pièce ne correspond.</p>`; };
+    $("[data-g]", L).innerHTML = sel.slice(0, 600).map(r => lotRow(r, [r.fig ? "figurine : " + r.fig : "", r.added ? "ajoutée" : ""].filter(Boolean).join(" · "))).join("") || `<p class="sh-note">Aucune pièce ne correspond.</p>`; };
   $("[data-q]", L).oninput = draw; draw();
 }
 /* navigation : #fig/<n>, #parts (le bouton « retour » du téléphone revient à la fiche) */

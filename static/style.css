@@ -3429,6 +3429,9 @@ html[data-ui="verre"] #topViews2.is-stuck, html[data-ui="pastel"] #topViews2.is-
 .ch-line.ch-nret { stroke: #eab308; } .ch-area.ch-nret { fill: #eab308; } .ch-dot.ch-nret { fill: #eab308; } .ch-key.ch-nret { border-color: #eab308; }
 .ch-line.ch-occ2 { stroke: #f97316; } .ch-area.ch-occ2 { fill: #f97316; } .ch-dot.ch-occ2 { fill: #f97316; } .ch-key.ch-occ2 { border-color: #f97316; }
 .ch-line.ch-mine2 { stroke: #ef4444; } .ch-area.ch-mine2 { fill: #ef4444; } .ch-dot.ch-mine2 { fill: #ef4444; } .ch-key.ch-mine2 { border-color: #ef4444; }
+/* (courbes BrickEconomy gardées, jusqu'au 9/11 : 🟦 neuf bleu, 🟪 ventes violet — 23/11) */
+.ch-line.ch-beN { stroke: #3b82f6; } .ch-area.ch-beN { fill: #3b82f6; } .ch-dot.ch-beN { fill: #3b82f6; } .ch-key.ch-beN { border-color: #3b82f6; }
+.ch-line.ch-beV { stroke: #a855f7; } .ch-area.ch-beV { fill: #a855f7; } .ch-dot.ch-beV { fill: #a855f7; } .ch-key.ch-beV { border-color: #a855f7; }
 
 /* (« À commander » : commandée d'après mes commandes — 21/11 soir) */
 .bl-ordered { color: #2f6fa8; font-weight: 600; }
@@ -3661,3 +3664,18 @@ html[data-ui="verre"] .modal-box { background: color-mix(in srgb, var(--panel) 9
 
 /* (glisser rapide — 22/11) : thème Verre, pas de flou d'arrière-plan sur les cartes (coûteux à redessiner, invisible sur le fond dégradé) */
 html[data-ui="verre"] .card, html[data-ui="verre"] .stat { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* (bouton + dessiné : centré quelle que soit la police — 23/11) */
+#btnAdd, html.hdr-mini .topbar #btnAdd, .topbar:has(.top-views:not([hidden])) #btnAdd { position: relative; font-size: 0 !important; width: 46px; min-width: 46px; height: 38px; padding: 0 !important; }
+html.hdr-mini .topbar #btnAdd { width: 40px; min-width: 40px; height: 30px; }
+#btnAdd::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(currentColor, currentColor) center / 18px 3px no-repeat, linear-gradient(currentColor, currentColor) center / 3px 18px no-repeat; }
+html.hdr-mini .topbar #btnAdd::after { background-size: 15px 3px, 3px 15px; }
+
+/* (📈 Évolution : plus lisible sur ordinateur — 23/11) */
+@media (min-width: 900px) {
+  .evo2-row { font-size: 16px; }
+  .evo2 .ch-legend, .hist-box .ch-legend { font-size: 14px; }
+  .evo2 .ch-ylab, .evo2 .ch-xlab, .hist-box .ch-ylab, .hist-box .ch-xlab { font-size: 13px; }
+  .evo2-per button, .hist-box .chips button { font-size: 14px; }
+}

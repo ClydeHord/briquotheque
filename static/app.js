@@ -973,7 +973,7 @@ async function load() {
     kb.textContent = `🔑 ${miss.length > 1 ? "Clés API Rebrickable et BrickLink" : miss[0] === "bricklink" ? "Codes API BrickLink" : "Clé API Rebrickable"} à fournir pour obtenir les tarifs, les images, la recherche et les inventaires → Réglages`;
     kb.onclick = () => $("#btnSettings").click();
   }
-  if (typeof d.sort_def === "string" && d.sort_def !== state.sortDef) { state.sortDef = d.sort_def; try { localStorage.setItem("bq-sort-def", d.sort_def); } catch {} }   /* (tri par défaut : celui du serveur — 22/11) */
+  if (typeof d.sort_def === "string" && d.sort_def !== state.sortDef) { state.sortDef = d.sort_def; state.sortFor = null; try { localStorage.setItem("bq-sort-def", d.sort_def); } catch {} }   /* (arrivé après le premier affichage : la liste affichée le reprend — 22/11) */   /* (tri par défaut : celui du serveur — 22/11) */
   else if (d.sort_def == null && state.sortDef && !DEMO) api("/api/settings/sort-def", { method: "POST", body: { sort: state.sortDef } }).catch(() => {});   /* (réglé avant sur cet appareil : envoyé au serveur) */
   state.demoOn = !!d.demo_on; state.sidePubHide = d.side_pub_hide || []; sidePubDraw();   // démo publique désactivée : pas de lien ; liens masqués (Réglages)
   if (!DEMO) loadNovCount();
@@ -1424,7 +1424,7 @@ document.addEventListener("click", e => {
   const cur = Math.max(0, TREND_DAYS.indexOf(+state.trend?.period || 1));
   d.innerHTML = `<div class="modal-box" style="width:min(420px,100%)"><div class="modal-head"><h2>📅 Comparer les prix à</h2><button type="button" class="icon-btn" data-x aria-label="Fermer">✕</button></div>
     <div class="tr-period" style="width:100%"><input type="range" min="0" max="6" step="1" value="${cur}" data-p><b data-l>${esc(trendDaysLbl(TREND_DAYS[cur]))}</b></div>
-    <p class="hint">Glissant : 30, 90, 180 et 365 jours = le même jour il y a 1, 3, 6 ou 12 mois. Aussi dans Réglages › 🧮 Estimations.</p></div>`;
+    <p class="hint">Glissant : 30, 90, 180 et 365 jours = le même jour il y a 1, 3, 6 ou 12 mois.</p></div>`;
   document.body.append(d);
   const close = () => d.remove(); $("[data-x]", d).onclick = close; d.onclick = ev => { if (ev.target === d) close(); };
   const r = $("[data-p]", d);
@@ -1797,6 +1797,17 @@ const isoDays = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10)
 const pctTxt = (a, b) => a && b != null ? `${b >= a ? "+" : "−"}${Math.abs((b - a) / a * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : "—";
 /* bloc « Évolution » : Occasion ou Neuf (une seule courbe à la fois), période, variation sur 1 an,
    minimum / maximum / moyenne sur la période affichée */
+/* courbes BrickEconomy gardées (jusqu'au 9/11/2026, plus mises à jour) : la valeur neuve publiée et le prix moyen des ventes de chaque mois,
+   telles quelles — lues une fois (info._be), avant que info.history ne soit vidé (plus de courbe recalculée à partir d'elles) — 23/11 */
+function beHist(info) {
+  if (!info) return { neuf: [], ventes: [] };
+  if (!info._be) { const t = isoDays(0), ok = a => (a || []).filter(p => p && p[0] <= t && p[1] > 0).map(p => [p[0], p[1]]);
+    info._be = { neuf: ok(info.history), ventes: ok(info.sales) }; }
+  return info._be;
+}
+const BE_END = "jusqu'au 9 novembre 2026, date à laquelle BrickEconomy a fermé son accès";
+/* une courbe d'avant (BrickEconomy) puis celle d'après (marché) : les points d'avant jusqu'au premier point d'après — une seule courbe (23/11) */
+const joinH = (a, b) => b?.length ? [...(a || []).filter(p => p[0] < b[0][0]), ...b] : (a || []);
 function historyBlock(box, { title, sub, modes, defMode, defPeriod = "all" }) {
   const keys = Object.keys(modes || {}).filter(k => modes[k]?.pts?.length);
   if (!keys.length) { box.hidden = true; box.innerHTML = ""; return; }
@@ -1838,7 +1849,8 @@ async function mineHistory(box, info, fig, it) {
   /* relevés farfelus écartés (ex. une seule annonce à 100 € un jour, entre deux relevés à 30-40 €) : plus de 1,8 fois ses deux voisins, ou moins */
   const clean = pts => (pts || []).filter(p => p && p[1] != null && p[1] > 0).filter((p, k, a) => { const a0 = a[k - 1]?.[1], a1 = a[k + 1]?.[1];
     if (a0 == null && a1 == null) return true;
-    if (a0 == null || a1 == null) { const nb = a0 ?? a1; return !(p[1] > nb * 3 || p[1] < nb / 3); }   // (premier / dernier point : plus de 3 fois son voisin, ou moins)
+    if (a1 == null) return true;   // (le dernier point = le prix du moment : toujours gardé — 23/11)
+    if (a0 == null) return !(p[1] > a1 * 3 || p[1] < a1 / 3);   // (premier point : plus de 3 fois son voisin, ou moins)
     const hi = Math.max(a0, a1), lo = Math.min(a0, a1); return !(p[1] > hi * 1.8 || p[1] < lo / 1.8); });
   const ext = pts => pts.length && pts.at(-1)[0] < today ? [...pts, [today, pts.at(-1)[1]]] : pts;
   const ownNew = (info?.own_hist || []).filter(r => r[1] != null).map(r => [r[0], r[1]]);
@@ -1878,14 +1890,14 @@ async function mineHistory(box, info, fig, it) {
   const afterPts = retired ? ext(newMk.filter(p => !rd10 || p[0] >= rd10)) : [];   // (après la date de retrait)
   const occPts = neuf ? usedMk : setPts;   // (occasion : dans l'état de mon set — sans figurines, manquantes… — sans les ajouts)
   const S = [
-    ["nmag", "🟩", "Neuf (magasin)", retailPts, "Neuf, magasin : le prix LEGO tant que le set est vendu", true],
-    ["nret", "🟨", "Neuf (après retrait)", afterPts, "Neuf, après retrait : le prix du marché", true],
-    ["occ2", "🟧", "Occasion", occPts, `Occasion${!neuf && why.length ? " dans l'état du mien (" + why.join(", ") + ")" : ""}, sans les ajouts : le prix du marché`, true],
-    ...(modded ? [["mine2", "🟥", "L'exemplaire", mine, "L'exemplaire : sa vraie valeur (les ajouts, retraits, boîte… comptent)", true]] : [])].filter(x => x[3].length);
+    ["nmag", "🟩", "Magasin", retailPts, "", true],   // (4 courbes, sans les sources — 23/11)
+    ["nret", "🟨", "Neuf", joinH(beHist(info).neuf, retired ? afterPts : ext(newMk)), "", true],
+    ["occ2", "🟧", "Occasion", joinH(beHist(info).ventes.map(([t, v]) => [t, Math.round(v * k * 100) / 100]), occPts), "", true],
+    ...(modded ? [["mine2", "🟥", "Mon exemplaire", mine, "", true]] : [])].filter(x => x[3].length);
   const per = Math.max(7, +state.trend?.period || 15);   // (d'office : la période des Réglages)
   const P = [...new Set([per, 30, 90, 180, 365, 1095, 0])];
   const plbl = n => !n ? "Tout" : n === 365 ? "1 an" : n === 1095 ? "3 ans" : n % 30 === 0 ? `${n / 30} mois` : `${n} j`;
-  let days = per; const on = Object.fromEntries(S.map(([k2, , , , , main]) => [k2, main]));
+  let days = beHist(info).neuf.length || beHist(info).ventes.length ? 0 : per; const on = Object.fromEntries(S.map(([k2, , , , , main]) => [k2, main]));   // (courbes BrickEconomy : « Tout » d'office — 23/11)
   const draw = () => {
     const from = days ? isoDays(-days) : "";
     const cut = s => !from ? s : (j => j < 0 ? [] : s.slice(Math.max(0, j - 1)))(s.findIndex(p => p[0] >= from)).map(p => p[0] < from ? [from, p[1]] : p);   // (le relevé d'avant la période : son prix au 1er jour ; une courbe finie avant la période : rien — 21/11 soir)
@@ -1898,7 +1910,7 @@ async function mineHistory(box, info, fig, it) {
         const last = c.at(-1)[1], first = c[0][1], mn = vals.reduce((a, p) => p[1] < a[1] ? p : a), mx = vals.reduce((a, p) => p[1] > a[1] ? p : a);
         return `<div class="evo2-row ${on[k2] ? "" : "off"}"><b>${emo} ${lbl}</b> <b>${money(last)}</b> <span class="${last >= first ? "up" : "down"}">${pctTxt(first, last)}</span>
           <span class="muted small">min ${money(mn[1])} · max ${money(mx[1])}</span></div>`; }).join("")}</div>
-      <div class="hist-chart"></div><p class="muted small">${S.filter(([k2]) => on[k2]).map(([, emo, , , note]) => `${emo} ${esc(note)}`).join(" · ")}</p></div>`;
+      <div class="hist-chart"></div></div>`;   /* (plus de texte des sources sous le graphique — 23/11) */
     if (shown.length) lineChart($(".hist-chart", box), shown.map(([k2, , lbl, pts]) => ({ name: lbl, pts: cut(pts), cls: k2 })), { from });   // (avant la 1re donnée : un trou)
     else $(".hist-chart", box).innerHTML = `<p class="muted small">Pas encore de courbe.</p>`;
     $$("[data-ev]", box).forEach(c => c.onchange = () => { on[c.dataset.ev] = c.checked; draw(); });
@@ -1931,10 +1943,11 @@ async function openEvolution(type, number, name = "", it = null) {   // it : ma 
   try {
     const info = await api(`/api/${type}/${encodeURIComponent(number)}`);
     if (!d.isConnected) return;
-    info.history = [];   // (courbes : du VRAI uniquement — plus l'historique BrickEconomy, 21/11 soir)
+    const be0 = beHist(info);   // (courbes BrickEconomy : affichées telles quelles, à part — 23/11)
+    info.history = [];   // (courbes : du VRAI uniquement — plus d'historique recalculé à partir de BrickEconomy, 21/11 soir)
     if (info.name && !name) $("h2", d).firstChild.textContent = info.name + " ";
     const own = info.own_hist = ownHistToday(info);   // relevés de l'appli, prolongés jusqu'à aujourd'hui
-    if (!info.history?.length && own.length < 2) {   // pas d'historique publié, et moins de deux relevés de l'appli : pas encore de courbe
+    if (!be0.neuf.length && !be0.ventes.length && own.length < 2) {   // pas d'historique publié, et moins de deux relevés de l'appli : pas encore de courbe
       const one = own[0], ce = type === "fig" ? "cette figurine" : "ce set";
       $("[data-h]", d).innerHTML = one
         ? `<p class="muted">La courbe de ${ce} se construit jour après jour : Briquothèque relève son prix chaque jour depuis le
@@ -1976,8 +1989,11 @@ function ownHistToday(info) {
 }
 /* fiche d'un set / d'une figurine */
 function itemHistory(box, info, fig, it = null) {   // it : ma fiche → courbe « L'exemplaire » (le prix réel + ce que j'ai en plus ou en moins)
+  const B = beHist(info); if (info) info.history = [];   // (BrickEconomy : ses courbes telles quelles, en plus — jamais recalculées ici, 23/11)
   if (info) info.own_hist = ownHistToday(info);   // (sans effet si déjà prolongé : la dernière ligne est à la date du jour)
-  const since = info?.own_hist?.[0] ? ` depuis le ${new Date(info.own_hist[0][0]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : "";
+  const daily0 = (info?.own_hist || []).find(r => r.at(-1) !== "BL6M"), blm = (info?.own_hist || []).some(r => r.at(-1) === "BL6M");   // (points « BL6M » : ventes BrickLink, mois par mois — 23/11)
+  const since = (blm ? " : ventes BrickLink mois par mois (médiane), puis relevés quotidiens de l'application" : " : relevés quotidiens de l'application")
+    + (daily0 ? ` depuis le ${new Date(daily0[0]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : "");
   const used = usedCurve(info?.history, fig ? info?.used : info?.used_value, info?.own_hist);
   const ownNew = (info?.own_hist || []).filter(r => r[1] != null).map(r => [r[0], r[1]]);   // relevés de l'appli : [date, neuf, occasion]
   const be = !!info?.history?.length;
@@ -1993,10 +2009,8 @@ function itemHistory(box, info, fig, it = null) {   // it : ma fiche → courbe 
     mine: mine && { pts: mine, note: "L'exemplaire : le prix réel du marché, plus ce que l'exemplaire a en plus (pièces, figurines, boîte…) ou en moins aujourd'hui." },
     set: mine && setPts?.length && { pts: setPts, note: `Le set seul, ${it.condition === "neuf" ? "neuf" : "d'occasion"} : le prix du marché.` },
     both: mine && setPts?.length && { pts: mine, extra: [{ name: "Le set", pts: setPts, cls: "b" }], note: "L'exemplaire et le set seul, superposés." },
-    used: !(mine && it?.condition !== "neuf") && used && { pts: used, note: be ? "Occasion : courbe du neuf ramenée au prix d'occasion actuel (BrickEconomy ne publie pas l'historique de l'occasion) ; remplacée par les relevés de l'application au fil des jours."
-      : `Occasion : relevés quotidiens de l'application${since} (prix des annonces ; ligne plate = prix inchangé).` },
-    new: mine && it?.condition === "neuf" ? null : be ? { pts: info.history, note: fig ? "Neuve / détachée : historique BrickEconomy." : "Neuf / scellé : historique BrickEconomy." }
-      : ownNew.length && { pts: ownNew, note: `Neuf : relevés quotidiens de l'application${since} (prix des annonces ; ligne plate = prix inchangé).` },
+    used: !(mine && it?.condition !== "neuf") && (p => p.length && { pts: p, note: "Occasion : le prix du marché." })(joinH(B.ventes, used || [])),   // (une courbe, sans les sources — 23/11)
+    new: mine && it?.condition === "neuf" ? null : (p => p.length && { pts: p, note: fig ? "Neuve : le prix du marché." : "Neuf : le prix du marché." })(joinH(B.neuf, ownNew)),
   } });
 }
 
@@ -2301,6 +2315,7 @@ function summary(items) {
 /* ------------------------------------------------------------ rendu */
 /* tri par défaut : « Thème » pour les listes, « Ajout récent » pour Toute la collection ; un tri choisi est retenu par liste */
 try { state.sortBy = JSON.parse(localStorage.getItem("bq-sort") || "{}"); } catch { state.sortBy = {}; }
+if (state.sortBy && state.sortBy[ALL]) { delete state.sortBy[ALL]; try { localStorage.setItem("bq-sort", JSON.stringify(state.sortBy)); } catch {} }   // (ouverture : la collection au tri par défaut — 22/11)
 try { state.sortRev = JSON.parse(localStorage.getItem("bq-sort-rev") || "{}"); } catch { state.sortRev = {}; }   // « 🔃 Renverser le tri » : retenu liste par liste
 const sortRevOn = () => !!state.sortRev?.[state.current];
 function toggleSortRev() {
@@ -4008,7 +4023,7 @@ function renderStats() {
   api("/api/history/collection" + (scope !== ALL ? "?list=" + encodeURIComponent(scope) : "")).then(h => {
     const box = $("#colHist", v); if (!box) return;
     if (!h.with_history) {
-      box.innerHTML = `<h2>📈 Valeur dans le temps</h2><p class="muted">L'historique des prix n'est pas encore récupéré : il arrive avec la prochaine actualisation des prix (bouton ⟳ en haut).</p>`;
+      box.innerHTML = `<h2>📈 Valeur dans le temps</h2><p class="muted">L'historique des prix n'est pas encore récupéré : 6 mois de ventes BrickLink, mois par mois, arrivent avec les prochaines passes BrickLink.</p>`;
       return;
     }
     const noH = h.without_history ? ` ${h.without_history} élément${h.without_history > 1 ? "s" : ""} sans historique compté${h.without_history > 1 ? "s" : ""} à valeur constante.` : "";
@@ -4017,7 +4032,7 @@ function renderStats() {
       used: { pts: (() => { const sn = smoothDaily(h.snapshots), est = h.estimated.filter(p => p[0] < snapStart), last = est.at(-1)?.[1], k = last && sn[0]?.[1] ? sn[0][1] / last : 1;
           return smoothDaily([...est.map(p => [p[0], p[1] * k, ...p.slice(2)]), ...sn]); })(),   /* (historique reconstitué ramené au 1er vrai relevé : pas de marche ; relevés aberrants lissés — 22/11) */
         note: `Occasion (l'estimation) : les sets et figurines actuels, chacun selon l'évolution de son prix, ramenés à l'estimation d'aujourd'hui ; un set compte à partir de sa sortie. Les relevés quotidiens de l'application prennent le relais.${noH}` },
-      new: { pts: h.new, note: `Neuf : valeur neuve des sets et figurines actuels (historique BrickEconomy).${noH}` },
+      new: { pts: h.new, note: `Neuf : valeur neuve des sets et figurines actuels (ventes BrickLink, mois par mois).${noH}` },
     } });
     $("h3", box).outerHTML = `<h2>📈 Valeur dans le temps</h2>`;
   }).catch(e => { const box = $("#colHist", v); if (box) box.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
@@ -4600,6 +4615,8 @@ async function newInventory(number, name = "") {
   await loadInventories(); renderNav?.();
   return openInventory("set-" + number, name);
 }
+/* commandées sans prix payé connu (commande à la main…) : la même mention dans l'inventaire et dans « Commandes » — 22/11 */
+const unpaidNote = (n, m) => ` <small class="muted" title="Commandées à la main ou sans prix payé connu : médiane BrickLink">+ ${m ? "≈ " + m + " estimés pour " : ""}${nf.format(n)} réf. sans prix payé</small>`;
 async function openInventory(itemId, setName, opts = {}) {
   { const it_ = !/^set-/.test(itemId) && state.items.find(i => i.id === itemId); if (it_?.number) itemId = "set-" + it_.number; }   /* (jamais rattaché à une fiche : rangé par n° de set — 22/11) */
   if (window.__invPageClose) await window.__invPageClose();   /* (une seule page d'inventaire : l'autre est refermée, enregistrée — 22/11) */
@@ -4886,7 +4903,7 @@ async function openInventory(itemId, setName, opts = {}) {
     const rest = rs.filter(r => !real.includes(r)), kn = rest.filter(r => ip[ipKey(r)] && ip[ipKey(r)] !== "…");
     const est = kn.reduce((a, r) => a + ip[ipKey(r)].unit * (st[r.key]?.q || r.need), 0);
     return ` · <b class="inv-total" title="Prix payé dans les commandes, pour les seules pièces de cet inventaire (port non compté)">${money(paid)} payés</b>`
-      + (rest.length ? ` <small class="muted" title="Commandées à la main ou sans prix connu : médiane BrickLink">+ ${kn.length ? "≈ " + money(est) : "?"} estimés (${rest.length} réf.)</small>` : "");
+      + (rest.length ? unpaidNote(rest.length, kn.length ? money(est) : "") : "");
   };
   const ipSum = state0 => {   // total estimé des pièces à commander (ou commandées)
     const rs = rows.filter(r => st[r.key]?.s === state0); if (!rs.length) return "";
@@ -5201,7 +5218,7 @@ async function openInventory(itemId, setName, opts = {}) {
   };
   if ($("[data-delinv-top]", d)) { $("[data-delinv-top]", d).hidden = false; $("[data-delinv-top]", d).onclick = () => $("[data-delinv]", d)?.click(); }   /* (corbeille en haut — 22/11) */
   $("[data-delinv]", d)?.addEventListener("click", async () => {
-    const c = counts(), what = data.xml ? `l'inventaire « ${label || data.name} »` : `l'inventaire du set ${data.set}`;   /* (un inventaire n'est rattaché à aucune fiche — 22/11) */
+    const c = counts(), what = `l'inventaire « ${label || data.name || setName || data.set} »`;   /* (un inventaire n'est rattaché à aucune fiche — 22/11) */
     /* pièces COMMANDÉES : déplacées dans « Commandes » (pas celles à commander) — 22/11 */
     const moves = rows.filter(r => st[r.key]?.s === "cmd").map(r => { const col = effColor(r), s0 = st[r.key] || {};
       return { row: r.key, part_num: s0.p || r.part_num, part_name: s0.p ? s0.pn || s0.p : r.name || "", bricklink: s0.p ? "" : r.bricklink || "", color_id: col.id,
@@ -5393,7 +5410,7 @@ function renderPartsView(items) {
     const gOrd = items.filter(i => !i.got && !isCmd(i)), gCmd = items.filter(isCmd), gOk = items.filter(i => i.got);
     const est = l => { const k = l.filter(i => partBuy(i)?.unit != null); return k.length ? ` <b class="inv-total">≈ ${money(k.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0))}</b>${k.length < l.length ? ` <small class="muted">(${k.length}/${l.length} réf.)</small>` : ""}` : ""; };
     const real = gCmd.filter(i => (i.ordered || []).length && i.ordered.every(o => typeof o.paid === "number")), rest = gCmd.filter(i => !real.includes(i));
-    const paid = real.length ? ` · <b class="inv-total" title="Prix payé dans les commandes (port non compté)">${money(real.reduce((a, i) => a + i.ordered.reduce((b, o) => b + o.paid, 0), 0))} payés</b>${rest.length ? ` <small class="muted">+${est(rest) || " ?"} estimés</small>` : ""}` : est(gCmd);
+    const paid = real.length ? ` · <b class="inv-total" title="Prix payé dans les commandes (port non compté)">${money(real.reduce((a, i) => a + i.ordered.reduce((b, o) => b + o.paid, 0), 0))} payés</b>${rest.length ? (k => unpaidNote(rest.length, k.length ? money(k.reduce((a, i) => a + partBuy(i).unit * (i.quantity || 1), 0)) : ""))(rest.filter(i => partBuy(i)?.unit != null)) : ""}` : est(gCmd);
     const tot = pcs(items), done = pcs(gCmd) + pcs(gOk);
     const F = state.blF || "";
     $("#stats").innerHTML = `<div class="bl-sum-box" style="grid-column:1/-1"><div class="inv-sum">
@@ -6245,9 +6262,9 @@ $("#btnSettings").onclick = async () => {
       ${bn0.day ? `Dernière passe : <b>${esc(fmtDate(bn0.t || 0))}</b> · ${nf.format(bn0.calls || 0)} appels${!bn0.done ? " · en cours" : bn0.left != null ? ` · ${nf.format(bn0.left)} prix encore à rafraîchir` : ""}` : "Première passe : cette nuit."}
       · aujourd'hui : ${nf.format(st.bricklink_today || 0)} / ${nf.format(bn0.max ?? 4800)} appels.` : "BrickLink n'est pas branché (section 🧱 BrickLink) : les prix viennent de BrickOwl."}</p>
     <div class="price-cfg">
-      <label><span>Actualisation automatique : toutes les <b data-pv="every_h"></b></span><input type="range" data-pc="every_h" min="1" max="168" step="1"></label>
-      <label><span>Limite : <b data-pv="budget"></b> appels BrickLink par jour</span><input type="range" data-pc="budget" min="100" max="${bn0.max ?? 4800}" step="100"></label>
-      <label><span>Fiche consultée : prix relus s'ils ont plus de <b data-pv="consult_h"></b></span><input type="range" data-pc="consult_h" min="1" max="168" step="1"></label>
+      <label><span>Actualisation automatique : toutes les <b data-pv="every_h"></b></span><input type="range" data-pc="every_h" min="0" max="10" step="1"></label>
+      <label><span>Limite : <b data-pv="budget"></b> appels BrickLink par jour</span><input type="range" data-pc="budget" min="0" max="8" step="1"></label>
+      <label><span>Fiche consultée : prix relus s'ils ont plus de <b data-pv="consult_h"></b></span><input type="range" data-pc="consult_h" min="0" max="10" step="1"></label>
     </div>
     <div class="blz-edit">
       <p class="set-sub">Zones des prix BrickLink, dans l'ordre</p>
@@ -6255,7 +6272,7 @@ $("#btnSettings").onclick = async () => {
         sans drapeau, et pays de livraison des liens BrickLink. Les prix déjà relevés gardent leur zone jusqu'à leur prochaine actualisation.</p>
       <div data-blzlist></div>
       <button type="button" class="btn small-btn" data-blzadd style="margin:6px 0 10px">+ Ajouter une zone</button>
-      <label><span>Passer à la zone suivante s'il y a moins de <b data-blzminv></b> ventes (ou annonces)</span><input type="range" data-blzmin min="1" max="20" step="1"></label>
+      <label><span>Ajouter la zone suivante s'il y a moins de <b data-blzminv></b> ventes (ou annonces)</span><input type="range" data-blzmin min="0" max="6" step="1"></label>
     </div>
     <p class="set-sub">Sets et figurines <span class="muted small">(catalogue)</span></p>
     <p class="hint" data-last style="margin:0 0 6px"></p>
@@ -6289,9 +6306,10 @@ $("#btnSettings").onclick = async () => {
     draw();
     $("[data-blzadd]", rf).onclick = () => { if (zones.length >= 8) return toast("8 zones au plus"); zones.splice(Math.max(0, zones.length - (zones.at(-1)?.w ? 1 : 0)), 0, { r: "europe" }); draw(); zsave(); };
     const mr = $("[data-blzmin]", rf), mv = $("[data-blzminv]", rf);
-    mr.value = mn; mv.textContent = mn; mr.oninput = () => { mv.textContent = mr.value; }; mr.onchange = () => zsave();
+    const ZMIN = [1, 2, 3, 5, 10, 15, 20], zIdx = v => ZMIN.reduce((b, x, i) => Math.abs(x - v) < Math.abs(ZMIN[b] - v) ? i : b, 0);   // (paliers — 22/11)
+    mr.value = zIdx(mn); mv.textContent = ZMIN[mr.value]; mr.oninput = () => { mv.textContent = ZMIN[mr.value]; }; mr.onchange = () => zsave();
     async function zsave() {   /* (zones : enregistrées à chaque changement) */
-      try { const r = await api("/api/settings/bl-zones", { method: "POST", body: { zones, min: +mr.value } });
+      try { const r = await api("/api/settings/bl-zones", { method: "POST", body: { zones, min: ZMIN[+mr.value] } });
         state.blz = { zones: r.zones, min: r.min, order: r.order }; zones = r.zones.map(z => ({ ...z })); draw(); render(); toast("✔ Zones enregistrées : les prix suivront à leur prochaine actualisation"); }
       catch (e) { toast(e.message); }
     }
@@ -6299,11 +6317,14 @@ $("#btnSettings").onclick = async () => {
   {   // curseurs de l'actualisation (enregistrés au lâcher)
     const pc = { every_h: 24, budget: 2000, consult_h: 24, ...(st.prices || {}) };
     const lab = (k, v) => k === "budget" ? nf.format(v) : v % 24 === 0 && v >= 24 ? `${v / 24} jour${v > 24 ? "s" : ""} (${v} h)` : `${v} h`;
+    const bmax = bn0.max ?? 4800, STEPS = { every_h: [1, 3, 6, 12, 24, 48, 72, 96, 120, 144, 168], consult_h: [1, 3, 6, 12, 24, 48, 72, 96, 120, 144, 168],
+      budget: [...new Set([100, 250, 500, 1000, 1500, 2000, 3000, 4000, bmax].filter(x => x <= bmax))].sort((a, b) => a - b) };   // (curseurs à paliers — 22/11)
+    const near = (k, v) => STEPS[k].reduce((b, x, i) => Math.abs(x - v) < Math.abs(STEPS[k][b] - v) ? i : b, 0);
     $$("[data-pc]", rf).forEach(r => {
-      const k = r.dataset.pc, out = $(`[data-pv="${k}"]`, rf);
-      r.value = pc[k]; out.textContent = lab(k, +r.value);
-      r.oninput = () => { out.textContent = lab(k, +r.value); };
-      r.onchange = async () => { try { const x = await api("/api/settings/prices", { method: "POST", body: { [k]: +r.value } }); Object.assign(pc, x.prices); toast("✔ Enregistré"); } catch (e) { toast(e.message); } };
+      const k = r.dataset.pc, out = $(`[data-pv="${k}"]`, rf), val = () => STEPS[k][+r.value];
+      r.max = STEPS[k].length - 1; r.value = near(k, pc[k]); out.textContent = lab(k, val());
+      r.oninput = () => { out.textContent = lab(k, val()); };
+      r.onchange = async () => { try { const x = await api("/api/settings/prices", { method: "POST", body: { [k]: val() } }); Object.assign(pc, x.prices); toast("✔ Enregistré"); } catch (e) { toast(e.message); } };
     });
   }
   const pstate = r => { $("[data-pstate]", rf).textContent = r?.running ? `Chiffrage en cours : ${nf.format(r.done || 0)} / ${nf.format(r.total || 0)} (reprend tout seul après un redémarrage)`
@@ -7303,9 +7324,7 @@ async function recognize(file, cropped = false) {
     $("#results [data-accphoto]").onclick = () => accessoryFromPhoto(state.lastPhoto);
     $("#results [data-retry]").onclick = () => recognize(file, true); };
   try {
-    const code = await Promise.race([readCodeInImage(file), new Promise(r => setTimeout(() => r(null), 2500))]);
-    if (!mine()) return;
-    if (code && (/^\d{8,14}$/.test(code.replace(/\s/g, "")) || /(?<!\d)\d{7}(?!\d)/.test(code))) return onCode(code);   // code lu : direct
+    const codeP = Promise.race([readCodeInImage(file), new Promise(r => setTimeout(() => r(null), 2500))]).catch(() => null);   // (en même temps que la reconnaissance — 22/11)
     const blob = await shrink(file);
     if (!mine()) return;
     state.lastPhoto = blob;
@@ -7324,7 +7343,11 @@ async function recognize(file, cropped = false) {
     pPromise.then(ps => { parts = ps; partsDone = true;   // pièces : ajoutées dès qu'elles arrivent, l'indicateur disparaît
       if (!found || !onScreen()) return;
       if (ps.length) showResults([...found, ...ps], true); else $("#results [data-morewait]")?.remove(); });
-    try { found = await post("/api/photo", 70000); }
+    const fP = post("/api/photo", 70000);
+    { const code = await codeP;   // code-barres lu pendant ce temps : il passe d'abord
+      if (!mine()) return;
+      if (code && (/^\d{8,14}$/.test(code.replace(/\s/g, "")) || /(?<!\d)\d{7}(?!\d)/.test(code))) { fP.catch(() => {}); return onCode(code); } }
+    try { found = await fP; }
     catch (e) { found = null; const ps = await pPromise; if (!mine()) return; if (ps.length) return showResults(ps, true); throw e; }
     if (!mine()) return;
     showResults([...found, ...parts], true);
@@ -8467,6 +8490,8 @@ function drawFigList(setQty) {
     if (!t) { t = document.createElement("div"); t.id = "figOrigT"; t.className = "fig-sub"; $("#figList").before(t); }
     const n = figs.reduce((a, f) => a + Math.min(state.draft.figCounts[f.id] ?? (f.qty || 1) * (setQty || 1), (f.qty || 1) * (setQty || 1)), 0);   // en plus : dans « ajoutées »
     t.textContent = n ? `${nf.format(n)} originale${n > 1 ? "s" : ""}` : ""; t.hidden = !n;
+    const k = +state.draft.info.minifig_count || 0;   // (pas encore connues : le dire — 22/11)
+    if (!figs.length && k) { t.textContent = `${nf.format(k)} figurine${k > 1 ? "s" : ""} dans ce set, pas encore ${k > 1 ? "détaillées" : "détaillée"} : ${k > 1 ? "elles apparaîtront" : "elle apparaîtra"} dès que BrickLink répondra.`; t.hidden = false; }
   }
   $("#figBox .choice").hidden = !!figs.length;   // le choix avec / sans ne sert que si la liste des figurines est inconnue
   const c = state.draft.figCounts;

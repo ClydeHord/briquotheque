@@ -2,8 +2,20 @@
 
 Les nouveautés de Briquothèque, version par version (la plus récente en haut).
 
+## 23 novembre 2026
+
+- **Courbes historiques sur plusieurs années** : 📈 Évolution remonte souvent plusieurs années en arrière (courbes BrickEconomy gardées, jusqu'au 9/11/2026), puis continue avec le marché du moment ; quatre courbes seulement, plus lisibles : 🟩 Magasin, 🟨 Neuf, 🟧 Occasion, 🟥 Mon exemplaire. Le graphique s'ouvre alors sur « Tout ».
+- **Occasion toujours affichée** : le prix du moment n'est plus écarté comme « farfelu » quand il diffère beaucoup du relevé précédent.
+- **Bouton +** dessiné, exactement centré quelle que soit la police (ordinateur).
+- **Historique des prix sur 6 mois** : les ventes BrickLink des 6 derniers mois, mois par mois (médiane), complètent les relevés quotidiens — courbes de chaque set et figurine, « 📈 Valeur dans le temps », variations sur 1, 3 ou 6 mois. Récupérées par la passe BrickLink (sets et figurines sans historique d'abord).
+- **Variation de la collection et des listes corrigée** : la valeur d'avant se calcule fiche par fiche (elle ne comptait que les fiches relevées ce jour-là, d'où des « ↑ +49 % »).
+
 ## 20 au 22 novembre 2026
 
+- **Réglages → 💶 Prix : curseurs à paliers** (1, 3, 6, 12, 24, 48, 72… h ; appels par jour ; nombre de ventes 1, 2, 3, 5, 10, 15, 20) ; « Ajouter la zone suivante » ; « 📅 Comparer les prix à » sans renvoi vers les Réglages.
+- **Inventaire et Commandes** : « + 1 réf. sans prix payé » (ou « + ≈ … estimés pour … ») au lieu de « + ? estimés » ; la suppression d'un inventaire le nomme par son nom.
+- **Set dont les figurines ne sont pas encore détaillées** : la section « Figurines » dit combien il y en a et qu'elles arriveront avec BrickLink.
+- **Tri par défaut toujours respecté à l'ouverture** : « Toute la collection » s'ouvre sur le tri défini par défaut (un tri choisi pour elle ne dure que jusqu'à la fermeture) ; sur un appareil qui ne le connaissait pas encore, il s'applique dès qu'il arrive.
 - **Variations de prix : repartir d'aujourd'hui** — une date de départ (22/11) : aucun relevé d'avant ne sert de comparaison (ils venaient d'autres sources) ; les courbes gardent tout l'historique.
 - **Inventaire : prix des pièces gardés sur l'appareil** (24 h) — la réouverture n'attend plus le chiffrage.
 - **« 🔁 Commander à nouveau » : plusieurs couleurs d'un coup** (chacune sa quantité, une ligne par couleur) ; dans **☑ Sélection**, « 🔁 Commander à nouveau » pour toutes les lignes cochées. Sur ordinateur, « Commandée le … » seule sur sa ligne, les boutons dessous ; sur téléphone, ✔ OK plus étroit. Sur une ligne commandée, **un seul bouton « 🛒 À commander »** qui demande : changer le statut de cette ligne, ou préparer une nouvelle commande.

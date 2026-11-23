@@ -1,6 +1,6 @@
 # Briquothèque — Guide utilisateur (condensé pour IA)
 
-Généré le 22/11/2026 22:52.
+Généré le 23/11/2026 09:46.
 
 Consigne pour l'IA : ce texte est le guide complet de Briquothèque, une application web (sur téléphone et ordinateur) pour gérer une collection LEGO : sets, figurines, MOC, pièces, liste de souhaits, estimations de valeur. Quand l'utilisateur te demande comment faire quelque chose, réponds en français, simplement, en t'appuyant UNIQUEMENT sur ce guide : les étapes dans l'ordre, avec les noms exacts des boutons et des menus (et leur emoji). Si le guide ne couvre pas la demande, dis-le plutôt que d'inventer. Vocabulaire : « figurine » (jamais « minifig »).
 
@@ -788,7 +788,11 @@ comptent pas, une même personne compte au plus une visite par jour (recharger o
 #### 📈 Valeur dans le temps
 
 L'évolution de la valeur de la collection : **Occasion** ou **Neuf**, sur **1 an**, **3 ans** ou **Tout** ;
-aujourd'hui, variation sur 1 an, minimum, maximum, moyenne.
+aujourd'hui, variation sur 1 an, minimum, maximum, moyenne. Avant les relevés quotidiens de l'application, la courbe vient des
+**ventes BrickLink des 6 derniers mois, mois par mois** (médiane de chaque mois) : la même source que les prix du jour. Les courbes de chaque
+set et figurine (📈 Évolution) et les variations sur 1, 3 ou 6 mois s'en servent aussi. Dans 📈 Évolution, quatre courbes : **🟩 Magasin**, **🟨 Neuf**, **🟧 Occasion** et **🟥 Mon exemplaire** (s'il a des
+modifications). Neuf et Occasion remontent souvent plusieurs années en arrière (courbes BrickEconomy gardées, jusqu'au 9 novembre 2026), puis
+continuent avec le marché du moment.
 
 #### 🔍 Comprendre les variations
 
@@ -878,7 +882,7 @@ autant d'étiquettes qu'on veut (la fenêtre reste ouverte) ; dans « Tri » on 
 en cours est rappelé sur le bouton). Un clic ailleurs ou la touche Échap referme le menu. C'est pareil sur les pages publiques.
 
 Les tris de la collection : **Dernière modification**, **Aléatoire**, **Valeur**, **Variation de prix (%)** (les plus grosses variations en % d'abord, hausses comme baisses), **Variation de prix (€)** (le plus gros écart en euros d'abord), **Écart de prix (%)** (de la plus forte hausse à la plus forte baisse), **Écart de prix (€)** (idem, en euros), **Nombre de pièces** et **Nombre de figurines**. Avec un tri en euros, l'écart s'affiche en € à côté de la flèche. Sous la barre, une ligne rappelle toujours le tri en cours et son sens : ↘ décroissant, ↗ croissant (« Valeur ↘ ») ; avec un tri de variation ou d'écart, elle donne aussi la date de référence (« par rapport au … ») ; le bouton **calendrier** de la barre change la période (1, 7, 15, 30, 90, 180 ou 365 jours, glissants ; aussi dans Réglages › Estimations).
-En tête du menu « Tri » : **Définir par défaut** fait du tri en cours le tri d'office (**↺** y revient), ; le bouton à côté du menu inverse l'ordre du tri en cours (les plus fortes baisses d'abord, du moins cher au plus cher…), retenu liste par liste — avec le tri Aléatoire, il remélange. Les « Pièces à commander » gardent leurs tris (ajout, nom, numéro, nombre).
+En tête du menu « Tri » : **Définir par défaut** fait du tri en cours le tri d'office (**↺** y revient ; « Toute la collection » s'ouvre toujours sur lui) ; le bouton à côté du menu inverse l'ordre du tri en cours (les plus fortes baisses d'abord, du moins cher au plus cher…), retenu liste par liste — avec le tri Aléatoire, il remélange. Les « Pièces à commander » gardent leurs tris (ajout, nom, numéro, nombre).
 
 **Inventaire** : son résumé donne une information par ligne (pièces, OK, à commander avec leur prix, commandées, à vérifier, exclues).
 La ligne **❔ à vérifier** donne aussi ce que coûteraient les pièces pas encore triées s'il fallait toutes les commander, et

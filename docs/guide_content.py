@@ -466,7 +466,11 @@ part de sets <b>déjà retirés</b> (toucher la tuile : lesquels sont encore en 
 le nombre de visites, de visiteurs différents, d'aujourd'hui et des 7 derniers jours, et la dernière visite. Les propres visites (connecté) ne
 comptent pas, une même personne compte au plus une visite par jour (recharger ou revenir ne compte pas), et les adresses des visiteurs ne sont jamais gardées en clair.</p>
 <h3>📈 Valeur dans le temps</h3><p>L'évolution de la valeur de la collection : <b>Occasion</b> ou <b>Neuf</b>, sur <b>1 an</b>, <b>3 ans</b> ou <b>Tout</b> ;
-aujourd'hui, variation sur 1 an, minimum, maximum, moyenne.</p>
+aujourd'hui, variation sur 1 an, minimum, maximum, moyenne. Avant les relevés quotidiens de l'application, la courbe vient des
+<b>ventes BrickLink des 6 derniers mois, mois par mois</b> (médiane de chaque mois) : la même source que les prix du jour. Les courbes de chaque
+set et figurine (📈 Évolution) et les variations sur 1, 3 ou 6 mois s'en servent aussi. Dans 📈 Évolution, quatre courbes : <b>🟩 Magasin</b>, <b>🟨 Neuf</b>, <b>🟧 Occasion</b> et <b>🟥 Mon exemplaire</b> (s'il a des
+modifications). Neuf et Occasion remontent souvent plusieurs années en arrière (courbes BrickEconomy gardées, jusqu'au 9 novembre 2026), puis
+continuent avec le marché du moment.</p>
 <h3>🔍 Comprendre les variations</h3><p>Sous la courbe, le bouton <b>🔍 Comprendre les variations</b> explique ce qui a fait monter ou baisser la valeur de la liste
 affichée, du plus gros au plus petit : <b>ajout</b> ou <b>retrait</b> d'une fiche, <b>hausse ou baisse d'une cote</b> (avec l'ancien et le nouveau prix),
 quantité changée, fiche modifiée. Quand un set bouge à cause d'une figurine (manquante ou en plus), c'est la figurine qui est citée. Choisir la période :
@@ -524,7 +528,7 @@ les boutons en carrés de même taille). Elle reste en haut de l'écran pendant 
 autant d'étiquettes qu'on veut (la fenêtre reste ouverte) ; dans « Tri » on choisit un seul tri (la fenêtre se referme, et sur ordinateur le tri
 en cours est rappelé sur le bouton). Un clic ailleurs ou la touche Échap referme le menu. C'est pareil sur les pages publiques.</p>
 <p>Les tris de la collection : <b>Dernière modification</b>, <b>Aléatoire</b>, <b>Valeur</b>, <b>Variation de prix (%)</b> (les plus grosses variations en % d'abord, hausses comme baisses), <b>Variation de prix (€)</b> (le plus gros écart en euros d'abord), <b>Écart de prix (%)</b> (de la plus forte hausse à la plus forte baisse), <b>Écart de prix (€)</b> (idem, en euros), <b>Nombre de pièces</b> et <b>Nombre de figurines</b>. Avec un tri en euros, l'écart s'affiche en € à côté de la flèche. Sous la barre, une ligne rappelle toujours le tri en cours et son sens : ↘ décroissant, ↗ croissant (« Valeur ↘ ») ; avec un tri de variation ou d'écart, elle donne aussi la date de référence (« par rapport au … ») ; le bouton <b>calendrier</b> de la barre change la période (1, 7, 15, 30, 90, 180 ou 365 jours, glissants ; aussi dans Réglages › Estimations).
-En tête du menu « Tri » : <b>Définir par défaut</b> fait du tri en cours le tri d'office (<b>↺</b> y revient), ; le bouton à côté du menu inverse l'ordre du tri en cours (les plus fortes baisses d'abord, du moins cher au plus cher…), retenu liste par liste — avec le tri Aléatoire, il remélange. Les « Pièces à commander » gardent leurs tris (ajout, nom, numéro, nombre).</p>
+En tête du menu « Tri » : <b>Définir par défaut</b> fait du tri en cours le tri d'office (<b>↺</b> y revient ; « Toute la collection » s'ouvre toujours sur lui) ; le bouton à côté du menu inverse l'ordre du tri en cours (les plus fortes baisses d'abord, du moins cher au plus cher…), retenu liste par liste — avec le tri Aléatoire, il remélange. Les « Pièces à commander » gardent leurs tris (ajout, nom, numéro, nombre).</p>
 <p><b>Inventaire</b> : son résumé donne une information par ligne (pièces, OK, à commander avec leur prix, commandées, à vérifier, exclues).
 La ligne <b>❔ à vérifier</b> donne aussi ce que coûteraient les pièces pas encore triées s'il fallait toutes les commander, et
 <b>Total 🛒 + ❔</b> additionne les pièces à commander et celles qui restent à vérifier (le chiffrage se complète en quelques instants,

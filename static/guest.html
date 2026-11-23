@@ -836,7 +836,7 @@ function render() {
         ${showList ? `<div class="meta list-tag">${esc(listName(i.list_id))}</div>` : ""}
         <div class="meta">${[i.info?.theme, i.info?.year, piecesTxt(i.info?.pieces)].map((t, k) => k === 2 && t && (i.quantity || 1) > 1 ? piecesTxt(i.info.pieces * i.quantity) : t).filter(Boolean).map(esc).join(" · ")}</div>
         ${(i.quantity || 1) > 1 && i.info?.pieces ? `<div class="meta pcs-unit">${nf.format(i.info.pieces)} pièces l'unité</div>` : ""}
-        ${isWishId(i.list_id) && i.kind === "set" && isWatch(i) ? `<div class="meta">🔎 ${esc(wantLabel(i))}</div>` : ""}${isWatch(i) && i.note ? `<div class="meta watch-note">📝 ${esc(i.note)}</div>` : ""}
+        ${isWishId(i.list_id) && i.kind === "set" && isWatch(i) ? `<div class="meta">🔎 ${esc(wantLabel(i))}</div>` : ""}${isWatch(i) && i.note ? `<div class="meta watch-note">👀 ${esc(i.note)}</div>` : ""}
         ${isWishId(i.list_id) && !isCustom(i) ? `<div class="meta prices3">${prices(i)}</div>
         ${upcoming(i) ? `<div class="meta release">📅 ${esc(releaseTxt(i))}</div>` : ""}
         ${soon(i) && rDate(i.info?.retirement) ? `<div class="meta">⏳ Retrait prévu : ${esc(rDate(i.info.retirement).txt)}</div>` : ""}` : ""}
@@ -1032,7 +1032,7 @@ function openDetail(i, altK = null) {
     </div>
     ${wishItem ? `<div class="gd-status">${retired(i) ? `<span class="badge retired">Retiré</span>` : upcoming(i) ? `<span class="badge upcoming">Bientôt disponible</span>` : soon(i) ? `<span class="badge soon">Bientôt retiré</span>` : ""}
       ${upcoming(i) ? ` <span class="meta">${esc(releaseTxt(i))}</span>` : !retired(i) && rDate(inf.retirement) ? ` <span class="meta">Retrait prévu : ${esc(rDate(inf.retirement).txt)}</span>` : ""}
-      ${isWatch(i) ? ` <span class="meta">🔎 ${esc(wantLabel(i))}</span>` : ""}${isWatch(i) && i.note ? `<div class="meta watch-note">📝 ${esc(i.note)}</div>` : ""}</div>
+      ${isWatch(i) ? ` <span class="meta">🔎 ${esc(wantLabel(i))}</span>` : ""}${isWatch(i) && i.note ? `<div class="meta watch-note">👀 ${esc(i.note)}</div>` : ""}</div>
       <div class="gd-prices">
         ${inf.retail ? `<div><span>Prix magasin</span><b>${money(inf.retail)}</b></div>` : ""}
         ${retired(i) && inf.new_value ? `<div><span>Neuf</span><b>${zf(inf.zones?.new)}${money(inf.new_value)}</b></div>` : ""}

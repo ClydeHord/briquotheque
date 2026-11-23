@@ -1280,7 +1280,13 @@ def bl_queue():
     have = {(j[0], j[1]) for j in q if j[0] != "part"} | {(j[1], j[2]) for j in q if j[0] == "part"}
     q += [("set", s) for s in sorted(sets) if ("set", s) not in have and old(pc.get("bm:" + s))]   # relevés d'avant (annonces) : à refaire en ventes réelles
     q += [("fig", f) for f in sorted(figs) if ("fig", f) not in have and not RB_FIG.fullmatch(f) and old(pc.get("fu:" + f))]
-    def age(job):   # date du dernier relevé BrickLink (0 : jamais relevé → en premier ; 1 : relevé « moyenne » d'avant → juste après)
+    have = {(j[0], j[1]) for j in q if j[0] != "part"} | {(j[1], j[2]) for j in q if j[0] == "part"}
+    nohist = lambda kind, n: not pc.get("hb:" + ("fig:" if kind == "fig" else "") + n)   # (pas encore relu avec ses 6 mois de ventes datées — 23/11)
+    q += [("set", s) for s in sorted(sets) if ("set", s) not in have and s in cache and nohist("set", s)]
+    q += [("fig", f) for f in sorted(figs) if ("fig", f) not in have and not RB_FIG.fullmatch(f) and nohist("fig", f)]
+    def age(job):   # date du dernier relevé BrickLink (0 : jamais relevé → en premier ; 1 : relevé « moyenne » d'avant ou sans historique → juste après)
+        if job[0] != "part" and nohist(job[0], job[1]):
+            return 1
         rec = pc.get({"set": "bm:", "fig": "fu:"}.get(job[0], "") + job[1] if job[0] != "part" else f"bp:{job[1]}|{job[2]}") or {}
         if rec.get("src") != "BrickLink":
             return 0
@@ -6962,7 +6968,7 @@ def trend_ref_row(rows, today, until, ok=lambda x: True, unit=None):
     unit (valeur à l'unité d'un relevé) : un relevé qui vaut moins du quart d'un des deux suivants (prix pas encore connu à l'ajout…)
     n'est jamais pris — c'est le relevé fiable suivant qui sert (20/11)."""
     ep = trend_epoch()
-    rows = [x for x in rows or [] if ok(x) and (not ep or x[0] >= ep)]   # (rien d'avant la date de départ des variations — 22/11)
+    rows = [x for x in rows or [] if ok(x) and (not ep or x[0] >= ep or x[-1] == "BL6M")]   # (rien d'avant la date de départ des variations — 22/11 ; sauf les ventes BrickLink datées — 23/11)
     if unit:
         def sure(k):
             u = unit(rows[k])
@@ -7007,7 +7013,9 @@ def vl_ref():
     log, today, until = _load(VALUE_LOG_FILE, {}), time.strftime("%Y-%m-%d"), trend_until()
     times = log.get("times") or {}
     ep = trend_epoch()
-    days = [d for d in times if ep <= d < today] + [d for d in (_load(HISTORY_FILE, {}).get("collection") or {}) if ep <= d < today]   # (date de départ des variations — 22/11)
+    h_ = _load(HISTORY_FILE, {})
+    days = [d for d in times if ep <= d < today] + [d for d in (h_.get("collection") or {}) if ep <= d < today]   # (date de départ des variations — 22/11)
+    days += list({r[0] for rows_ in (h_.get("items") or {}).values() for r in rows_ if r and r[-1] == "BL6M" and r[0] < today})   # (ventes BrickLink datées — 23/11)
     if not days:
         return None
     d = max([x for x in days if x < until] or [min(days)])   # (période choisie ; sinon le premier relevé)
@@ -7021,7 +7029,7 @@ def comp_chg(e, cache, ih, today):
     def last(pts, col):
         ref = None
         for p_ in pts or []:
-            if trend_epoch() <= p_[0] < today and p_[col] is not None:   # (date de départ des variations — 22/11)
+            if (trend_epoch() <= p_[0] or p_[-1] == "BL6M") and p_[0] < today and p_[col] is not None:   # (date de départ des variations — 22/11 ; ventes BrickLink datées gardées — 23/11)
                 ref = p_[col]
         return ref
     q = max(1, int(e.get("quantity", 1) or 1))
@@ -7071,13 +7079,15 @@ def hist_backfill(key, m):
     """Historique réel (history.json) : les médianes mensuelles des ventes BrickLink (6 mois) ajoutées AVANT le premier relevé de l'appli
     — [« AAAA-MM-15 », neuf, occasion] (21/11)."""
     nm, um = ((m or {}).get("new") or {}).get("months") or {}, ((m or {}).get("used") or {}).get("months") or {}
+    if m:
+        _parts_cache_put("hb:" + key, {"t": time.time()})   # (relu avec ses ventes datées : plus prioritaire dans la passe BrickLink — 23/11)
     if not nm and not um:
         return
     with lock:
         h = _load(HISTORY_FILE, {})
         rows = (h.setdefault("items", {})).get(key) or []
         first = rows[0][0] if rows else time.strftime("%Y-%m-%d")
-        add = [[mo + "-15", nm.get(mo), um.get(mo)] for mo in sorted(set(nm) | set(um)) if mo + "-15" < first]
+        add = [[mo + "-15", nm.get(mo), um.get(mo), "BL6M"] for mo in sorted(set(nm) | set(um)) if mo + "-15" < first]   # (« BL6M » : point BrickLink, gardé par les variations — 23/11)
         if not add:
             return
         h["items"][key] = add + rows
@@ -7137,8 +7147,6 @@ def vl_trends(enriched, kinds, cache=None):
         orig = bool(e.get("set_orig") and e.get("attached_to"))
         q = max(1, int(e.get("quantity", 1) or 1))
         v = (e.get("own_total") if orig else e.get("total_value")) or 0
-        if not orig:
-            lists.setdefault(e["list_id"], [0.0, 0.0])[1] += v
         mp = mkt_pair(e, cache, ih, today, until)   # (MON EXEMPLAIRE sur l'historique réel du marché — 21/11 soir)
         if mp and v > 0 and not e.get("no_estimate"):
             unit = v / q
@@ -7151,14 +7159,20 @@ def vl_trends(enriched, kinds, cache=None):
             if c is not None:
                 e["chg"] = c
             continue
-        if _vl_counted(ref[1:]):
-            lists.setdefault(ref[3], [0.0, 0.0])[0] += ref[1]
         u0 = ref[1] / max(1, ref[2])
         if u0 > 0.004 and not e.get("no_estimate"):
             e["chg"] = round((v / q - u0) / u0 * 100, 1)
     for e in enriched:   # (variation de mon exemplaire sur l'historique réel : elle l'emporte sur celle des seuls relevés de ma fiche — 21/11 soir)
         if "_chg_mine" in e:
             e["chg"] = e.pop("_chg_mine")
+    for e in enriched:   # totaux des listes : chaque fiche, maintenant et ramenée par SA variation (sans variation : la même des deux côtés) — 23/11
+        if e.get("id") not in seen or (e.get("set_orig") and e.get("attached_to")):
+            continue
+        v, c = e.get("total_value") or 0, e.get("chg")
+        a = v / (1 + c / 100) if c is not None and c > -99.9 else v
+        tl = lists.setdefault(e["list_id"], [0.0, 0.0])
+        tl[0] += a
+        tl[1] += v
     for iid, r in items.items():   # fiches parties depuis le dernier relevé : dans la valeur d'avant
         if iid in seen or (r.get("gone") and r["gone"] < today):
             continue
@@ -7360,7 +7374,10 @@ def collection_history(list_id=""):
         if m > 12:
             y, m = y + 1, 1
     now = today.isoformat()
-    past = [d for d in months if d <= now] + [now]
+    ih = _load(HISTORY_FILE, {}).get("items") or {}   # (historique réel : ventes BrickLink mois par mois + relevés quotidiens — 23/11)
+    bl_first = [r[0] for rows_ in ih.values() for r in rows_[:1] if r and r[-1] == "BL6M"]
+    start = min(bl_first)[:7] + "-01" if bl_first else now   # (la courbe commence au premier mois connu, pas 4 ans avant)
+    past = [d for d in months if start <= d <= now] + [now]
     future = [d for d in months if d > now]
     tot_past, tot_fut, tot_new = [0.0] * len(past), [0.0] * len(future), [0.0] * len(past)
     with_hist = without = 0
@@ -7370,7 +7387,13 @@ def collection_history(list_id=""):
         e = enrich(it, cache, kinds)
         val = e.get("total_value") or 0
         info = cache.get(cache_key(it)) or {}
-        hist, fc = info.get("history") or [], info.get("forecast") or []
+        rows_ = ih.get(cache_key(it)) or []
+        col_ = 1 if it.get("condition") == "neuf" else 2
+        hist = [[r[0], r[col_]] for r in rows_ if len(r) > col_ and r[col_] is not None]   # (BrickLink seul : plus l'ancien historique BrickEconomy du cache)
+        hn_ = [[r[0], r[1]] for r in rows_ if len(r) > 1 and r[1] is not None] or hist
+        fc = []
+        if hist and hist[0][0] > start and (rows_[0][-1] != "BL6M" or rows_[0][0][:7] == min(bl_first)[:7]):   # (avant son 1er point : sa 1re valeur, constante ; sauf un set sorti depuis : rien avant sa sortie)
+            hist, hn_ = [[start, hist[0][1]]] + hist, [[start, hn_[0][1]]] + hn_
         if it.get("kind") == "custom" and len(it.get("value_hist") or []) >= 2:   # MOC : ses propres relevés (avant : premier relevé)
             vh, q = it["value_hist"], it.get("quantity", 1) or 1
             for k, d in enumerate(past):
@@ -7396,7 +7419,7 @@ def collection_history(list_id=""):
         for k, d in enumerate(past):
             v = _at(hist, d)
             tot_past[k] += (v or 0) * ratio   # pas encore sorti à cette date : rien
-            tot_new[k] += (v or 0) * qn       # valeur neuve réelle (BrickEconomy)
+            tot_new[k] += (_at(hn_, d) or 0) * qn       # valeur neuve réelle (ventes BrickLink — 23/11)
         for k, d in enumerate(future):
             v = _at(allp, d)
             tot_fut[k] += (v if v is not None else cur) * ratio
@@ -7915,6 +7938,25 @@ def _share_payload0(it, db):
     }
 
 
+def apply_part_swaps(rows, swaps, qk="quantity"):
+    """Une liste de pièces (set, figurine) avec MES échanges appliqués : pièce retirée (orig seul), remplacée (orig + new), ajoutée (new seul).
+    Les lignes gardent leur format ; une pièce ajoutée ou remplaçante porte « added » — 22/11."""
+    out = [dict(r) for r in rows or []]
+    for x in _real_swaps(swaps) or []:
+        o, n = x.get("orig"), x.get("new")
+        if o:
+            ids = {str(v) for v in (o.get("part"), o.get("part_num")) if v}
+            for r in out:
+                if str(r.get("color_id")) == str(o.get("color_id")) and ids & {str(r.get(k)) for k in ("part_num", "bricklink", "part") if r.get(k)} and int(r.get(qk) or 0) > 0:
+                    r[qk] = max(0, int(r.get(qk) or 0) - int(o.get("qty") or 1))
+                    break
+        if n:
+            out.append({"part_num": n.get("part_num") or n.get("part"), "bricklink": n.get("part"), "part": n.get("part"), "name": n.get("name") or "",
+                        "color_id": n.get("color_id"), "color_fr": n.get("color_fr") or "", "color_name": n.get("color") or "", "color": n.get("color") or "",
+                        qk: int(n.get("qty") or 1), "image": n.get("image") or "", "added": True})
+    return [r for r in out if int(r.get(qk) or 0) > 0]
+
+
 def share_fig_parts(it, db, fid):
     """Pièces d'une minifig de la fiche partagée (la fiche elle-même si c'est une minifig)."""
     if fid == "self":
@@ -7931,7 +7973,8 @@ def share_fig_parts(it, db, fid):
         if not (c and c[0].get("sure")):
             return []
         rb = c[0]["fig_num"]
-    return rb_fig_parts(rb) + (cmf_accessories(host) if host else [])
+    sw = (host or {}).get("fig_swaps") if host else ((it.get("fig_mods") or {}).get(fid) or {}).get("fig_swaps")   # (mes échanges sur cette figurine — 22/11)
+    return apply_part_swaps(rb_fig_parts(rb), sw, "qty") + (cmf_accessories(host) if host else [])
 
 
 # ---------------------------------------------------------------- HTTP
@@ -8498,9 +8541,28 @@ class Handler(BaseHTTPRequestHandler):
             if sub == "/parts":
                 if not data.get("set_parts"):
                     return self.error("Introuvable", 404)
-                rows = inventory_rows(it["number"])
-                prefetch_images([u for r in rows for u in (r.get("image"), r.get("part_image"))])
-                return self.send_json([{k: r.get(k) for k in ("part_num", "bricklink", "name", "color_id", "color_name", "color_fr", "rgb", "trans", "quantity", "image", "part_image")} for r in rows])
+                rows = apply_part_swaps(inventory_rows(it["number"]), (it.get("set_mod") or {}).get("fig_swaps"))   # (MES pièces : échanges appliqués — 22/11)
+                keep = ("part_num", "bricklink", "name", "color_id", "color_name", "color_fr", "rgb", "trans", "quantity", "image", "part_image", "added")
+                out = [{k: r.get(k) for k in keep} for r in rows]
+                try:   # … plus les pièces de ses figurines (avec leurs échanges), autant de fois qu'il y en a
+                    figs_ = [{"id": f["id"], "name": f.get("name"), "qty": f.get("qty")} for f in guest_figs(it, (_load(CACHE_FILE, {}).get(cache_key(it)) or {}), False)]
+                    seen_ = {f["id"] for f in figs_}
+                    for a_ in db["items"]:   # (figurines rangées dans le set, en plus : elles aussi — 22/11)
+                        if a_.get("attached_to") == it["id"] and a_.get("kind") == "fig" and a_.get("number") not in seen_:
+                            figs_.append({"id": a_["number"], "name": a_.get("display_name") or a_["number"], "qty": int(a_.get("quantity") or 1)}); seen_.add(a_["number"])
+                    for f in figs_:
+                        n_ = int(f.get("qty") or 0)
+                        if n_ <= 0:
+                            continue
+                        for r in share_fig_parts(it, db, f["id"]) or []:
+                            out.append({"part_num": r.get("part_num") or r.get("part"), "bricklink": r.get("part") or r.get("bricklink"), "name": r.get("name") or "",
+                                        "color_id": r.get("color_id"), "color_name": r.get("color") or r.get("color_name") or "", "color_fr": r.get("color_fr") or "",
+                                        "quantity": int(r.get("qty") or r.get("quantity") or 1) * n_, "image": r.get("image") or "", "fig": f.get("name") or f["id"],
+                                        **({"added": True} if r.get("added") else {})})
+                except Exception as e:
+                    print("Partage : pièces des figurines :", e, flush=True)
+                prefetch_images([u for r in out for u in (r.get("image"), r.get("part_image")) if u])
+                return self.send_json(out)
             m = re.fullmatch(r"/fig/([\w.-]+)/parts", sub)
             if m:
                 if sfig and m.group(1) != "self":
@@ -8617,7 +8679,7 @@ class Handler(BaseHTTPRequestHandler):
                 "quantity": it.get("quantity", 1), "condition": it.get("condition"), "bl_zone": bl_zone_of(it.get("kind", "set"), it["number"]),
                 "with_minifigs": it.get("with_minifigs", True), "missing": len(it.get("missing_minifigs") or []),
                 **({"has_box": bool(it.get("has_box")), "no_plan": bool(it.get("no_plan")), "also_used": bool(it.get("also_used"))} if it["list_id"] in watch else {}),
-                **({"note": str(it.get("notes") or "")[:800]} if it["list_id"] in watch and (it.get("notes") or "").strip() else {}),   # (« À surveiller » : la note, seulement là — 22/11)
+                **({"note": str(it.get("gift_note") or "")[:300]} if it["list_id"] in watch and (it.get("gift_note") or "").strip() else {}),   # (« À surveiller » : « 👀 Hugo », comme la carte privée — 22/11)
                 "figs": sum(fig_have(it, info.get("minifigs") or []).values()) if it.get("kind", "set") == "set" and it.get("with_minifigs", True) else 0,
                 "portion": it.get("portion", 100), "portion_note": it.get("portion_note", ""), "display_name": (mods or {}).get("name") or it.get("display_name", ""),
                 "custom_type": it.get("custom_type"), "added_at": it.get("added_at"),
@@ -10096,18 +10158,18 @@ button.main{background:#d01012;border-color:#d01012;color:#fff}p{margin:10px 14p
                 if not data:
                     return self.error("Aucune image reçue")
                 found = sources.recognize(data, content_type=ctype, kind="parts")[:5]
-                out, t0, later = [], time.time(), []
+                import concurrent.futures as _cf   # (toutes en même temps, 2,5 s au plus ; les autres finissent en coulisse — 22/11)
+                out, _ex = [], _cf.ThreadPoolExecutor(5)
+                _fu = {r["number"]: _ex.submit(cached_part_from_bricklink, r["number"]) for r in found}
+                _cf.wait(list(_fu.values()), timeout=2.5)
+                _ex.shutdown(wait=False)
                 for r in found:
-                    if "bl:" + r["number"] in _parts_cache() or time.time() - t0 < 4:
-                        rbp = cached_part_from_bricklink(r["number"])
-                    else:   # temps écoulé : réponse tout de suite, correspondance cherchée en arrière-plan
-                        rbp = None
-                        later.append(r["number"])
+                    f_ = _fu[r["number"]]
+                    late = not f_.done()
+                    rbp = None if late or f_.exception() else f_.result()
                     out.append({**(rbp or {"part_num": r["number"], "name": r["name"], "image": r["image"],
                                            "bricklink": r["number"]}),
-                                "score": r["score"], "photo_image": r["image"], "found_on_rb": bool(rbp) or None if r["number"] in later else bool(rbp)})
-                if later:
-                    threading.Thread(target=lambda ns: [cached_part_from_bricklink(n) for n in ns], args=(later,), daemon=True).start()
+                                "score": r["score"], "photo_image": r["image"], "found_on_rb": None if late else bool(rbp)})
                 return self.send_json(out)
             if p == "/api/photo":
                 ctype = self.headers.get("Content-Type", "image/jpeg")
